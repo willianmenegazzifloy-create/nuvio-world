@@ -17,6 +17,7 @@
 int main(void) {
   const int ordem1[AJ_MENU_TOPO_ORDEM_N] = { 2, 0, 3, 1, 4, 5, 6, 7 };
   const int ordem2[AJ_MENU_TOPO_ORDEM_N] = { 1, 3, 0, 2, 5, 4, 7, 6 };
+  const int ordemInvalida[AJ_MENU_TOPO_ORDEM_N] = { 0, 0, 1, 2, 3, 4, 5, 6 };
   int ordemLida[AJ_MENU_TOPO_ORDEM_N];
   char dir[NVT_MAX]; nvt_set(dir, sizeof dir, "/nuvio-aj-perfil-XXXXXX");
   assert(mkdtemp(dir));
@@ -51,6 +52,7 @@ int main(void) {
   valor[AJ_MENU_TOPO] = 0;       // apresentação permanece salva mesmo com menu lateral
   valor[AJ_MENU_TOPO_MODO] = 1;  // somente texto
   valor[AJ_MENU_TOPO_TAMANHO] = 2; // grande
+  assert(!ajustes_menu_topo_ordem_definir(ordemInvalida));
   assert(ajustes_menu_topo_ordem_definir(ordem1));
   ajustes_definir_ocultar_filmes_vistos(1);
   ajustes_perfil_guardar(1);
@@ -103,6 +105,7 @@ int main(void) {
   { char *localBlob = NULL;
     ajustes_mesclar_blob("{}", &localBlob);
     assert(localBlob && strstr(localBlob, "c_hideWatchedMoviesLocal"));
+    assert(!strstr(localBlob, "menuTopoOrdemLocal"));
     free(localBlob); }
 
   // Perfil nunca usado aqui: nada muda.
