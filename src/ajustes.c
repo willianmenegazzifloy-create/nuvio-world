@@ -6094,8 +6094,10 @@ int ajustes_perfil_restaurar(int perfil) {
   nomePerfil(nome, sizeof nome, perfil);
   t = dados_ler(nome);
   if (!t) {
-    // A new/older profile must not inherit another profile's collection default.
-    if (colecaoPropria && valor[AJ_COLECAO_EXIBICAO] != 0) { valor[AJ_COLECAO_EXIBICAO] = 0; mudou++; }
+    // A profile without a saved collection choice starts with the current factory default.
+    if (colecaoPropria && valor[AJ_COLECAO_EXIBICAO] != valorPadrao[AJ_COLECAO_EXIBICAO]) {
+      valor[AJ_COLECAO_EXIBICAO] = valorPadrao[AJ_COLECAO_EXIBICAO]; mudou++;
+    }
     if (bibliotecaFonteEscolhida) { bibliotecaFonteEscolhida = 0; mudou++; }
     if (mudou) gravar();
     return 0;
@@ -6131,8 +6133,8 @@ int ajustes_perfil_restaurar(int perfil) {
       }
     l = fim ? fim + 1 : NULL;
   }
-  if (colecaoPropria && !viuColecao && valor[AJ_COLECAO_EXIBICAO] != 0) {
-    valor[AJ_COLECAO_EXIBICAO] = 0; mudou++;
+  if (colecaoPropria && !viuColecao && valor[AJ_COLECAO_EXIBICAO] != valorPadrao[AJ_COLECAO_EXIBICAO]) {
+    valor[AJ_COLECAO_EXIBICAO] = valorPadrao[AJ_COLECAO_EXIBICAO]; mudou++;
   }
   if (!viuFoco && focoAntigo >= 0) {
     int v = focoTrailerMigrar(focoAntigo);
