@@ -1450,12 +1450,13 @@ static float topoEscalaTamanho(void) {
 typedef struct { float x, vx, w, vw, a, va; int em; } TopoCapsula;
 static TopoCapsula topoSel = { .em = -1 }, topoFoc = { .em = -1 };
 
-// Itens da pilula, da esquerda para a direita: os destinos na ordem do enum e a
-// Busca por ultimo. O perfil nao entra: e o circulo avulso.
+// Itens da pilula, da esquerda para a direita, na ordem salva pelo perfil.
+// O avatar do perfil nao entra: e o circulo avulso antes das abas.
 static int topoLista(int *ordem) {
-  int n = 0, i;
-  for (i = 0; i < MENU_N; i++) if (i != MENU_BUSCAR && mostra(i)) ordem[n++] = i;
-  if (mostra(MENU_BUSCAR)) ordem[n++] = MENU_BUSCAR;
+  int salvos[AJ_MENU_TOPO_ORDEM_N], n = 0, i;
+  ajustes_menu_topo_ordem(salvos);
+  for (i = 0; i < AJ_MENU_TOPO_ORDEM_N; i++)
+    if (mostra(salvos[i])) ordem[n++] = salvos[i];
   return n;
 }
 
@@ -1485,6 +1486,7 @@ static const char *topoRotulo(int i) {
 // da tela da barra. tab_metrics_from + tab_content_w deles, com o aperto no
 // lugar da rolagem: a nossa tira nunca rola.
 typedef struct { int n, ordem[NV_MENU_FOCOS], cortado, modo; float ws[NV_MENU_FOCOS], vao, pad, rotMax, larg, txtEscala; } TopoTira;
+_Static_assert(MENU_N == AJ_MENU_TOPO_ORDEM_N, "top menu order must cover every navigation destination");
 
 static void topoMedir(TopoTira *t) {
   int k, nl = 0, ni = 0;
