@@ -453,6 +453,22 @@ int main(void) {
   assert(!strcmp(CHAVE[AJ_PLR_FORMATO], "plrFormatoLocal") && somenteDesteAparelho(AJ_PLR_FORMATO));
   valor[AJ_PLR_FORMATO] = 99; assert(ajustes_plr_formato() == PLR_FMT_ORIGINAL);   // valor fora da lista: o original
   valor[AJ_PLR_FORMATO] = PLR_FMT_ORIGINAL;
+  // Menu superior: somente ícones por padrão, local e independente por perfil.
+  assert(AJ_MENU_TOPO_MODO == AJ_PLR_FORMATO + 1);
+  assert(valor[AJ_MENU_TOPO_MODO] == 0 && ajustes_menu_topo_icones());
+  assert(OPCOES[AJ_MENU_TOPO_MODO].n == 2);
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[0], "Somente ícones"));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Somente texto"));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].rotulo, "Apresentação do menu superior"));
+  assert(!strcmp(CHAVE[AJ_MENU_TOPO_MODO], "menuTopoModoLocal"));
+  assert(somenteDesteAparelho(AJ_MENU_TOPO_MODO) && dePerfil(AJ_MENU_TOPO_MODO));
+  assert(familiaPreviaOpcao(AJ_MENU_TOPO_MODO) == AJPV_HOME);
+  { int n = 0; montarTela();
+    for (int i = 0; i < AJ_N_TELA; i++)
+      if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_MODO) n++;
+    assert(n == 1); }
+  valor[AJ_MENU_TOPO_MODO] = 1; assert(!ajustes_menu_topo_icones());
+  valor[AJ_MENU_TOPO_MODO] = 0;
   unlink(path);
   puts("ajustes_padroes: ok");
   return 0;

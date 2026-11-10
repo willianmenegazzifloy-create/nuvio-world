@@ -704,6 +704,8 @@ typedef enum {
   // fileiraFormato): o estilo. LOCAL (o web nao tem). No fim:
   // valor[]/CHAVE[] posicionais.
   AJ_PLR_FORMATO,
+  // Device-local top navigation presentation, saved independently per profile.
+  AJ_MENU_TOPO_MODO,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -834,6 +836,7 @@ static const char *V_ESCALA_TEXTO[] = { "85%", "90%", "100%", "110%", "120%", "1
 static const char *V_DET_ESPACO[] = { "Compacto", "Normal", "Confortável" };   // stored in detEspacoLocal
 static const char *V_INTERFACE_MODO[] = { "TV", "Mobile", "Automático" };
 static const char *V_MENU_POS[] = { "Na lateral", "No topo" };   // #461
+static const char *V_MENU_TOPO_MODO[] = { "Somente ícones", "Somente texto" };
 static const char *V_ABAS_ESTILO[] = { "Chips", "Menu suspenso", "Barra central", "Páginas", "Menu no topo" };   // #205
 // F07: the order is cacheboost_cache_mb's (0, 256, 512, 1024 MB).
 // #338: indice -> MiB em cacheboost_buffer_mb (0 = o de sempre).
@@ -1829,6 +1832,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Dolby Vision P7 para P8.1 (experimental)", V_LIGA, 2),
   ESC("Registro na rede local", V_LIGA, 2),                   // local: logRedeLocal
   ESC("Formato no player", V_PLR_FORMATO, 6),          // local: plrFormatoLocal
+  ESC("Apresentação do menu superior", V_MENU_TOPO_MODO, 2), // por perfil, somente nesta TV
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2153,6 +2157,7 @@ static const char *CHAVE[] = {
   "dv7ConversionLocal",
   "logRedeLocal",
   "plrFormatoLocal",
+  "menuTopoModoLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -3465,6 +3470,7 @@ int ajustes_rail_moderna(void)        { return lig(AJ_RAIL_MODERNA); }
 int ajustes_menu_topo(void) {
   return valor[AJ_MENU_TOPO] == 1 && ajustes_home_layout() != HOME_LAYOUT_DINAMICA && !ajRetrato();
 }
+int ajustes_menu_topo_icones(void) { return valor[AJ_MENU_TOPO_MODO] == 0; }
 int ajustes_abas_estilo(void) { return valor[AJ_ABAS_ESTILO]; }
 void ajustes_definir_abas_estilo(int estilo) {
   if (estilo < 0 || estilo >= OPCOES[AJ_ABAS_ESTILO].n) return;
@@ -5961,6 +5967,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_LAYOUT_AJUSTES: /* #339: o arranjo dos Ajustes e desta TV */
     case AJ_INTERFACE_MODO: /* TV/Mobile follows this device, never the account */
     case AJ_MENU_TOPO:      /* #461: o web nao tem; por perfil (perfilLocal) */
+    case AJ_MENU_TOPO_MODO: /* presentation is local to this TV and profile */
     case AJ_ABAS_ESTILO:    /* #205: idem */
     case AJ_LOGO_TRAILER:   /* so a protecao de OLED desta TV */
     case AJ_LEG_MOSTRAR:
@@ -6028,7 +6035,7 @@ static int somenteDesteAparelho(int op) {
 // (ajustes-p<N>.txt) e continuam FORA do blob (somenteDesteAparelho).
 static int perfilLocal(int i) {
   return i == AJ_GUIA_ORDEM || i == AJ_GUIA_FONTE || i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
-         i == AJ_MENU_TOPO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS;
+         i == AJ_MENU_TOPO || i == AJ_MENU_TOPO_MODO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS;
   return i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
          i == AJ_MENU_TOPO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS || i == AJ_BIB_HOME;
 }
@@ -6086,7 +6093,7 @@ int ajustes_perfil_restaurar(int perfil) {
     if (mudou) gravar();
     return 0;
   }
-  { int focoAntigo = -1, viuFoco = 0, viuTopo = 0, viuAbas = 0, viuColecao = 0;
+  { int focoAntigo = -1, viuFoco = 0, viuTopo = 0, viuTopoModo = 0, viuAbas = 0, viuColecao = 0;
   for (l = t; l && *l; ) {
     char chave[64], *fim = strchr(l, '\n');
     int v, i;
@@ -6108,6 +6115,7 @@ int ajustes_perfil_restaurar(int perfil) {
         v = limita(i, v);
         if (i == AJ_FOCO_TRAILER) viuFoco = 1;
         if (i == AJ_MENU_TOPO) viuTopo = 1;
+        if (i == AJ_MENU_TOPO_MODO) viuTopoModo = 1;
         if (i == AJ_ABAS_ESTILO) viuAbas = 1;
         if (i == AJ_COLECAO_EXIBICAO) viuColecao = 1;
         if (v != valor[i]) { valor[i] = v; mudou++; }
@@ -6125,6 +6133,8 @@ int ajustes_perfil_restaurar(int perfil) {
   // Copia de antes do #461 nao tem menuTopoLocal, e a conta nao o guarda: sem
   // isto o topo ligado pelo perfil anterior vazaria para este.
   if (!viuTopo && valor[AJ_MENU_TOPO]) { valor[AJ_MENU_TOPO] = 0; mudou++; }
+  // Perfis anteriores a esta apresentação recebem o padrão: Somente ícones.
+  if (!viuTopoModo && valor[AJ_MENU_TOPO_MODO] != 0) { valor[AJ_MENU_TOPO_MODO] = 0; mudou++; }
   // Idem para o estilo das abas (#205).
   if (!viuAbas && valor[AJ_ABAS_ESTILO]) { valor[AJ_ABAS_ESTILO] = 0; mudou++; } }
   free(t);
@@ -7060,6 +7070,7 @@ static int inativa(int op) {
     case AJ_VIDRO_CONTORNO: case AJ_FOCO_ACENTO: case AJ_VIDRO_OPAC: case AJ_VIDRO_FOSCO: case AJ_VIDRO_QUALIDADE: return !lig(AJ_VIDRO);
     case AJ_RAIL:         return ajustes_rail_moderna();
     case AJ_MENU_TOPO:    return ajustes_home_layout() == HOME_LAYOUT_DINAMICA;
+    case AJ_MENU_TOPO_MODO: return !ajustes_menu_topo();
     case AJ_RAIL_BLUR:    return !ajustes_rail_moderna();
     case AJ_HERO_CATALOGOS: return !ajustes_hero_ligado();
     // O fundo em tela cheia e da Moderna: no Padrao o destaque e um banner e na
@@ -7484,6 +7495,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_RAIL: return "A barra de navegação da esquerda fica sempre aberta, ou recolhida até você ir até ela.";
     case AJ_ABAS_ESTILO: return "Chips: uma fileira de botões, como sempre. Menu suspenso: escolha Filmes ou Séries e depois o catálogo numa lista. Barra central: uma pílula de vidro no centro do alto da tela. Páginas: um catálogo por página; Esquerda e Direita trocam de página. Vale para este perfil.";
     case AJ_MENU_TOPO: return "Na lateral: o menu fica na esquerda, como sempre. No topo: o menu vira uma barra no alto da tela e o conteúdo usa a largura toda. Para cima no primeiro item da tela chega à barra e Para baixo volta. Vale para este perfil.";
+    case AJ_MENU_TOPO_MODO: return "Somente ícones: as abas mostram os ícones do menu lateral, sem rótulos. Somente texto: mostram os nomes das seções. A Busca mantém seu ícone e o Perfil mantém o avatar. Vale para este perfil.";
     case AJ_RAIL_MODERNA: return "Troca a barra lateral pela versão nova, com ícones maiores. Ela ignora a escolha entre recolhida e fixa.";
     case AJ_RAIL_BLUR: return "Desfoca a arte atrás da barra lateral moderna em vez de usar um fundo sólido.";
 #ifndef NV_ANDROID
@@ -7936,6 +7948,7 @@ static const char *beneficioProprio(int op) {
     case AJ_BUSCA_CINEMETA: return "A busca também consulta o Cinemeta se o catálogo do Nuvio falhar.";
     case AJ_HOME_LAYOUT: return "Como a Home se organiza: Moderna, Padrão ou Dinâmica.";
     case AJ_MENU_TOPO: return "Onde fica o menu: na esquerda ou no alto da tela.";
+    case AJ_MENU_TOPO_MODO: return "Escolhe se as abas do menu superior mostram ícones ou texto.";
     case AJ_ABAS_ESTILO: return "Como as abas de uma coleção de streaming aparecem: chips, menu suspenso, barra central ou páginas.";
     case AJ_HERO_FUNDO: return "De onde vem a arte grande do destaque e da página do título.";
     case AJ_HERO_GENERO: return "Mostra ou esconde o gênero sob o logo do destaque e dos pôsteres grandes.";
@@ -10352,7 +10365,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_ESPACO_FILEIRAS: case AJ_ESPACO_TITULOS:
     case AJ_HERO_TRAILER_SOM: case AJ_HERO_TRAILER_ESPERA: case AJ_HERO_TRANSICAO: case AJ_LOGO_TRAILER:
     case AJ_ADDON_FUNDO: case AJ_ADDON_LOGO:
-    case AJ_FIL_ORDEM: case AJ_RAIL: case AJ_RAIL_MODERNA: case AJ_MENU_TOPO: case AJ_ABAS_ESTILO:
+    case AJ_FIL_ORDEM: case AJ_RAIL: case AJ_RAIL_MODERNA: case AJ_MENU_TOPO: case AJ_MENU_TOPO_MODO: case AJ_ABAS_ESTILO:
     case AJ_RAIL_BLUR: case AJ_MIC_BUSCA: case AJ_HERO: case AJ_HERO_CATALOGOS: case AJ_HERO_GENERO:
     case AJ_HERO_SINOPSE: case AJ_HERO_NOTAS: case AJ_HERO_ANO: case AJ_HERO_DURACAO:
     case AJ_PS_FUNDO: case AJ_PS_CONTINUAR: case AJ_DESCOBRIR: case AJ_ROTULOS:

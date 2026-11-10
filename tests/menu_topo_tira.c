@@ -46,7 +46,7 @@ static void gravar(const char *txt) {
   fputs(txt, f); fclose(f);
   ajustes_dir(dir);
 }
-#define CFG "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\n"
+#define CFG "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 1\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\n"
 
 int main(void) {
   static const int idiomas[] = { 0, 1, 6, 4, 5 };   // pt, en, de, ru, fr
@@ -104,6 +104,23 @@ int main(void) {
       assert(PERTO(vao, 2.0f, 0.01f));
     }
   }
+
+  // MODO ÍCONES: todas as abas são quadradas; Busca e avatar mantêm sua geometria.
+  gravar(CFG "menuTopoModoLocal 0\nidioma 0\n");
+  menu_topo_geo(&g);
+  assert(g.n >= 5 && !g.cortado);
+  for (k = 0; k < g.n; k++) assert(PERTO(g.w[k], g.h, 0.01f));
+  assert(g.busca[g.n - 1]);
+  assert(PERTO(g.trilha[0] + g.trilha[2] * 0.5f, NV_LAYOUT_REAL_W * 0.5f, 1.0f));
+  assert(PERTO(g.avatar[0], 64.0f, 0.01f) && PERTO(g.avatar[2], g.trilha[3], 0.01f));
+  // A cápsula de foco acompanha a largura quadrada no modo de ícones.
+  menu_iniciar(); menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 80);
+  menu_topo_geo(&g);
+  assert(PERTO(g.foc[1], g.w[0], 0.01f));
+  tecla(SDLK_RIGHT); passo(0.016f, 80);
+  menu_topo_geo(&g);
+  assert(PERTO(g.foc[1], g.w[1], 0.5f));
+  tecla(SDLK_ESCAPE); passo(0.016f, 80);
 
   // TINTA A27: a "Opacidade do vidro" existente e o parametro claro->tinto
   // (78 % -> ~0,47), crescente, e nunca abaixo do piso de legibilidade.

@@ -69,6 +69,11 @@ int main(void) {
 
   gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\n");
   assert(ajustes_menu_topo());
+  assert(ajustes_menu_topo_icones()); // instalação/perfil sem chave nasce em ícones
+  { MenuTopoGeo g; menu_topo_geo(&g);
+    assert(g.n >= 5 && !g.cortado);
+    for (int k = 0; k < g.n; k++) assert(PERTO(g.w[k], g.h, 0.01f));
+    assert(g.busca[g.n - 1]); }
   assert(ajustes_rail_largura_fixa() == 0.0f);
   assert(ajustes_conteudo_x() == NV_CONTENT_PAD);
   menu_iniciar();
@@ -93,15 +98,15 @@ int main(void) {
   // nos idiomas de rotulo mais longo (pt, en, de, ru, fr).
   { static const int idiomas[] = { 0, 1, 6, 4, 5 };
     for (int j = 0; j < 5; j++) {
-      char cfg[160];
+      char cfg[256];
       MenuTopoGeo g;
-      snprintf(cfg, sizeof cfg, "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\nidioma %d\n", idiomas[j]);
+      snprintf(cfg, sizeof cfg, "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 1\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\nidioma %d\n", idiomas[j]);
       gravar(cfg);
       menu_topo_geo(&g);
       printf("topo idioma %d: largura %.0f cortado %d\n", idiomas[j], g.trilha[2], g.cortado);
       assert(g.cortado == 0 && g.trilha[2] > 600.0f && g.trilha[2] < 1300.0f);
     }
-    gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\n"); }
+    gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 0\n"); }
 
   abrir(MENU_INICIO);
   tecla(SDLK_ESCAPE);

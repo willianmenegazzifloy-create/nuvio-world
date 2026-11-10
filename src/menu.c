@@ -1483,6 +1483,16 @@ static void topoMedir(TopoTira *t) {
   int k, nl = 0, ni = 0;
   float txt = 0.0f, disp, fixo;
   t->n = topoLista(t->ordem);
+  if (ajustes_menu_topo_icones()) {
+    // Ícones: cada aba ocupa uma cápsula quadrada; não medir nem comprimir texto.
+    t->vao = TOPO_VAO; t->pad = 0.0f; t->rotMax = 0.0f; t->cortado = 0;
+    t->larg = t->n > 1 ? (t->n - 1) * t->vao : 0.0f;
+    for (k = 0; k < t->n; k++) {
+      t->ws[k] = TOPO_PILULA_H;
+      t->larg += t->ws[k];
+    }
+    return;
+  }
   for (k = 0; k < t->n; k++) {
     if (t->ordem[k] == MENU_BUSCAR) ni++;
     else { txt += (float)txt_largura(TOPO_TXT, topoRotulo(t->ordem[k])); nl++; }
@@ -1633,6 +1643,8 @@ static void topoDesenhar(void) {
     ta = a * anim_mistura(ajustes_vidro() && !gfx_efeitos_minimos() ? .74f : .80f, 1.0f, fmaxf(sm, fm));
     if (ponteiro_ativo() && a > 0.5f) ponteiro_alvo(r.x, r.y, r.w, r.h, ponteiroLinha, NULL, i, 0);
     if (i == MENU_BUSCAR) iconeTraco(i, r.x + r.w * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
+    else if (ajustes_menu_topo_icones())
+      icone(i, r.x + r.w * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
     else {
       TxtLinha l = txt_linha_corta(TOPO_TXT, topoRotulo(i), 255, 255, 255, 255, t.rotMax);
       txt_desenhar_tom(l, r.x + (r.w - l.w) * 0.5f, y + (TOPO_PILULA_H - l.h) * 0.5f, tr, tg, tb, ta);
