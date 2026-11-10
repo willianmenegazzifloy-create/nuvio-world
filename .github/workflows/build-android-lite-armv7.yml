@@ -1,0 +1,99 @@
+name: Build Nuvio World APK (Android TV ARMv7)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nuvio-world-android-armv7-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compile Lite ARMv7 APK
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      NUVIO_APK_LITE: "1"
+      NUVIO_REQUIRE_CORE: "1"
+      NUVIO_BUILD_JOBS: "2"
+      NUVIO_ANDROID_JOBS: "2"
+      NUVIO_ANDROID_CACHE: /home/runner/.cache/nuvio-android
+      CARGO_HOME: /home/runner/.cargo
+      RUSTUP_HOME: /home/runner/.rustup
+
+    steps:
+      - name: Checkout Nuvio World
+        uses: actions/checkout@v4
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Install Rust targets used by the original Android build
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install native build tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build ffmpeg curl git python3 \
+            pkg-config nasm yasm autoconf automake libtool
+
+      - name: Install Android SDK, NDK and CMake versions required by Nuvio
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.2.12479018" \
+            "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          # Some SDK CMake packages omit the Ninja executable; the build scripts
+          # prefer this path whenever the SDK's cmake binary is present.
+          mkdir -p "$ANDROID_HOME/cmake/3.22.1/bin"
+          if [ ! -x "$ANDROID_HOME/cmake/3.22.1/bin/ninja" ]; then
+            ln -s "$(command -v ninja)" "$ANDROID_HOME/cmake/3.22.1/bin/ninja"
+          fi
+
+      - name: Cache Android native dependencies and Rust crates
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/runner/.cache/nuvio-android
+            /home/runner/.cargo/registry
+            /home/runner/.cargo/git
+          key: ${{ runner.os }}-nuvio-android-2.0.8-${{ hashFiles('tools/android/deps.sh', 'tools/android/ffmpeg-android.sh', 'tools/android.sh', 'tools/rust-mkvcore.sh', 'rust/mkvcore/Cargo.lock') }}
+
+      - name: Download the official 2.0.8 APK and recover its original build configuration
+        run: |
+          curl --fail --location --retry 3 \
+            "https://github.com/iqui27/nuvio-native-legacy/releases/download/v2.0.8/Nuvio-2.0.8-android-lite-armv7.apk" \
+            --output "$RUNNER_TEMP/nuvio-original.apk"
+          python3 tools/android/extract-config-from-apk.py \
+            "$RUNNER_TEMP/nuvio-original.apk" --output local.properties
+
+      - name: Build curl, JPEG and WebP libraries for Android
+        run: bash tools/android/deps.sh arm64-v8a armeabi-v7a
+
+      - name: Compile Nuvio World Lite for Android TV
+        run: bash tools/android.sh --debug-only
+
+      - name: Upload ARMv7 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nuvio-World-2.0.8-Android-TV-ARMv7
+          path: build/android/Nuvio-2.0.8-android-lite-armv7-debug.apk
+          if-no-files-found: error
+          retention-days: 14
