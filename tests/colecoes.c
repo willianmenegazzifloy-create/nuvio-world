@@ -64,6 +64,46 @@ int main(void) {
          && f->sources[1].tmdbId == 6384 && strstr(f->sources[1].filtros, "withGenres"));
   puts("ok  fontes trakt e tmdb entram com id, ordenacao e filtros");
 
+  // So os catalogos das pastas Novos Filmes/Novas Series em Descobrir
+  // recebem o sinal para limitar o TMDB a datas ja alcancadas.
+  const char *descobrir =
+    "{\"collections\":[{\"id\":\"d\",\"title\":\"Descobrir\",\"folders\":["
+    "{\"id\":\"nf\",\"title\":\"Novos Filmes\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
+    "{\"id\":\"ns\",\"title\":\"Novas Séries\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"TV\"}]},"
+    "{\"id\":\"alta\",\"title\":\"Filmes em Alta\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]}]}]}";
+  assert(col_definir_json(descobrir) == 3);
+  assert(col_folder(0)->sources[0].somenteLancados == 1);
+  assert(col_folder(1)->sources[0].somenteLancados == 1);
+  assert(col_folder(2)->sources[0].somenteLancados == 0);
+  puts("ok  filtro de lancamentos futuros ativado somente em Descobrir / Novos Filmes e Novas Series");
+
+  // A capacidade real usada pela collection do usuario: 249 pastas numa
+  // fileira e ate 52 fontes dentro de uma pasta (o codigo antigo parava em 32).
+  {
+    char grande[100000]; size_t usado = 0; int idx[256];
+    usado += (size_t)snprintf(grande + usado, sizeof grande - usado,
+      "{\"collections\":[{\"id\":\"longa\",\"title\":\"Colecoes de Filmes\",\"folders\":[");
+    for (int p = 0; p < 249; p++) {
+      int fontes = p == 0 ? 52 : 1;
+      usado += (size_t)snprintf(grande + usado, sizeof grande - usado,
+        "%s{\"id\":\"p%d\",\"title\":\"Pasta %d\",\"sources\":[",
+        p ? "," : "", p, p);
+      for (int k = 0; k < fontes; k++)
+        usado += (size_t)snprintf(grande + usado, sizeof grande - usado,
+          "%s{\"provider\":\"addon\",\"addonBaseUrl\":\"https://a.invalid\",\"type\":\"movie\",\"catalogId\":\"p%d_%d\"}",
+          k ? "," : "", p, k);
+      usado += (size_t)snprintf(grande + usado, sizeof grande - usado, "]}");
+      assert(usado < sizeof grande);
+    }
+    usado += (size_t)snprintf(grande + usado, sizeof grande - usado, "]}]}");
+    assert(usado < sizeof grande);
+    assert(col_definir_json(grande) == 249 && col_n() == 249);
+    assert(col_grupo_chave("collection_longa", idx, 256) == 249);
+    assert(col_folder(idx[0])->nSources == 52);
+    assert(!strcmp(col_folder(idx[0])->sources[51].catId, "p0_51"));
+    puts("ok  collection com 249 pastas e uma pasta com 52 fontes preservada por inteiro");
+  }
+
   // string escapada, como parseRemoteCollectionsPayload aceita
   const char *esc = "{\"collections_json\":\"{\\\"collections\\\":[{\\\"id\\\":\\\"c9\\\",\\\"title\\\":\\\"T\\\",\\\"folders\\\":[{\\\"id\\\":\\\"g\\\",\\\"title\\\":\\\"G\\\",\\\"sources\\\":[{\\\"addonBaseUrl\\\":\\\"https://a\\\",\\\"type\\\":\\\"movie\\\",\\\"catalogId\\\":\\\"k\\\"}]}]}]}\"}";
   assert(col_definir_json(esc) == 1 && !strcmp(col_folder(0)->groupId, "c9"));

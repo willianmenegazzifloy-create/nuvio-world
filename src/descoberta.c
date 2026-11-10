@@ -1615,8 +1615,8 @@ static int lerCatalogoHome(const char *base, const char *tipo, const char *id,
 // 512 nao e "o numero certo" — nao ha um; e so mais folga antes de
 // o mesmo corte voltar a acontecer com addons de sobra.
 #define DECL_MAX 512
-// Quantos itens cada fileira mostra. A home desenha no maximo MAX_CARDS (41) e
-// buscar mais e trafego que ninguem ve.
+// Quantos itens cada fileira de catalogo mostra. A Home tem capacidade maior
+// para collections, mas catalogos comuns continuam limitados a este teto.
 #define MAX_POR_FILEIRA DESC_ITENS_POR_FILEIRA   // ver descoberta.h (#163)
 
 // filsMontadas = as janelas do bloco QUE ESTA PUBLICADO, e nada alem disso.
@@ -8868,7 +8868,30 @@ static int deMetaTrakt(const char *p, const char *f, const char *midia,
 
 // Traduz o objeto "filters" do editor do site para parametros do /discover
 // do TMDB — mesma lista de chaves que applyTmdbDiscoverFilters do web.
-static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv) {
+static int tmdbDataValida(const char *s) {
+  if (!s || strlen(s) != 10 || s[4] != '-' || s[7] != '-') return 0;
+  for (int i = 0; i < 10; i++)
+    if (i != 4 && i != 7 && (s[i] < '0' || s[i] > '9')) return 0;
+  return 1;
+}
+
+static void tmdbDataHoje(char *dst, size_t n) {
+  time_t t = time(NULL);
+  struct tm tmv;
+  if (n) dst[0] = 0;
+  if (n && (localtime_r(&t, &tmv) || gmtime_r(&t, &tmv)))
+    snprintf(dst, n, "%04d-%02d-%02d", tmv.tm_year + 1900,
+             tmv.tm_mon + 1, tmv.tm_mday);
+  // Em falha excepcional do relogio, falhar fechado: nao liberar datas futuras.
+  if (n && !dst[0]) snprintf(dst, n, "0001-01-01");
+}
+
+// Traduz o objeto "filters" do editor do site para parametros do /discover
+// do TMDB — mesma lista de chaves que applyTmdbDiscoverFilters do web. Nas
+// pastas especiais Novos Filmes/Novas Series, a data maxima e limitada a hoje;
+// um releaseDateLte anterior configurado pelo usuario continua prevalecendo.
+static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv,
+                        int somenteLancados) {
   const char *fim = filtros ? filtros + strlen(filtros) : NULL;
   static const struct { const char *js, *url; int soTv; } M[] = {
     {"withGenres","with_genres",0}, {"withoutGenres","without_genres",0},
@@ -8883,27 +8906,43 @@ static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv) {
   };
   char v[128];
   size_t u;
-  if (!filtros || *filtros != '{') return;
-  for (u = 0; u < sizeof M / sizeof *M; u++) {
-    if (M[u].soTv && !isTv) continue;
-    if (js_texto(filtros, fim, M[u].js, v, sizeof v) && v[0])
-      snprintf(q + strlen(q), n - strlen(q), "&%s=%s", M[u].url, v);
+  if (filtros && *filtros == '{') {
+    for (u = 0; u < sizeof M / sizeof *M; u++) {
+      if (M[u].soTv && !isTv) continue;
+      if (js_texto(filtros, fim, M[u].js, v, sizeof v) && v[0])
+        snprintf(q + strlen(q), n - strlen(q), "&%s=%s", M[u].url, v);
+    }
+    if (js_texto(filtros, fim, "releaseDateGte", v, sizeof v) && v[0])
+      snprintf(q + strlen(q), n - strlen(q), "&%s.gte=%s",
+               isTv ? "first_air_date" : "release_date", v);
   }
-  if (js_texto(filtros, fim, "releaseDateGte", v, sizeof v) && v[0])
-    snprintf(q + strlen(q), n - strlen(q), "&%s.gte=%s",
-             isTv ? "first_air_date" : "release_date", v);
-  if (js_texto(filtros, fim, "releaseDateLte", v, sizeof v) && v[0])
+  if (somenteLancados) {
+    char hoje[12], limite[128];
+    tmdbDataHoje(hoje, sizeof hoje);
+    snprintf(limite, sizeof limite, "%s", hoje);
+    // Se a collection ja pede uma data-limite mais antiga, nao a ampliamos.
+    if (filtros && *filtros == '{' &&
+        js_texto(filtros, fim, "releaseDateLte", v, sizeof v) &&
+        tmdbDataValida(v) && strcmp(v, limite) < 0)
+      snprintf(limite, sizeof limite, "%s", v);
+    snprintf(q + strlen(q), n - strlen(q), "&%s.lte=%s",
+             isTv ? "first_air_date" : "primary_release_date", limite);
+  } else if (filtros && *filtros == '{' &&
+             js_texto(filtros, fim, "releaseDateLte", v, sizeof v) && v[0]) {
     snprintf(q + strlen(q), n - strlen(q), "&%s.lte=%s",
              isTv ? "first_air_date" : "release_date", v);
-  { long ano = (long)js_num(filtros, fim, "year", 0.0);
+  }
+  if (filtros && *filtros == '{') {
+    long ano = (long)js_num(filtros, fim, "year", 0.0);
     if (ano > 0)
       snprintf(q + strlen(q), n - strlen(q), "&%s=%ld",
-               isTv ? "first_air_date_year" : "year", ano); }
-  if (js_texto(filtros, fim, "withWatchProviders", v, sizeof v) && v[0]) {
-    char reg[8] = "";
-    js_texto(filtros, fim, "watchRegion", reg, sizeof reg);
-    snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s&with_watch_providers=%s",
-             reg[0] ? reg : "US", v);
+               isTv ? "first_air_date_year" : "year", ano);
+    if (js_texto(filtros, fim, "withWatchProviders", v, sizeof v) && v[0]) {
+      char reg[8] = "";
+      js_texto(filtros, fim, "watchRegion", reg, sizeof reg);
+      snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s&with_watch_providers=%s",
+               reg[0] ? reg : "US", v);
+    }
   }
 }
 
@@ -8937,7 +8976,7 @@ static const char *tmdbMontarUrl(const ColSource *f, int pagina,
     snprintf(q, sizeof q, "&sort_by=%s",
              f->ordenar[0] ? f->ordenar
                            : isTv ? "first_air_date.desc" : "popularity.desc");
-    tmdbFiltros(q, sizeof q, f->filtros, isTv);
+    tmdbFiltros(q, sizeof q, f->filtros, isTv, f->somenteLancados);
     if (!strcasecmp(f->tmdbTipo, "COMPANY") && f->tmdbId > 0)
       snprintf(q + strlen(q), sizeof q - strlen(q), "&with_companies=%ld", f->tmdbId);
     else if (!strcasecmp(f->tmdbTipo, "NETWORK") && f->tmdbId > 0) {

@@ -181,9 +181,10 @@ int col_extra_definir(const ColFolder *v, int n) {
 // leu o manifesto daquele addon. Resolver no acesso deixa a pasta pronta assim
 // que a sonda passar, sem ninguem precisar avisar.
 //
-// ColSource.base FICA EM 600 (#201), e nao em NV_ADDON_URL_MAX: sao
-// COL_MAX x COL_SOURCE_MAX = 8192 fontes, e 2048 em cada uma custaria ~12 MB.
-// Ela e so um atalho: a base inteira mora na tabela de addons e toda leitura
+// ColSource.base FICA EM 600 (#201), e nao em NV_ADDON_URL_MAX. As fontes
+// sao alocadas conforme a conta chega, com teto global COL_FONTES_MAX e teto
+// por pasta COL_SOURCE_MAX. A base e so um atalho: a base inteira mora na tabela
+// de addons e toda leitura
 // cai em addons_base_por_id(addonId) quando o atalho esta vazio. Entao a regra
 // e NUNCA guardar aqui uma base cortada — o que nao cabe fica vazio.
 static int baseCabe(ColSource *a, const char *base) {
@@ -439,7 +440,7 @@ pronto:
 // bloco do conjunto, e o proximo sync o libera.
 typedef struct { ColFolder f; ColSource s[COL_SOURCE_MAX]; } ColCopia;
 // Per-thread snapshot on the heap (pthread key, freed on thread exit). A
-// `static __thread ColCopia` (~52 KB) inflated PT_TLS for every thread, and
+// `static __thread ColCopia` (mais de 100 KB com 64 fontes) inflated PT_TLS for every thread, and
 // Tizen 4/5's manual ELF loader cannot initialize compiler TLS at all (#317).
 static pthread_key_t colCopiaKey;
 static pthread_once_t colCopiaOnce = PTHREAD_ONCE_INIT;
@@ -601,6 +602,20 @@ static void tirarManifest(char *base) {
 static int fPulProvedor, fPulSemFonte, fPulSemTitulo, fPulCheio, fGifCortado;
 static char fPrimeiraPulada[128];
 
+// Os dois catalogos de descoberta precisam mostrar somente titulos cuja
+// data de lancamento/primeira exibicao ja chegou. O sinal e colocado em cada
+// fonte TMDB da pasta, sem alterar outras consultas DISCOVER da collection.
+static int pastaDescobertaSomenteLancados(const char *grupo, const char *pasta) {
+  int descobrir = grupo && (!strcasecmp(grupo, "Descobrir") ||
+                            !strcasecmp(grupo, "Discover"));
+  int novosFilmes = pasta && (!strcasecmp(pasta, "Novos Filmes") ||
+                              !strcasecmp(pasta, "New Movies"));
+  int novasSeries = pasta && (!strcasecmp(pasta, "Novas Séries") ||
+                              !strcasecmp(pasta, "Novas Series") ||
+                              !strcasecmp(pasta, "New Series"));
+  return descobrir && (novosFilmes || novasSeries);
+}
+
 // Devolve 0 quando a colecao NAO COUBE (teto de pastas, de fontes ou falta de
 // memoria). Quem chama desfaz a colecao inteira: cortar no meio deixava a
 // colecao com parte das pastas e o resto das fontes solto na Home (#255).
@@ -617,6 +632,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     snprintf(v->group, sizeof v->group, "%s", group);
     snprintf(v->groupId, sizeof v->groupId, "%s", groupId);
     js_texto_raiz_em(p, pe, "id", v->id, sizeof v->id); js_texto_raiz_em(p, pe, "title", v->title, sizeof v->title);
+    int somenteLancados = pastaDescobertaSomenteLancados(group, v->title);
     js_texto(p, pe, "coverImageUrl", v->cover, sizeof v->cover);
     js_texto(p, pe, "heroBackdropUrl", v->hero, sizeof v->hero);
     snprintf(v->groupBackdrop, sizeof v->groupBackdrop, "%s", fundo);
@@ -667,6 +683,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
         js_bruto(s, se, "filters", a->filtros, sizeof a->filtros);
         if (!a->title[0])
           snprintf(a->title, sizeof a->title, "%s", a->tmdbTipo[0] ? a->tmdbTipo : "TMDB");
+        a->somenteLancados = somenteLancados;
         snprintf(a->prov, sizeof a->prov, "tmdb"); v->nSources++; continue;
       }
       if (!strcasecmp(prov, "trakt")) {

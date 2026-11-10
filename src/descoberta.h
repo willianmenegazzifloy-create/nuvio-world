@@ -243,8 +243,8 @@ int  desc_buscando(void);
 
 // ITENS POR FILEIRA DA HOME (#163: "da para passar de 12?"). Eram 12. O web
 // usa 15 no layout padrao e 24 no classico (HOME_MAX_ITEMS_PER_ROW_CLASSIC,
-// homeConstants.js); aqui e 24. home.c reserva MAX_CARDS = 33 colunas (os
-// cartazes mais o "Ver tudo"), entao cabe. Custo: ~15,6 KB por item em RAM,
+// homeConstants.js); aqui e 24. home.c reserva MAX_CARDS = 256 colunas, entao
+// cabe sem mudar o teto de cards dos catalogos comuns. Custo: ~15,6 KB por item em RAM,
 // e as capas continuam carregando so quando entram na tela.
 #define DESC_ITENS_POR_FILEIRA 24
 

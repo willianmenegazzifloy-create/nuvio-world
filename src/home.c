@@ -109,21 +109,21 @@ int video_registro_negado(void); /* video.h: motivo do trailer bloqueado */
 // home acrescenta por conta propria (grupos de colecao, social, retomada). Com
 // CAT_FIL_MAX em 40 (o HOME_MAX_ROWS_DEFAULT do web) o dobro seria 80, mas os
 // acrescimos nao crescem junto: 64 sobra para 40 + colecoes + social + retomada.
-// Custo: as tabelas por fileira aqui somam ~200 KB estaticos (Fileira pesa
-// 1,3 KB); nada disto mora na pilha.
-// ANDROID: CAT_FIL_MAX e 224 la (fileiras ilimitadas, 2.0.4); a folga de 24
-// e a mesma ideia. ~250 x 1,3 KB x 3 vetores de Fileira = ~1 MB de BSS.
+// As tabelas por fileira ficam em BSS, nao na pilha. No Android a quantidade
+// de fileiras segue CAT_FIL_MAX; o vetor de colunas cresce separadamente para
+// suportar collections grandes, sem alterar DESC_ITENS_POR_FILEIRA.
 #ifdef NV_ANDROID
 #define MAX_FIL    (CAT_FIL_MAX + 24)
 #else
 #define MAX_FIL    64
 #endif
 _Static_assert(MAX_FIL >= CAT_FIL_MAX + 16, "a home precisa de folga sobre o teto do catalogo");
-// 41: 40 cartazes (teto nativo de "Continuar assistindo", CONT_MAX) mais a
-// coluna do card "Ver tudo", que ocupa a posicao seguinte a ultima arte. Com
-// menos que isso, animFoco[r][n] escrevia fora do vetor — o card nunca
-// acendia ao receber foco e a memoria do vizinho era corrompida em silencio.
-#define MAX_CARDS 41
+// Capacidade por fileira. 256 cobre as 249 pastas da maior collection
+// conhecida sem tocar no teto global de pastas (COL_MAX). O limite de itens
+// dos catalogos continua sendo DESC_ITENS_POR_FILEIRA; este vetor tambem
+// guarda pastas de collections, que podem ser muito maiores que uma fileira
+// comum. Mantemos uma reserva ampla para o card "Ver tudo" e para animacao.
+#define MAX_CARDS 256
 // Mesmo valor que CONT_MAX (CWO_FILEIRA_MAX, issue #205).
 #define CW_TETO CWO_FILEIRA_MAX
 _Static_assert(DESC_ITENS_POR_FILEIRA <= MAX_CARDS - 1, "itens por fileira + Ver tudo cabem em MAX_CARDS");

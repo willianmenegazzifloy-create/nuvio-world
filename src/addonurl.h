@@ -19,8 +19,9 @@
 // QUEM NAO USA, E POR QUE. Duas copias secundarias continuam em 600 porque
 // alarga-las custaria memoria demais para o que rendem, e as duas tem a base
 // inteira a mao por outro caminho:
-//   - ColSource.base (colecoes.h), 8192 fontes: +12 MB. O que nao cabe fica
-//     vazio e a leitura cai em addons_base_por_id(addonId);
+//   - ColSource.base (colecoes.h), fontes de collections alocadas conforme a
+//     conta chega (ate 64 por pasta e COL_FONTES_MAX no total). O que nao cabe
+//     fica vazio e a leitura cai em addons_base_por_id(addonId);
 //   - GCanal.base (guia.c), 3 x 900 canais: +3,9 MB. O que nao cabe fica vazio,
 //     que e o caso "pergunta a fonte a todos os addons". Lembrete, fontecache,
 //     spotlight e o diagnostico da Live TV recebem a base do canal e herdam

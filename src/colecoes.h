@@ -13,7 +13,7 @@
    O teto que sobra e de seguranca, nao de conta real. Quando ele e atingido a
    colecao INTEIRA fica de fora (nunca cortada no meio) e o log diz qual. */
 #define COL_MAX 2048
-#define COL_SOURCE_MAX 32
+#define COL_SOURCE_MAX 64
 #define COL_FONTES_MAX 4096
 typedef struct {
   char title[128], base[600], type[8], catId[96], genre[96]; char addonId[96];
@@ -30,6 +30,9 @@ typedef struct {
   char ordem[8];       // sort_how do Trakt: "asc" | "desc"
   long traktLista;     // id da lista no Trakt
   char filtros[384];   // objeto "filters" cru; o montador da URL traduz
+  /* 1 nas fontes TMDB das pastas Descobrir / Novos Filmes e Novas Séries:
+     limita a consulta ao dia atual para nao mostrar titulos futuros. */
+  int somenteLancados;
 } ColSource;
 typedef struct {
   char id[96], title[128], group[64], cover[512], hero[512], logo[512];
@@ -56,7 +59,7 @@ typedef struct {
   /* FORMA DO CARTAO da pasta (COL_FORMA_*): o `tileShape` que o editor de
      colecoes do app web grava por pasta. Ver col_forma_texto. */
   int forma;
-  /* AS FONTES NAO MORAM MAIS NA PASTA (#255): eram 32 x 1512 bytes embutidos
+  /* AS FONTES NAO MORAM MAIS NA PASTA (#255): antes eram 32 x 1512 bytes embutidos
      em cada uma, para uma media de 2 fontes por pasta. `sources` aponta para o
      bloco de fontes do conjunto (colecoes.c) e e valido para ler ate
      COL_SOURCE_MAX posicoes — o bloco termina com essa folga zerada. Quem
