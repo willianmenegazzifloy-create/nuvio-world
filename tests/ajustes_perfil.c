@@ -44,6 +44,7 @@ int main(void) {
   valor[AJ_HERO] = 1;
   valor[AJ_RESOLUCAO] = RES_4K;
   valor[AJ_ADDONS_PRINCIPAL] = 0;
+  valor[AJ_COLECAO_EXIBICAO] = VT_LAY_AUTO; // Explicit saved choice must survive the new default.
   valor[AJ_MENU_TOPO] = 0;       // apresentação permanece salva mesmo com menu lateral
   valor[AJ_MENU_TOPO_MODO] = 1;  // somente texto
   valor[AJ_MENU_TOPO_TAMANHO] = 2; // grande
@@ -69,6 +70,7 @@ int main(void) {
   assert(valor[AJ_RESOLUCAO] == 0);
   assert(valor[AJ_ADDONS_PRINCIPAL] == 1);   // ajuste desta TV, nao do perfil
   assert(valor[AJ_MENU_TOPO] == 0 && valor[AJ_MENU_TOPO_MODO] == 1 && valor[AJ_MENU_TOPO_TAMANHO] == 2);
+  assert(valor[AJ_COLECAO_EXIBICAO] == VT_LAY_AUTO);
   assert(valor[AJ_CW_FONTE] == AJ_CWF_SIMKL && valor[AJ_SALVOS_DEST] == AJ_SALVOS_SIMKL);
   assert(!ajustes_hist_conta() && !ajustes_social());
   assert(ajustes_ocultar_filmes_vistos());
@@ -111,7 +113,8 @@ int main(void) {
     assert(t);
     for (l = t; *l; ) {
       char *fim = strchr(l, '\n'); size_t n = fim ? (size_t)(fim - l + 1) : strlen(l);
-      if (strncmp(l, "menuTopoLocal ", strlen("menuTopoLocal ")) &&
+      if (strncmp(l, "collectionDisplayLocal ", strlen("collectionDisplayLocal ")) &&
+          strncmp(l, "menuTopoLocal ", strlen("menuTopoLocal ")) &&
           strncmp(l, "menuTopoModoLocal ", strlen("menuTopoModoLocal ")) &&
           strncmp(l, "menuTopoTamanhoLocal ", strlen("menuTopoTamanhoLocal "))) {
         memcpy(buf + u, l, n); u += n;
@@ -125,6 +128,7 @@ int main(void) {
   assert(valor[AJ_MENU_TOPO] == 0);
   assert(valor[AJ_MENU_TOPO_MODO] == 0 && ajustes_menu_topo_icones());
   assert(valor[AJ_MENU_TOPO_TAMANHO] == 1 && ajustes_menu_topo_tamanho() == 1);
+  assert(valor[AJ_COLECAO_EXIBICAO] == VT_LAY_VITRINE); // Missing key receives the new default.
   assert(ajustes_menu_topo() == 0);
 
   // A copia nao carrega linha de aparelho nem chave local com "-".
