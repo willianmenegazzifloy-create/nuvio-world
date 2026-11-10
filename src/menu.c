@@ -1408,26 +1408,33 @@ static void tvDesenhar(void) {
 // (home_topo_fracao, via menu_pilula_mostrar): nas outras telas o canto e do
 // titulo delas e a barra abre por cima. Sem rail fixa o conteudo usa a largura toda.
 // ===========================================================================
-// Medidas deles (tela de 1920, a nossa) a 0,9: o corpo do rotulo deles e 28 e
-// o nosso TXT_BODY 25. TK leva px da tela REAL para a tela da barra.
+// Medidas do menu superior. O tamanho escala cápsulas, ícones, texto, respiros
+// e avatar juntos; o centro vertical e a ilha do relógio permanecem fixos.
+static float topoEscalaTamanho(void) {
+  switch (ajustes_menu_topo_tamanho()) {
+    case 0: return 0.90f;  // Pequeno
+    case 2: return 1.30f;  // Grande
+    default: return 1.15f; // Médio: padrão, um pouco maior que antes
+  }
+}
+// TK leva px da tela REAL para a tela da barra.
 #define TK(v)          ((v) / NV_MENU_ESCALA)
 #define TP(v)          TK((v) * 0.9f)
-// A27: the track, the avatar chip and the clock island are one 60 px line
-// (NV_CHROME_*), the tab capsules 48 inside a 6 px inset, pad 22, gap 2.
+#define TS(v)          (TK(v) * topoEscalaTamanho())
+// A trilha e o avatar acompanham a cápsula para manter o mesmo recuo.
 #define TOPO_X         TK(NV_CHROME_EDGE)
-#define TOPO_CY        TK(NV_CHROME_TOP + NV_CHROME_H * 0.5f)   // linha de centro da ilha
-#define TOPO_PILULA_H  TK(NV_CHROME_H - 2.0f * NV_CHROME_INSET)
-#define TOPO_PAD       TK(22.0f)    // de cada lado do rotulo
-#define TOPO_VAO       TK(2.0f)     // entre duas pilulas
-#define TOPO_TRILHA    TK(NV_CHROME_INSET)   // trilha -> pilula, igual nos 4 lados
-#define TOPO_ICONE     TK(26.0f)    // a pilula da Busca e quadrada
+#define TOPO_CY        TK(NV_CHROME_TOP + NV_CHROME_H * 0.5f)
+#define TOPO_PILULA_H  TS(NV_CHROME_H - 2.0f * NV_CHROME_INSET)
+#define TOPO_PAD       TS(22.0f)
+#define TOPO_VAO       TS(2.0f)
+#define TOPO_TRILHA    TS(NV_CHROME_INSET)
+#define TOPO_ICONE     TS(26.0f)
+#define TOPO_ICON_VAO  TS(8.0f)
 #define TOPO_H         (TOPO_PILULA_H + 2.0f * TOPO_TRILHA)
 #define TOPO_Y         (TOPO_CY - TOPO_H * 0.5f)
-// Sem espaco ate a ilha do relogio, aperta primeiro o vao, depois o respiro;
-// so abaixo dos dois minimos o rotulo seria cortado.
-#define TOPO_VAO_MIN   TOPO_VAO
-#define TOPO_PAD_MIN   TP(10.0f)
-#define TOPO_TXT       TXT_BODY     // o corpo dos rotulos da rail
+#define TOPO_VAO_MIN   TS(1.0f)
+#define TOPO_PAD_MIN   TS(10.0f)
+#define TOPO_TXT       (TXT_BODY * topoEscalaTamanho())
 #define TOPO_RELOGIO   ((NV_ILHA_MARGEM_D * gfx_escala_ui_base() + ilha_relogio_largura() + 16.0f) / NV_MENU_ESCALA)
 
 // AS CAPSULAS VIAJAM entre as pilulas (Capsule::step deles): mola criticamente
@@ -1477,13 +1484,15 @@ static const char *topoRotulo(int i) {
 // o vao entre elas e a largura da area das pilulas (sem a trilha), tudo em px
 // da tela da barra. tab_metrics_from + tab_content_w deles, com o aperto no
 // lugar da rolagem: a nossa tira nunca rola.
-typedef struct { int n, ordem[NV_MENU_FOCOS], cortado; float ws[NV_MENU_FOCOS], vao, pad, rotMax, larg; } TopoTira;
+typedef struct { int n, ordem[NV_MENU_FOCOS], cortado, modo; float ws[NV_MENU_FOCOS], vao, pad, rotMax, larg, txtEscala; } TopoTira;
 
 static void topoMedir(TopoTira *t) {
   int k, nl = 0, ni = 0;
-  float txt = 0.0f, disp, fixo;
+  float txt = 0.0f, disp, fixo = 0.0f, disponivel;
   t->n = topoLista(t->ordem);
-  if (ajustes_menu_topo_icones()) {
+  t->modo = ajustes_menu_topo_modo();
+  t->txtEscala = 1.0f;
+  if (t->modo == 0) {
     // Ícones: cada aba ocupa uma cápsula quadrada; não medir nem comprimir texto.
     t->vao = TOPO_VAO; t->pad = 0.0f; t->rotMax = 0.0f; t->cortado = 0;
     t->larg = t->n > 1 ? (t->n - 1) * t->vao : 0.0f;
@@ -1494,24 +1503,42 @@ static void topoMedir(TopoTira *t) {
     return;
   }
   for (k = 0; k < t->n; k++) {
-    if (t->ordem[k] == MENU_BUSCAR) ni++;
-    else { txt += (float)txt_largura(TOPO_TXT, topoRotulo(t->ordem[k])); nl++; }
+    if (t->ordem[k] == MENU_BUSCAR) {
+      ni++;
+    } else {
+      txt += (float)txt_largura(TOPO_TXT, topoRotulo(t->ordem[k]));
+      if (t->modo == 2) fixo += TOPO_ICONE + TOPO_ICON_VAO;
+      nl++;
+    }
   }
   disp = NV_TELA_W - 2.0f * TOPO_RELOGIO - 2.0f * TOPO_TRILHA;
-  fixo = txt + ni * TOPO_PILULA_H;
+  fixo += ni * TOPO_PILULA_H;
   t->vao = TOPO_VAO; t->pad = TOPO_PAD; t->rotMax = 1e6f; t->cortado = 0;
-  if (t->n > 1 && fixo + 2.0f * nl * t->pad + (t->n - 1) * t->vao > disp)
-    t->vao = fmaxf(TOPO_VAO_MIN, (disp - fixo - 2.0f * nl * t->pad) / (t->n - 1));
-  if (nl && fixo + 2.0f * nl * t->pad + (t->n - 1) * t->vao > disp)
-    t->pad = fmaxf(TOPO_PAD_MIN, (disp - fixo - (t->n - 1) * t->vao) / (2.0f * nl));
-  if (nl && fixo + 2.0f * nl * t->pad + (t->n - 1) * t->vao > disp) {
-    t->rotMax = (disp - ni * TOPO_PILULA_H - (t->n - 1) * t->vao - 2.0f * nl * t->pad) / nl;
+  if (t->n > 1 && fixo + txt + 2.0f * nl * t->pad + (t->n - 1) * t->vao > disp)
+    t->vao = fmaxf(TOPO_VAO_MIN, (disp - fixo - txt - 2.0f * nl * t->pad) / (t->n - 1));
+  if (nl && fixo + txt + 2.0f * nl * t->pad + (t->n - 1) * t->vao > disp)
+    t->pad = fmaxf(TOPO_PAD_MIN, (disp - fixo - txt - (t->n - 1) * t->vao) / (2.0f * nl));
+  disponivel = disp - fixo - 2.0f * nl * t->pad - (t->n > 1 ? (t->n - 1) * t->vao : 0.0f);
+  if (nl && txt > disponivel) {
+    t->txtEscala = fmaxf(0.65f, disponivel / txt);
+    txt = 0.0f;
+    for (k = 0; k < t->n; k++)
+      if (t->ordem[k] != MENU_BUSCAR)
+        txt += (float)txt_largura(TOPO_TXT * t->txtEscala, topoRotulo(t->ordem[k]));
+  }
+  if (nl && txt > disponivel) {
+    t->rotMax = fmaxf(1.0f, disponivel / nl);
     t->cortado = 1;
   }
   t->larg = t->n > 1 ? (t->n - 1) * t->vao : 0.0f;
   for (k = 0; k < t->n; k++) {
-    t->ws[k] = t->ordem[k] == MENU_BUSCAR ? TOPO_PILULA_H
-             : 2.0f * t->pad + txt_linha_corta(TOPO_TXT, topoRotulo(t->ordem[k]), 255, 255, 255, 255, t->rotMax).w;
+    if (t->ordem[k] == MENU_BUSCAR) {
+      t->ws[k] = TOPO_PILULA_H;
+    } else {
+      TxtLinha l = txt_linha_corta(TOPO_TXT * t->txtEscala, topoRotulo(t->ordem[k]),
+                                   255, 255, 255, 255, t->rotMax);
+      t->ws[k] = 2.0f * t->pad + (t->modo == 2 ? TOPO_ICONE + TOPO_ICON_VAO : 0.0f) + l.w;
+    }
     t->larg += t->ws[k];
   }
 }
@@ -1642,12 +1669,19 @@ static void topoDesenhar(void) {
     tb = anim_mistura(0xef, 0x16, fm) / 255.0f;
     ta = a * anim_mistura(ajustes_vidro() && !gfx_efeitos_minimos() ? .74f : .80f, 1.0f, fmaxf(sm, fm));
     if (ponteiro_ativo() && a > 0.5f) ponteiro_alvo(r.x, r.y, r.w, r.h, ponteiroLinha, NULL, i, 0);
-    if (i == MENU_BUSCAR) iconeTraco(i, r.x + r.w * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
-    else if (ajustes_menu_topo_icones())
+    if (i == MENU_BUSCAR) {
+      iconeTraco(i, r.x + r.w * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
+    } else if (t.modo == 0) {
       icone(i, r.x + r.w * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
-    else {
-      TxtLinha l = txt_linha_corta(TOPO_TXT, topoRotulo(i), 255, 255, 255, 255, t.rotMax);
-      txt_desenhar_tom(l, r.x + (r.w - l.w) * 0.5f, y + (TOPO_PILULA_H - l.h) * 0.5f, tr, tg, tb, ta);
+    } else {
+      TxtLinha l = txt_linha_corta(TOPO_TXT * t.txtEscala, topoRotulo(i), 255, 255, 255, 255, t.rotMax);
+      float tx = r.x + (r.w - l.w) * 0.5f;
+      if (t.modo == 2) {
+        float ix = r.x + t.pad + TOPO_ICONE * 0.5f;
+        icone(i, ix, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
+        tx = r.x + t.pad + TOPO_ICONE + TOPO_ICON_VAO;
+      }
+      txt_desenhar_tom(l, tx, y + (TOPO_PILULA_H - l.h) * 0.5f, tr, tg, tb, ta);
     }
   }
   gfx_sem_recorte();

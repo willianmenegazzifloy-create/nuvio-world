@@ -75,20 +75,20 @@ int main(void) {
     printf("idioma %d: %d pilulas, trilha x %.1f w %.1f, vao %.1f, cortado %d\n", idiomas[j], g.n,
            g.trilha[0], g.trilha[2], g.n > 1 ? g.x[1] - g.x[0] - g.w[0] : 0.0f, g.cortado);
     assert(g.n >= 5 && !g.cortado);
-    assert(PERTO(g.h, 48.0f, 0.01f));                                  // capsula 48
-    assert(PERTO(g.trilha[3], 60.0f, 0.01f));                          // + inset 6
+    assert(PERTO(g.h, 48.0f * 1.15f, 0.01f));                          // cápsula no tamanho Médio
+    assert(PERTO(g.trilha[3], 60.0f * 1.15f, 0.01f));                  // trilha e avatar acompanham o tamanho
     // A27: avatar chip, trilha e ilha do relogio sao uma familia: mesmo topo,
     // mesma altura (capsulas de raio h/2), margens 64/64.
-    assert(PERTO(g.trilha[1], NV_ILHA_Y, 0.01f) && PERTO(g.trilha[3], NV_ILHA_H, 0.01f));
-    assert(PERTO(g.trilha[1], 32.0f, 0.01f) && PERTO(NV_ILHA_MARGEM_D, g.avatar[0], 0.01f));
+    assert(PERTO(g.trilha[1] + g.trilha[3] * 0.5f, NV_ILHA_Y + NV_ILHA_H * 0.5f, 0.01f));
+    assert(PERTO(NV_ILHA_MARGEM_D, g.avatar[0], 0.01f));
     cy = NV_ILHA_Y + NV_ILHA_H * 0.5f;                                 // a linha da ilha
     assert(PERTO(g.trilha[1] + g.trilha[3] * 0.5f, cy, 0.01f));
     assert(PERTO(g.y + g.h * 0.5f, cy, 0.01f));
     assert(PERTO(g.avatar[1], g.trilha[1], 0.01f) && PERTO(g.avatar[3], g.trilha[3], 0.01f));
     assert(PERTO(g.avatar[2], g.avatar[3], 0.01f) && PERTO(g.avatar[0], 64.0f, 0.01f));
     // Pilulas concentricas na trilha: o mesmo recuo nas pontas e em cima.
-    assert(PERTO(g.x[0] - g.trilha[0], 6.0f, 0.01f));
-    assert(PERTO(g.trilha[0] + g.trilha[2] - (g.x[g.n - 1] + g.w[g.n - 1]), 6.0f, 0.01f));
+    assert(PERTO(g.x[0] - g.trilha[0], 6.0f * 1.15f, 0.01f));
+    assert(PERTO(g.trilha[0] + g.trilha[2] - (g.x[g.n - 1] + g.w[g.n - 1]), 6.0f * 1.15f, 0.01f));
     // Centrada, entre o avatar e a ilha do relogio, e acima de onde as fileiras comecam.
     assert(PERTO(g.trilha[0] + g.trilha[2] * 0.5f, NV_LAYOUT_REAL_W * 0.5f, 1.0f));
     assert(g.trilha[0] > g.avatar[0] + g.avatar[2]);
@@ -99,9 +99,9 @@ int main(void) {
     assert(g.busca[g.n - 1] && PERTO(g.w[g.n - 1], g.h, 0.01f));
     for (k = 0; k + 1 < g.n; k++) {
       float vao = g.x[k + 1] - g.x[k] - g.w[k];
-      assert(!g.busca[k] && g.w[k] > 2.0f * 10.0f * 0.9f);
+      assert(!g.busca[k] && g.w[k] > 2.0f * 10.0f * 0.9f * 1.15f);
       // Vao A27 de 2 px em todo idioma (quem aperta e o respiro).
-      assert(PERTO(vao, 2.0f, 0.01f));
+      assert(PERTO(vao, 2.0f * 1.15f, 0.01f));
     }
   }
 
@@ -121,6 +121,22 @@ int main(void) {
   menu_topo_geo(&g);
   assert(PERTO(g.foc[1], g.w[1], 0.5f));
   tecla(SDLK_ESCAPE); passo(0.016f, 80);
+
+  // MODO MISTO: as abas combinam o ícone lateral e o rótulo; Busca continua quadrada.
+  gravar(CFG "menuTopoModoLocal 2\nidioma 0\n");
+  menu_topo_geo(&g);
+  assert(g.n >= 5 && !g.cortado && g.busca[g.n - 1]);
+  for (k = 0; k + 1 < g.n; k++) assert(g.w[k] > g.h);
+
+  // TAMANHOS: Pequeno reduz; Médio e Grande aumentam cápsulas e avatar
+  // sem deslocar o centro vertical da barra.
+  gravar(CFG "menuTopoModoLocal 0\nmenuTopoTamanhoLocal 0\n");
+  menu_topo_geo(&g); assert(PERTO(g.h, 48.0f * 0.90f, 0.01f));
+  gravar(CFG "menuTopoModoLocal 0\nmenuTopoTamanhoLocal 1\n");
+  menu_topo_geo(&g); assert(PERTO(g.h, 48.0f * 1.15f, 0.01f));
+  gravar(CFG "menuTopoModoLocal 0\nmenuTopoTamanhoLocal 2\n");
+  menu_topo_geo(&g); assert(PERTO(g.h, 48.0f * 1.30f, 0.01f));
+  gravar(CFG "menuTopoModoLocal 1\nmenuTopoTamanhoLocal 1\n");
 
   // TINTA A27: a "Opacidade do vidro" existente e o parametro claro->tinto
   // (78 % -> ~0,47), crescente, e nunca abaixo do piso de legibilidade.

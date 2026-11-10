@@ -46,6 +46,7 @@ int main(void) {
   valor[AJ_ADDONS_PRINCIPAL] = 0;
   valor[AJ_MENU_TOPO] = 0;       // apresentação permanece salva mesmo com menu lateral
   valor[AJ_MENU_TOPO_MODO] = 1;  // somente texto
+  valor[AJ_MENU_TOPO_TAMANHO] = 2; // grande
   ajustes_definir_ocultar_filmes_vistos(1);
   ajustes_perfil_guardar(1);
 
@@ -58,6 +59,7 @@ int main(void) {
   valor[AJ_RESOLUCAO] = 0;
   valor[AJ_ADDONS_PRINCIPAL] = 1;
   valor[AJ_MENU_TOPO_MODO] = 0;  // somente ícones
+  valor[AJ_MENU_TOPO_TAMANHO] = 0; // pequeno
   ajustes_definir_ocultar_filmes_vistos(0);
   ajustes_perfil_guardar(2);
 
@@ -66,7 +68,7 @@ int main(void) {
   assert(valor[AJ_HERO] == 1);
   assert(valor[AJ_RESOLUCAO] == 0);
   assert(valor[AJ_ADDONS_PRINCIPAL] == 1);   // ajuste desta TV, nao do perfil
-  assert(valor[AJ_MENU_TOPO] == 0 && valor[AJ_MENU_TOPO_MODO] == 1);
+  assert(valor[AJ_MENU_TOPO] == 0 && valor[AJ_MENU_TOPO_MODO] == 1 && valor[AJ_MENU_TOPO_TAMANHO] == 2);
   assert(valor[AJ_CW_FONTE] == AJ_CWF_SIMKL && valor[AJ_SALVOS_DEST] == AJ_SALVOS_SIMKL);
   assert(!ajustes_hist_conta() && !ajustes_social());
   assert(ajustes_ocultar_filmes_vistos());
@@ -75,7 +77,7 @@ int main(void) {
   assert(ajustes_perfil_restaurar(2) == 1);
   assert(valor[AJ_HERO] == 0);
   assert(valor[AJ_CW_FONTE] == AJ_CWF_CONTA && valor[AJ_SALVOS_DEST] == AJ_SALVOS_LOCAL);
-  assert(valor[AJ_MENU_TOPO_MODO] == 0);
+  assert(valor[AJ_MENU_TOPO_MODO] == 0 && valor[AJ_MENU_TOPO_TAMANHO] == 0);
   assert(ajustes_hist_conta() && ajustes_social());
   assert(!ajustes_ocultar_filmes_vistos());
 
@@ -103,13 +105,15 @@ int main(void) {
   // trocar para o 2 (arquivo antigo) tem de voltar ao padrao 0, e nao herdar o 1.
   valor[AJ_MENU_TOPO] = 1;
   valor[AJ_MENU_TOPO_MODO] = 1; // deve voltar a ícones quando a chave não existe
+  valor[AJ_MENU_TOPO_TAMANHO] = 2; // deve voltar ao Médio quando a chave não existe
   { char *t = dados_ler("ajustes-p2.txt"), *l; FILE *f;
     char nome[600], buf[AJ_N * 56]; size_t u = 0;
     assert(t);
     for (l = t; *l; ) {
       char *fim = strchr(l, '\n'); size_t n = fim ? (size_t)(fim - l + 1) : strlen(l);
       if (strncmp(l, "menuTopoLocal ", strlen("menuTopoLocal ")) &&
-          strncmp(l, "menuTopoModoLocal ", strlen("menuTopoModoLocal "))) {
+          strncmp(l, "menuTopoModoLocal ", strlen("menuTopoModoLocal ")) &&
+          strncmp(l, "menuTopoTamanhoLocal ", strlen("menuTopoTamanhoLocal "))) {
         memcpy(buf + u, l, n); u += n;
       }
       if (!fim) break; l = fim + 1;
@@ -120,6 +124,7 @@ int main(void) {
   assert(ajustes_perfil_restaurar(2) == 1);
   assert(valor[AJ_MENU_TOPO] == 0);
   assert(valor[AJ_MENU_TOPO_MODO] == 0 && ajustes_menu_topo_icones());
+  assert(valor[AJ_MENU_TOPO_TAMANHO] == 1 && ajustes_menu_topo_tamanho() == 1);
   assert(ajustes_menu_topo() == 0);
 
   // A copia nao carrega linha de aparelho nem chave local com "-".

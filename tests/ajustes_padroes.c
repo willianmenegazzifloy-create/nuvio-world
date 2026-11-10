@@ -455,24 +455,43 @@ int main(void) {
   valor[AJ_PLR_FORMATO] = PLR_FMT_ORIGINAL;
   // Menu superior: somente ícones por padrão, local e independente por perfil.
   assert(AJ_MENU_TOPO_MODO == AJ_PLR_FORMATO + 1);
+  assert(AJ_MENU_TOPO_TAMANHO == AJ_MENU_TOPO_MODO + 1 && AJ_N > AJ_MENU_TOPO_TAMANHO);
   assert(valor[AJ_MENU_TOPO_MODO] == 0 && ajustes_menu_topo_icones());
-  assert(OPCOES[AJ_MENU_TOPO_MODO].n == 2);
+  assert(OPCOES[AJ_MENU_TOPO_MODO].n == 3);
+  assert(valor[AJ_MENU_TOPO_TAMANHO] == 1 && ajustes_menu_topo_tamanho() == 1);
+  assert(OPCOES[AJ_MENU_TOPO_TAMANHO].n == 3);
+  assert(!strcmp(CHAVE[AJ_MENU_TOPO_TAMANHO], "menuTopoTamanhoLocal"));
+  assert(somenteDesteAparelho(AJ_MENU_TOPO_TAMANHO) && dePerfil(AJ_MENU_TOPO_TAMANHO));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[0], "Pequeno"));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[1], "Médio"));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[2], "Grande"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[0], "Somente ícones"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Somente texto"));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[2], "Ícones + texto"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].rotulo, "Apresentação do menu superior"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].rotulo), "Top menu presentation"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[2]), "Icons + text"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_TAMANHO].rotulo), "Top menu size"));
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_MODO], "menuTopoModoLocal"));
   assert(somenteDesteAparelho(AJ_MENU_TOPO_MODO) && dePerfil(AJ_MENU_TOPO_MODO));
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_MODO) == AJPV_HOME);
+  assert(familiaPreviaOpcao(AJ_MENU_TOPO_TAMANHO) == AJPV_HOME);
   valor[AJ_HOME_LAYOUT] = 0; // layout clássico, compatível com o menu superior
-  valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO));
-  valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO));
+  valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO) && inativa(AJ_MENU_TOPO_TAMANHO));
+  valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO) && !inativa(AJ_MENU_TOPO_TAMANHO));
   valor[AJ_MENU_TOPO] = 0;
   { int n = 0; montarTela();
-    for (int i = 0; i < AJ_N_TELA; i++)
+    for (int i = 0; i < AJ_N_TELA; i++) {
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_MODO) n++;
-    assert(n == 1); }
-  valor[AJ_MENU_TOPO_MODO] = 1; assert(!ajustes_menu_topo_icones());
+      if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_TAMANHO) n++;
+    }
+    assert(n == 2); }
+  valor[AJ_MENU_TOPO_MODO] = 1; assert(!ajustes_menu_topo_icones() && ajustes_menu_topo_modo() == 1);
+  valor[AJ_MENU_TOPO_MODO] = 2; assert(ajustes_menu_topo_modo() == 2);
   valor[AJ_MENU_TOPO_MODO] = 0;
+  valor[AJ_MENU_TOPO_TAMANHO] = 0; assert(ajustes_menu_topo_tamanho() == 0);
+  valor[AJ_MENU_TOPO_TAMANHO] = 2; assert(ajustes_menu_topo_tamanho() == 2);
+  valor[AJ_MENU_TOPO_TAMANHO] = 1;
   unlink(path);
   puts("ajustes_padroes: ok");
   return 0;

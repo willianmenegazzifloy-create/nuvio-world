@@ -345,3 +345,4 @@
   1, /* log page on the local network (logrede.h): Desligado */
   4, /* player format style: Original (V_PLR_FORMATO 4) */
   0, /* top menu presentation: icons by default, profile-local */
+  1, /* top menu size: Medium, slightly larger than the previous fixed size */
