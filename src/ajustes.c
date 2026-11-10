@@ -7368,6 +7368,8 @@ static const char *ajudaOpcaoBase(int op) {
     if (op == AJ_VIDRO_OPAC || op == AJ_VIDRO_FOSCO || op == AJ_VIDRO_QUALIDADE) return "Ative a interface de vidro para ajustar o vidro.";
     if (op == AJ_RAIL) return "Desative a barra lateral moderna para escolher entre recolhida e fixa.";
     if (op == AJ_MENU_TOPO) return "No layout Dinâmica o menu já fica no alto da tela.";
+    if (op == AJ_MENU_TOPO_MODO || op == AJ_MENU_TOPO_TAMANHO || op == AJ_MENU_TOPO_ORDEM)
+      return "Ative o menu superior para personalizar a apresentação e a ordem das abas.";
     if (op == AJ_RAIL_BLUR) return "Ative a barra lateral moderna para usar o desfoque.";
     if (op == AJ_HERO_CATALOGOS) return "Ative Mostrar destaque para exibir os catálogos no topo da Home.";
     if (op == AJ_HERO_CHEIO) return "Só vale no layout Moderna. No Padrão o destaque é um banner, e na Dinâmica ele ocupa a largura toda e sobe junto com a rolagem.";
