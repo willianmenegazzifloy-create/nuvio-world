@@ -31,6 +31,9 @@ int main(void) {
     assert(somenteDesteAparelho(op) && !dePerfil(op));
   }
   assert(valor[AJ_HDR_INTERFACE] == 0 && !ajustes_hdr_interface());
+  // New profiles use Vitrine unless a collection display choice was saved.
+  assert(valor[AJ_COLECAO_EXIBICAO] == VT_LAY_VITRINE);
+  assert(ajustes_colecao_exibicao() == VT_LAY_VITRINE);
   assert(somenteDesteAparelho(AJ_HDR_INTERFACE) && !ajustePortavel(AJ_HDR_INTERFACE));
   assert(!strcmp(CHAVE[AJ_HDR_INTERFACE], "hdrInterfaceLocal"));
 #ifndef NV_ANDROID
