@@ -707,6 +707,7 @@ typedef enum {
   // Device-local top navigation presentation, saved independently per profile.
   AJ_MENU_TOPO_MODO,
   AJ_MENU_TOPO_TAMANHO,
+  AJ_MENU_TOPO_ORDEM, // packed permutation of top navigation destinations; profile-local
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -1836,6 +1837,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Formato no player", V_PLR_FORMATO, 6),          // local: plrFormatoLocal
   ESC("Apresentação do menu superior", V_MENU_TOPO_MODO, 3), // por perfil, somente nesta TV
   ESC("Tamanho do menu superior", V_MENU_TOPO_TAMANHO, 3), // por perfil, somente nesta TV
+  ACAO("Ordem do menu superior"),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2162,6 +2164,7 @@ static const char *CHAVE[] = {
   "plrFormatoLocal",
   "menuTopoModoLocal",
   "menuTopoTamanhoLocal",
+  "menuTopoOrdemLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -3477,6 +3480,49 @@ int ajustes_menu_topo(void) {
 int ajustes_menu_topo_modo(void) { int v = valor[AJ_MENU_TOPO_MODO]; return v >= 0 && v < 3 ? v : 0; }
 int ajustes_menu_topo_icones(void) { return ajustes_menu_topo_modo() == 0; }
 int ajustes_menu_topo_tamanho(void) { int v = valor[AJ_MENU_TOPO_TAMANHO]; return v >= 0 && v < 3 ? v : 1; }
+
+// A ordem tem oito destinos de tres bits cada. Validar a permutacao inteira
+// evita indices duplicados ou destinos inexistentes vindos de arquivo antigo.
+static int ajMenuTopoOrdemValida(int packed) {
+  unsigned visto = 0, p;
+  int i, id;
+  if (packed < 0 || ((unsigned)packed & ~0x00ffffffu)) return 0;
+  p = (unsigned)packed;
+  for (i = 0; i < AJ_MENU_TOPO_ORDEM_N; i++) {
+    id = (int)((p >> (3 * i)) & 7u);
+    if (visto & (1u << id)) return 0;
+    visto |= 1u << id;
+  }
+  return visto == ((1u << AJ_MENU_TOPO_ORDEM_N) - 1u);
+}
+void ajustes_menu_topo_ordem(int ordem[AJ_MENU_TOPO_ORDEM_N]) {
+  unsigned p;
+  int i;
+  if (!ordem) return;
+  p = (unsigned)(ajMenuTopoOrdemValida(valor[AJ_MENU_TOPO_ORDEM])
+                 ? valor[AJ_MENU_TOPO_ORDEM] : valorPadrao[AJ_MENU_TOPO_ORDEM]);
+  for (i = 0; i < AJ_MENU_TOPO_ORDEM_N; i++) ordem[i] = (int)((p >> (3 * i)) & 7u);
+}
+int ajustes_menu_topo_ordem_definir(const int ordem[AJ_MENU_TOPO_ORDEM_N]) {
+  unsigned visto = 0, p = 0;
+  int i, antes, ok;
+  if (!ordem) return 0;
+  for (i = 0; i < AJ_MENU_TOPO_ORDEM_N; i++) {
+    int id = ordem[i];
+    if (id < 0 || id >= AJ_MENU_TOPO_ORDEM_N || (visto & (1u << id))) return 0;
+    visto |= 1u << id;
+    p |= (unsigned)id << (3 * i);
+  }
+  if (visto != ((1u << AJ_MENU_TOPO_ORDEM_N) - 1u)) return 0;
+  antes = valor[AJ_MENU_TOPO_ORDEM];
+  if (antes == (int)p) return 1;
+  valor[AJ_MENU_TOPO_ORDEM] = (int)p;
+  ajOrigem = AJLOG_AJUSTES;
+  ok = gravar();
+  ajOrigem = 0;
+  if (!ok) { valor[AJ_MENU_TOPO_ORDEM] = antes; return 0; }
+  return 1;
+}
 int ajustes_abas_estilo(void) { return valor[AJ_ABAS_ESTILO]; }
 void ajustes_definir_abas_estilo(int estilo) {
   if (estilo < 0 || estilo >= OPCOES[AJ_ABAS_ESTILO].n) return;
@@ -4011,6 +4057,7 @@ static const char *const *literaisDe(int op) {
 
 static int limita(int op, int v) {
   const Opcao *o = &OPCOES[op];
+  if (op == AJ_MENU_TOPO_ORDEM) return ajMenuTopoOrdemValida(v) ? v : valorPadrao[op];
   if (o->tipo == OP_ESCOLHA) return (v >= 0 && v < nValores(op)) ? v : valor[op];
   if (o->tipo == OP_NUMERO)  return v < o->min ? o->min : (v > o->max ? o->max : v);
   return valor[op];
@@ -4809,7 +4856,8 @@ void ajustes_dir(const char *dir) {
     if (!strcmp(chave, "vidroContornoLocal") && v == 2) v = 0;
     for (i = 0; i < AJ_N; i++) {
       if (!CHAVE[i] || strcmp(CHAVE[i], chave)) continue;
-      if (OPCOES[i].tipo == OP_LEITURA || OPCOES[i].tipo == OP_ACAO) continue;
+      if (OPCOES[i].tipo == OP_LEITURA ||
+          (OPCOES[i].tipo == OP_ACAO && i != AJ_MENU_TOPO_ORDEM)) continue;
       // Valor fora da faixa (arquivo de outra versao, ou editado a mao) cai no
       // padrao em vez de indexar fora do vetor.
       valor[i] = limita(i, v);
@@ -5107,7 +5155,8 @@ static int gravar(void) {
     // guardar. Acao tambem nao. E chave ausente NUNCA vai para o arquivo — foi
     // um "(null) 0" gravado assim que derrubou o app na leitura seguinte.
     if (!CHAVE[i] || CHAVE[i][0] == '-') continue;
-    if (OPCOES[i].tipo == OP_LEITURA || OPCOES[i].tipo == OP_ACAO) continue;
+    if (OPCOES[i].tipo == OP_LEITURA ||
+        (OPCOES[i].tipo == OP_ACAO && i != AJ_MENU_TOPO_ORDEM)) continue;
     if (i == AJ_IDIOMA) {
       // O numero do disco e o IDIOMA_* em vigor; a marca diz se e automatico.
       fprintf(f, "%s %d\n", CHAVE[i], ajustes_idioma());
@@ -5975,6 +6024,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_MENU_TOPO:      /* #461: o web nao tem; por perfil (perfilLocal) */
     case AJ_MENU_TOPO_MODO: /* presentation is local to this TV and profile */
     case AJ_MENU_TOPO_TAMANHO: /* size is local to this TV and profile */
+    case AJ_MENU_TOPO_ORDEM: /* order is local to this TV and profile */
     case AJ_ABAS_ESTILO:    /* #205: idem */
     case AJ_LOGO_TRAILER:   /* so a protecao de OLED desta TV */
     case AJ_LEG_MOSTRAR:
@@ -6042,12 +6092,13 @@ static int somenteDesteAparelho(int op) {
 // (ajustes-p<N>.txt) e continuam FORA do blob (somenteDesteAparelho).
 static int perfilLocal(int i) {
   return i == AJ_GUIA_ORDEM || i == AJ_GUIA_FONTE || i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
-         i == AJ_MENU_TOPO || i == AJ_MENU_TOPO_MODO || i == AJ_MENU_TOPO_TAMANHO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS;
+         i == AJ_MENU_TOPO || i == AJ_MENU_TOPO_MODO || i == AJ_MENU_TOPO_TAMANHO || i == AJ_MENU_TOPO_ORDEM || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS;
   return i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
          i == AJ_MENU_TOPO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS || i == AJ_BIB_HOME;
 }
 
 static int dePerfil(int i) {
+  if (i == AJ_MENU_TOPO_ORDEM) return 1; // persisted action, but a real profile preference
   if (OPCOES[i].tipo == OP_LEITURA || OPCOES[i].tipo == OP_ACAO) return 0;
   if (!CHAVE[i] || CHAVE[i][0] == '-') return 0;
   if (i == AJ_FONTE_UI || i == AJ_IDIOMA) return 0;
@@ -6094,6 +6145,9 @@ int ajustes_perfil_restaurar(int perfil) {
   nomePerfil(nome, sizeof nome, perfil);
   t = dados_ler(nome);
   if (!t) {
+    if (colecaoPropria && valor[AJ_MENU_TOPO_ORDEM] != valorPadrao[AJ_MENU_TOPO_ORDEM]) {
+      valor[AJ_MENU_TOPO_ORDEM] = valorPadrao[AJ_MENU_TOPO_ORDEM]; mudou++;
+    }
     // A profile without a saved collection choice starts with the current factory default.
     if (colecaoPropria && valor[AJ_COLECAO_EXIBICAO] != valorPadrao[AJ_COLECAO_EXIBICAO]) {
       valor[AJ_COLECAO_EXIBICAO] = valorPadrao[AJ_COLECAO_EXIBICAO]; mudou++;
@@ -6102,7 +6156,7 @@ int ajustes_perfil_restaurar(int perfil) {
     if (mudou) gravar();
     return 0;
   }
-  { int focoAntigo = -1, viuFoco = 0, viuTopo = 0, viuTopoModo = 0, viuTopoTamanho = 0, viuAbas = 0, viuColecao = 0;
+  { int focoAntigo = -1, viuFoco = 0, viuTopo = 0, viuTopoModo = 0, viuTopoTamanho = 0, viuTopoOrdem = 0, viuAbas = 0, viuColecao = 0;
   for (l = t; l && *l; ) {
     char chave[64], *fim = strchr(l, '\n');
     int v, i;
@@ -6126,6 +6180,7 @@ int ajustes_perfil_restaurar(int perfil) {
         if (i == AJ_MENU_TOPO) viuTopo = 1;
         if (i == AJ_MENU_TOPO_MODO) viuTopoModo = 1;
         if (i == AJ_MENU_TOPO_TAMANHO) viuTopoTamanho = 1;
+        if (i == AJ_MENU_TOPO_ORDEM) viuTopoOrdem = 1;
         if (i == AJ_ABAS_ESTILO) viuAbas = 1;
         if (i == AJ_COLECAO_EXIBICAO) viuColecao = 1;
         if (v != valor[i]) { valor[i] = v; mudou++; }
@@ -6147,6 +6202,10 @@ int ajustes_perfil_restaurar(int perfil) {
   if (!viuTopoModo && valor[AJ_MENU_TOPO_MODO] != 0) { valor[AJ_MENU_TOPO_MODO] = 0; mudou++; }
   // Perfis anteriores ao controle de tamanho recebem o padrão Médio.
   if (!viuTopoTamanho && valor[AJ_MENU_TOPO_TAMANHO] != 1) { valor[AJ_MENU_TOPO_TAMANHO] = 1; mudou++; }
+  // Perfis sem chave de ordem recebem a ordem original, sem herdar a do anterior.
+  if (colecaoPropria && !viuTopoOrdem && valor[AJ_MENU_TOPO_ORDEM] != valorPadrao[AJ_MENU_TOPO_ORDEM]) {
+    valor[AJ_MENU_TOPO_ORDEM] = valorPadrao[AJ_MENU_TOPO_ORDEM]; mudou++;
+  }
   // Idem para o estilo das abas (#205).
   if (!viuAbas && valor[AJ_ABAS_ESTILO]) { valor[AJ_ABAS_ESTILO] = 0; mudou++; } }
   free(t);
@@ -7084,7 +7143,7 @@ static int inativa(int op) {
     case AJ_VIDRO_CONTORNO: case AJ_FOCO_ACENTO: case AJ_VIDRO_OPAC: case AJ_VIDRO_FOSCO: case AJ_VIDRO_QUALIDADE: return !lig(AJ_VIDRO);
     case AJ_RAIL:         return ajustes_rail_moderna();
     case AJ_MENU_TOPO:    return ajustes_home_layout() == HOME_LAYOUT_DINAMICA;
-    case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO: return !ajustes_menu_topo();
+    case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO: case AJ_MENU_TOPO_ORDEM: return !ajustes_menu_topo();
     case AJ_RAIL_BLUR:    return !ajustes_rail_moderna();
     case AJ_HERO_CATALOGOS: return !ajustes_hero_ligado();
     // O fundo em tela cheia e da Moderna: no Padrao o destaque e um banner e na
@@ -7511,6 +7570,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_MENU_TOPO: return "Na lateral: o menu fica na esquerda, como sempre. No topo: o menu vira uma barra no alto da tela e o conteúdo usa a largura toda. Para cima no primeiro item da tela chega à barra e Para baixo volta. Vale para este perfil.";
     case AJ_MENU_TOPO_MODO: return "Somente ícones: as abas mostram os ícones do menu lateral. Somente texto: mostram os nomes das seções. Ícones + texto: cada aba mostra o ícone e o nome. A Busca mantém seu ícone e o Perfil mantém o avatar. Vale para este perfil.";
     case AJ_MENU_TOPO_TAMANHO: return "Ajusta o tamanho das cápsulas, ícones, textos e avatar do menu superior. Médio é um pouco maior que o tamanho anterior. Vale para este perfil.";
+    case AJ_MENU_TOPO_ORDEM: return "Reordena as abas do menu superior. A Busca mantém seu ícone quadrado e o avatar do perfil permanece separado. Vale para este perfil nesta TV.";
     case AJ_RAIL_MODERNA: return "Troca a barra lateral pela versão nova, com ícones maiores. Ela ignora a escolha entre recolhida e fixa.";
     case AJ_RAIL_BLUR: return "Desfoca a arte atrás da barra lateral moderna em vez de usar um fundo sólido.";
 #ifndef NV_ANDROID
@@ -7965,6 +8025,7 @@ static const char *beneficioProprio(int op) {
     case AJ_MENU_TOPO: return "Onde fica o menu: na esquerda ou no alto da tela.";
     case AJ_MENU_TOPO_MODO: return "Escolhe se as abas do menu superior mostram somente ícones, somente texto ou ícones e texto.";
     case AJ_MENU_TOPO_TAMANHO: return "Aumenta ou reduz o tamanho visual do menu superior.";
+    case AJ_MENU_TOPO_ORDEM: return "Muda a posição das abas na barra superior.";
     case AJ_ABAS_ESTILO: return "Como as abas de uma coleção de streaming aparecem: chips, menu suspenso, barra central ou páginas.";
     case AJ_HERO_FUNDO: return "De onde vem a arte grande do destaque e da página do título.";
     case AJ_HERO_GENERO: return "Mostra ou esconde o gênero sob o logo do destaque e dos pôsteres grandes.";
@@ -8653,7 +8714,7 @@ static void desenhaFolhaFiltros(void);
 // marcados que ja nao estao instalados, para poder tira-los), com "Todos" no
 // topo. OK marca/desmarca e grava na hora (fonteregra.c); Voltar fecha.
 #define FR_FOLHA_MAX 128
-static int frAberta;            // 0 closed; 1/2 allowed; 3 legacy order; 4/5 failover order; 6 shared exclusions; 7 rating order; 8 Live TV account order
+static int frAberta;            // 0 closed; 1/2 allowed; 3 legacy order; 4/5 failover order; 6 shared exclusions; 7 rating order; 8 Live TV account order; 9 top menu order
 // Failover order uses native IDs / opaque instance keys, never display names.
 typedef struct {
   int servico, instalado;
@@ -8887,6 +8948,7 @@ static int frCol;               // folha da ordem: 0 = subir, 1 = descer
 static int frN;
 static char frNome[FR_FOLHA_MAX][FR_NOME_MAX];
 static char frApoio[FR_FOLHA_MAX][64];
+static int frMenuOrdem[AJ_MENU_TOPO_ORDEM_N];
 static void frPor(const char *nome, const char *apoio) {
   int k;
   if (!nome || !nome[0] || frN >= FR_FOLHA_MAX) return;
@@ -8933,6 +8995,18 @@ static void frMontarOrdem(void) {
 static void frMontar(void) {
   int plugin = frAberta == 2, i, j, k;
   char nm[FR_NOME_MAX];
+  if (frAberta == 9) {
+    static const char *const rotulos[AJ_MENU_TOPO_ORDEM_N] = {
+      "Início", "Explorar", "Guia TV", "Busca", "Biblioteca", "Agenda", "Perfil", "Ajustes"
+    };
+    ajustes_menu_topo_ordem(frMenuOrdem);
+    frN = AJ_MENU_TOPO_ORDEM_N;
+    for (i = 0; i < frN; i++) {
+      snprintf(frNome[i], FR_NOME_MAX, "%s", i18n(rotulos[frMenuOrdem[i]]));
+      frApoio[i][0] = 0;
+    }
+    return;
+  }
   if (frAberta == 7) {
     frN = EX_NFONTES;
     for (i = 0; i < frN; i++) {
@@ -8970,6 +9044,17 @@ static void frOrdemMover(int k, int dir) {
   char tmp[FR_NOME_MAX], ap[64];
   int j = k + dir, i;
   if (k < 0 || k >= frN || j < 0 || j >= frN) return;
+  if (frAberta == 9) {
+    int t = frMenuOrdem[k];
+    frMenuOrdem[k] = frMenuOrdem[j];
+    frMenuOrdem[j] = t;
+    if (ajustes_menu_topo_ordem_definir(frMenuOrdem)) frFoco = j + 1;
+    else {
+      t = frMenuOrdem[k]; frMenuOrdem[k] = frMenuOrdem[j]; frMenuOrdem[j] = t;
+      uxNotificar("Não foi possível salvar a ordem do menu.");
+    }
+    return;
+  }
   if (frAberta == 7) {
     int ordem[EX_NFONTES], t;
     for (i = 0; i < EX_NFONTES; i++) ordem[i] = ajustes_nota_fonte(i);
@@ -8993,13 +9078,18 @@ static void frEventoOrdem(SDL_Keycode k) {
   if (k == SDLK_RIGHT) frCol = 1;
   if (k == SDLK_RETURN || k == SDLK_KP_ENTER) {
     if (frFoco == 0 && frAberta == 7) { notaFontes[0] = -1; valor[AJ_NT_ORDEM] = 0; gravar(); }
+    else if (frFoco == 0 && frAberta == 9) {
+      static const int padrao[AJ_MENU_TOPO_ORDEM_N] = { 0, 1, 2, 3, 4, 5, 6, 7 };
+      if (ajustes_menu_topo_ordem_definir(padrao)) uxNotificar("Ordem padrão restaurada.");
+      else uxNotificar("Não foi possível salvar a ordem do menu.");
+    }
     else if (frFoco == 0) { fonteregra_ordem_definir(NULL, 0); sync_proteger_ajustes_locais(); uxNotificar("Ordem removida."); }
     else frOrdemMover(frFoco - 1, frCol ? 1 : -1);
   }
 }
 static void frEvento(SDL_Keycode k) {
   int plugin = frAberta == 2;
-  if (frAberta == 7) { frEventoOrdem(k); return; }
+  if (frAberta == 7 || frAberta == 9) { frEventoOrdem(k); return; }
   if (frAberta == 6) { ffEvento(k); return; }
   if (frAberta >= 4) { faEvento(k); return; }
   if (frAberta == 3) { frEventoOrdem(k); return; }
@@ -9423,6 +9513,7 @@ static void eventoTela(const SDL_Event *e) {
       else snprintf(kc, sizeof kc, "%s", i18n(uxCaminho(focoOp)));
       teclado_contexto(kc); }
     if (focoOp == AJ_NT_ORDEM) { frAberta = 7; frFoco = frCol = 0; frMontar(); return; }
+    if (focoOp == AJ_MENU_TOPO_ORDEM) { frAberta = 9; frFoco = frCol = 0; frMontar(); return; }
     if(focoOp==AJ_IPTV_ORDEM) {
       frAberta=8;faRetornarFolha=0;faIptvSessao=nv_perfil_sessao_ler();faFoco=faCol=0;faMontar();return;
     }
@@ -10512,7 +10603,7 @@ static void ajDesenharTudo(Uint32 agora) {
 #endif
     ESCALA_REAL_INI(); desenhaFileiras(); ESCALA_REAL_FIM(); }
   if (riscoFolha) desenhaRiscoFolha();
-  if (frAberta == 7) desenhaFolhaOrdem();
+  if (frAberta == 7 || frAberta == 9) desenhaFolhaOrdem();
   else if (frAberta == 6) desenhaFolhaFiltros();
   else if (frAberta >= 4) desenhaFolhaFalha();
   else if (frAberta == 3) desenhaFolhaOrdem();
