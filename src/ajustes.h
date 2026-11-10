@@ -327,6 +327,9 @@ int   ajustes_menu_topo(void);
 int   ajustes_menu_topo_modo(void); // 0 ícones, 1 texto, 2 ícones + texto
 int   ajustes_menu_topo_icones(void); // compatibilidade: 1 = somente ícones
 int   ajustes_menu_topo_tamanho(void); // 0 pequeno, 1 médio, 2 grande
+#define AJ_MENU_TOPO_ORDEM_N 8
+void  ajustes_menu_topo_ordem(int ordem[AJ_MENU_TOPO_ORDEM_N]);
+int   ajustes_menu_topo_ordem_definir(const int ordem[AJ_MENU_TOPO_ORDEM_N]);
 int   ajustes_abas_estilo(void);   // 0 Chips, 1 Menu suspenso, 2 Barra central, 3 Paginas, 4 Menu no topo
 void  ajustes_definir_abas_estilo(int estilo);
 int   ajustes_rail_moderna(void);       // modernSidebar
