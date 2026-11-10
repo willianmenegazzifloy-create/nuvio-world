@@ -464,6 +464,13 @@ int main(void) {
   assert(valor[AJ_MENU_TOPO_TAMANHO] == 1 && ajustes_menu_topo_tamanho() == 1);
   assert(OPCOES[AJ_MENU_TOPO_TAMANHO].n == 3);
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_TAMANHO], "menuTopoTamanhoLocal"));
+  assert(AJ_MENU_TOPO_ORDEM == AJ_MENU_TOPO_TAMANHO + 1);
+  assert(OPCOES[AJ_MENU_TOPO_ORDEM].tipo == OP_ACAO);
+  assert(!strcmp(CHAVE[AJ_MENU_TOPO_ORDEM], "menuTopoOrdemLocal"));
+  assert(valor[AJ_MENU_TOPO_ORDEM] == 16434824);
+  assert(somenteDesteAparelho(AJ_MENU_TOPO_ORDEM) && dePerfil(AJ_MENU_TOPO_ORDEM));
+  { int ordem[AJ_MENU_TOPO_ORDEM_N]; ajustes_menu_topo_ordem(ordem);
+    for (int i = 0; i < AJ_MENU_TOPO_ORDEM_N; i++) assert(ordem[i] == i); }
   assert(somenteDesteAparelho(AJ_MENU_TOPO_TAMANHO) && dePerfil(AJ_MENU_TOPO_TAMANHO));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[0], "Pequeno"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[1], "Médio"));
