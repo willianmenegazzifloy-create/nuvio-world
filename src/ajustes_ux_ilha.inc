@@ -1665,7 +1665,7 @@ static void ajDesenharAddons(int foco) {
 // das setas; o OK do clique liga/desliga ou move, como o do controle.
 static void ajPontFolha(int i, int col) {
   if (!frAberta || teclado_aberto() || i < 0 || i > frN) return;
-  if ((frAberta == 3 || frAberta == 7) && i > 0) { if (col < 0 || col > 1) return; frCol = col; }
+  if ((frAberta == 3 || frAberta == 7 || frAberta == 9) && i > 0) { if (col < 0 || col > 1) return; frCol = col; }
   frFoco = i;
 }
 // "Add-ons permitidos" / "Plugins permitidos" (#202): o modal com "Todos" no
@@ -1841,11 +1841,16 @@ static void desenhaFolhaOrdem(void) {
   ajVeuModal();
   ajCentraModal(&m);
   ajIlha(m, 36, 1, 1);
-  snprintf(sub, sizeof sub, "%s", frAberta == 7
+  if (frAberta == 9)
+    snprintf(sub, sizeof sub, "%s", i18n("Esquerda e direita escolhem subir ou descer; OK move. A Busca mantém o ícone quadrado e o avatar fica separado."));
+  else snprintf(sub, sizeof sub, "%s", frAberta == 7
     ? i18n("Esquerda e direita escolhem subir ou descer; OK move.")
     : i18n("Esquerda e direita escolhem subir ou descer; OK move. Quem está fora da ordem toca depois de todos."));
-  snprintf(k, sizeof k, "%s · %s", i18n("Fontes e addons"), i18n("Escolha da fonte"));
-  topo = ajCabecalhoFolha(m, k, frAberta == 7 ? "Ordem das notas na linha do título" : "Ordem dos add-ons", sub, 0, 1);
+  if (frAberta == 9) snprintf(k, sizeof k, "%s · %s", i18n("Tela inicial"), i18n("Barra lateral"));
+  else snprintf(k, sizeof k, "%s · %s", i18n("Fontes e addons"), i18n("Escolha da fonte"));
+  topo = ajCabecalhoFolha(m, k,
+    frAberta == 9 ? "Ordem do menu superior" : frAberta == 7 ? "Ordem das notas na linha do título" : "Ordem dos add-ons",
+    sub, 0, 1);
   base = m.y + m.h - 96.0f;
   alvo = frFoco * 84.0f - (base - topo - 80.0f) * 0.5f;
   if (alvo > n * 84.0f - (base - topo)) alvo = n * 84.0f - (base - topo);
@@ -1866,7 +1871,8 @@ static void desenhaFolhaOrdem(void) {
     ponteiro_alvo_faixa(r.x, r.y, r.w, r.h, topo, base, ajPontFolha, NULL, i, frCol);
     if (f) ajFocoLinha(r, 22, 1, 1);
     if (i == 0) {
-      TxtLinha t = ajTxtC(TXT_AJ_ROTULO, i18n(frAberta == 7 ? "Padrão" : "Sem ordem"), r.w - 120);
+      const char *rotuloPadrao = frAberta == 9 ? "Restaurar padrão" : frAberta == 7 ? "Padrão" : "Sem ordem";
+      TxtLinha t = ajTxtC(TXT_AJ_ROTULO, i18n(rotuloPadrao), r.w - 120);
       ajNeutro((GfxRect){ r.x + 22, y + 16, 48, 48 }, 14, 0.09f, 0.141f, 0.149f, 0.173f, 1);
       ajIcone("aj_arrow-up-down", r.x + 22 + 14, y + 16 + 14, 20, 0.85f);
       txt_desenhar_alpha(t, r.x + 22 + 48 + 16, y + 40 - t.h * 0.5f, f ? 1.0f : 0.86f);
