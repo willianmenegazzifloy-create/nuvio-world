@@ -6201,7 +6201,9 @@ void ajustes_perfil_esquecer(void) {
   for (i = 1; i <= 32; i++) { nomePerfil(nome, sizeof nome, i); dados_apagar(nome); }
   fonteregra_perfil_esquecer();
   provedoresPrivadosEsquecer();
-  if (valor[AJ_COLECAO_EXIBICAO] != 0) { valor[AJ_COLECAO_EXIBICAO] = 0; gravar(); }
+  if (valor[AJ_COLECAO_EXIBICAO] != valorPadrao[AJ_COLECAO_EXIBICAO]) {
+    valor[AJ_COLECAO_EXIBICAO] = valorPadrao[AJ_COLECAO_EXIBICAO]; gravar();
+  }
 }
 
 // Onde esta o valor de `chave` dentro de [ini,fim): *vi aponta o primeiro
