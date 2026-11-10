@@ -487,15 +487,16 @@ int main(void) {
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_MODO) == AJPV_HOME);
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_TAMANHO) == AJPV_HOME);
   valor[AJ_HOME_LAYOUT] = 0; // layout clássico, compatível com o menu superior
-  valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO) && inativa(AJ_MENU_TOPO_TAMANHO));
-  valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO) && !inativa(AJ_MENU_TOPO_TAMANHO));
+  valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO) && inativa(AJ_MENU_TOPO_TAMANHO) && inativa(AJ_MENU_TOPO_ORDEM));
+  valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO) && !inativa(AJ_MENU_TOPO_TAMANHO) && !inativa(AJ_MENU_TOPO_ORDEM));
   valor[AJ_MENU_TOPO] = 0;
   { int n = 0; montarTela();
     for (int i = 0; i < AJ_N_TELA; i++) {
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_MODO) n++;
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_TAMANHO) n++;
+      if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_ORDEM) n++;
     }
-    assert(n == 2); }
+    assert(n == 3); }
   valor[AJ_MENU_TOPO_MODO] = 1; assert(!ajustes_menu_topo_icones() && ajustes_menu_topo_modo() == 1);
   valor[AJ_MENU_TOPO_MODO] = 2; assert(ajustes_menu_topo_modo() == 2);
   valor[AJ_MENU_TOPO_MODO] = 0;
