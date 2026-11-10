@@ -113,7 +113,7 @@ int main(void) {
     assert(t);
     for (l = t; *l; ) {
       char *fim = strchr(l, '\n'); size_t n = fim ? (size_t)(fim - l + 1) : strlen(l);
-      if (strncmp(l, "collectionDisplayLocal ", strlen("collectionDisplayLocal ")) &&
+      if (strncmp(l, "colecaoExibicaoPadraoLocal ", strlen("colecaoExibicaoPadraoLocal ")) &&
           strncmp(l, "menuTopoLocal ", strlen("menuTopoLocal ")) &&
           strncmp(l, "menuTopoModoLocal ", strlen("menuTopoModoLocal ")) &&
           strncmp(l, "menuTopoTamanhoLocal ", strlen("menuTopoTamanhoLocal "))) {
