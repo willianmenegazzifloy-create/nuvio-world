@@ -1584,7 +1584,12 @@ static void topoAtualizar(float dt) {
   tvPilAlfa = anim_mola(tvPilAlfa, tvPilAlvo, dt, TV_MOLA_PILULA);
   topoMedir(&t);
   topoCapsulaPasso(&topoSel, &t, topoIndice(t.ordem, t.n, destino), pousa, dt);
-  topoCapsulaPasso(&topoFoc, &t, aberto ? topoIndice(t.ordem, t.n, linha) : -1, pousa, dt);
+  // Nos modos com texto, a largura da capsula varia por destino. O rótulo já
+  // é desenhado na posição final; animar a largura/posição da capsula separada
+  // fazia o texto escapar do foco durante a transição. Mantém a mola no modo
+  // somente ícones (largura fixa) e pousa a cápsula nos modos variáveis.
+  topoCapsulaPasso(&topoFoc, &t, aberto ? topoIndice(t.ordem, t.n, linha) : -1,
+                   pousa || t.modo != 0, dt);
 }
 
 void menu_topo_geo(MenuTopoGeo *o) {
