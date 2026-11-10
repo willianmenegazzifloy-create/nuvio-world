@@ -72,7 +72,7 @@ int main(void) {
   assert(ajustes_menu_topo_icones()); // instalação/perfil sem chave nasce em ícones
   { MenuTopoGeo g; menu_topo_geo(&g);
     assert(g.n >= 5 && !g.cortado);
-    for (int k = 0; k < g.n; k++) assert(PERTO(g.w[k], g.h, 0.01f));
+    for (int k = 0; k < g.n; k++) assert(g.w[k] == g.h);
     assert(g.busca[g.n - 1]); }
   assert(ajustes_rail_largura_fixa() == 0.0f);
   assert(ajustes_conteudo_x() == NV_CONTENT_PAD);
