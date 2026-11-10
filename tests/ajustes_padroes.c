@@ -463,6 +463,10 @@ int main(void) {
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_MODO], "menuTopoModoLocal"));
   assert(somenteDesteAparelho(AJ_MENU_TOPO_MODO) && dePerfil(AJ_MENU_TOPO_MODO));
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_MODO) == AJPV_HOME);
+  valor[AJ_HOME_LAYOUT] = 0; // layout clássico, compatível com o menu superior
+  valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO));
+  valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO));
+  valor[AJ_MENU_TOPO] = 0;
   { int n = 0; montarTela();
     for (int i = 0; i < AJ_N_TELA; i++)
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_MODO) n++;
