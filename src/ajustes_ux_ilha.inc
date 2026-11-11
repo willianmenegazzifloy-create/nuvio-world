@@ -1879,23 +1879,25 @@ static void desenhaFolhaOrdem(void) {
     } else {
       const char *nome = frNome[i - 1], *apoio = frApoio[i - 1];
       float bw = 56.0f, bx = r.x + r.w - 22 - bw * 2 - 8.0f, tw = bx - (r.x + 22 + 48 + 16) - 24;
-      int c;
+      int c, bloqueado = frAberta == 9 && frMenuDesativado(frMenuOrdem[i - 1]);
       char pos[16];
       TxtLinha t = txt_linha_corta(TXT_AJ_ROTULO, nome, AJ_TX, tw);
       TxtLinha cap = ajTxtC(TXT_ILHA_GENERO, apoio[0] ? i18n(apoio) : "", tw);
       float ty = y + 40 - (t.h + (apoio[0] ? 4 + cap.h : 0)) * 0.5f;
       snprintf(pos, sizeof pos, "%d", i);
       ajRosto(nome, r.x + 22, y + 16, 48, 14, 0.09f, 0.85f, TXT_ILHA_INICIAL);
-      txt_desenhar_alpha(t, r.x + 22 + 48 + 16, ty, f ? 1.0f : 0.86f);
-      if (apoio[0]) txt_desenhar_alpha(cap, r.x + 22 + 48 + 16, ty + t.h + 4, 0.42f);
+      txt_desenhar_alpha(t, r.x + 22 + 48 + 16, ty, bloqueado ? 0.34f : f ? 1.0f : 0.86f);
+      if (apoio[0]) txt_desenhar_alpha(cap, r.x + 22 + 48 + 16, ty + t.h + 4, bloqueado ? 0.55f : 0.42f);
       for (c = 0; c < 2; c++) {
         GfxRect b = { bx + c * (bw + 8.0f), y + 12, bw, bw };
-        int bf = f && frCol == c, sem = (c == 0 && i == 1) || (c == 1 && i == frN);
+        int bf = f && frCol == c;
+        int sem = bloqueado || (c == 0 && i == 1) || (c == 1 && i == frN);
+        float alfaSeta = bloqueado ? 0.18f : sem ? 0.3f : 1.0f;
         ponteiro_alvo_faixa(b.x, b.y, b.w, b.h, topo, base, ajPontFolha, NULL, i, c);
         if (bf) ajPilulaAcento(b, 28, 1);
         else ajNeutro(b, 28, 0.08f, AJ_CHIP_SOL, 1);
-        if (bf) ajIconeT(c ? "aj_arrow-down" : "aj_arrow-up", b.x + 14, b.y + 14, 28, sem ? 0.3f : 1.0f);
-        else ajIcone(c ? "aj_arrow-down" : "aj_arrow-up", b.x + 14, b.y + 14, 28, sem ? 0.3f : 0.85f);
+        if (bf) ajIconeT(c ? "aj_arrow-down" : "aj_arrow-up", b.x + 14, b.y + 14, 28, alfaSeta);
+        else ajIcone(c ? "aj_arrow-down" : "aj_arrow-up", b.x + 14, b.y + 14, 28, bloqueado ? 0.18f : sem ? 0.3f : 0.85f);
       }
     }
   }
