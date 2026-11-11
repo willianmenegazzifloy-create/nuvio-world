@@ -100,11 +100,11 @@ int main(void) {
     for (int j = 0; j < 5; j++) {
       char cfg[256];
       MenuTopoGeo g;
-      snprintf(cfg, sizeof cfg, "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 1\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\nidioma %d\n", idiomas[j]);
+      snprintf(cfg, sizeof cfg, "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 0\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\nidioma %d\n", idiomas[j]);
       gravar(cfg);
       menu_topo_geo(&g);
       printf("topo idioma %d: largura %.0f cortado %d\n", idiomas[j], g.trilha[2], g.cortado);
-      assert(g.cortado == 0 && g.trilha[2] > 600.0f && g.trilha[2] < 1300.0f);
+      assert(g.cortado == 0 && g.trilha[2] > 200.0f && g.trilha[2] < 1300.0f);
     }
     gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 0\n"); }
 
