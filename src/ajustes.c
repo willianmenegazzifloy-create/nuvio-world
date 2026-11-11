@@ -1837,7 +1837,7 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Dolby Vision P7 para P8.1 (experimental)", V_LIGA, 2),
   ESC("Registro na rede local", V_LIGA, 2),                   // local: logRedeLocal
   ESC("Formato no player", V_PLR_FORMATO, 6),          // local: plrFormatoLocal
-  ESC("Apresentação do menu superior", V_MENU_TOPO_MODO, 3), // por perfil, somente nesta TV
+  ESC("Apresentação do menu superior", V_MENU_TOPO_MODO, 2), // por perfil, somente nesta TV
   ESC("Tamanho do menu superior", V_MENU_TOPO_TAMANHO, 3), // por perfil, somente nesta TV
   ACAO("Ordem do menu superior"),
   ESC("Manter Menu Topo fixo", V_LIGA, 2),
