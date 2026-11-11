@@ -1413,8 +1413,7 @@ static void tvDesenhar(void) {
 // ===========================================================================
 // Medidas do menu superior. O tamanho escala cápsulas, ícones, texto, respiros
 // e avatar juntos; o centro vertical e a ilha do relógio permanecem fixos.
-// Medidas do menu superior. O tamanho escala cápsulas, ícones, texto, respiros
-// e avatar juntos; o centro vertical e a ilha do relógio permanecem fixos.
+// A expansão do foco escala o conjunto inteiro, inclusive o avatar.
 static float topoFocoEscala, topoFocoEscalaV;
 static float topoMistura[MENU_N], topoMisturaV[MENU_N];
 static float topoEscalaTamanho(void) {
@@ -1561,6 +1560,9 @@ static void topoMedir(TopoTira *t) {
   for (k = 0; k < t->n; k++) {
     float m = t->mistura[k] * fator;
     t->mistura[k] = m;
+    // A largura efetiva do texto acompanha a mesma compressão da cápsula;
+    // assim, durante a troca rápida de foco, nada escapa do balão.
+    t->texto[k] *= fator;
     t->ws[k] = TOPO_PILULA_H + (m > 0.001f
       ? m * (TOPO_ICON_VAO + t->texto[k] + TOPO_PAD_MIN) : 0.0f);
     t->larg += t->ws[k];
