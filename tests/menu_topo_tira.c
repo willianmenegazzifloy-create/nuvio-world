@@ -46,7 +46,7 @@ static void gravar(const char *txt) {
   fputs(txt, f); fclose(f);
   ajustes_dir(dir);
 }
-#define CFG "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 1\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\n"
+#define CFG "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 0\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\n"
 
 int main(void) {
   static const int idiomas[] = { 0, 1, 6, 4, 5 };   // pt, en, de, ru, fr
@@ -99,7 +99,7 @@ int main(void) {
     assert(g.busca[g.n - 1] && PERTO(g.w[g.n - 1], g.h, 0.01f));
     for (k = 0; k + 1 < g.n; k++) {
       float vao = g.x[k + 1] - g.x[k] - g.w[k];
-      assert(!g.busca[k] && g.w[k] > 2.0f * 10.0f * 0.9f * 1.15f);
+      assert(!g.busca[k] && PERTO(g.w[k], g.h, 0.01f));
       // Vao A27 de 2 px em todo idioma (quem aperta e o respiro).
       assert(PERTO(vao, 2.0f * 1.15f, 0.01f));
     }
@@ -122,11 +122,16 @@ int main(void) {
   assert(PERTO(g.foc[1], g.w[1], 0.5f));
   tecla(SDLK_ESCAPE); passo(0.016f, 80);
 
-  // MODO MISTO: as abas combinam o ícone lateral e o rótulo; Busca continua quadrada.
-  gravar(CFG "menuTopoModoLocal 2\nidioma 0\n");
+  // MODO MISTO: só a aba focada expande e revela o rótulo.
+  gravar(CFG "menuTopoModoLocal 1\nidioma 0\n");
+  menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 80);
   menu_topo_geo(&g);
   assert(g.n >= 5 && !g.cortado && g.busca[g.n - 1]);
-  for (k = 0; k + 1 < g.n; k++) assert(g.w[k] > g.h);
+  assert(g.w[0] > g.h && PERTO(g.foc[1], g.w[0], 0.5f));
+  for (k = 1; k + 1 < g.n; k++) assert(PERTO(g.w[k], g.h, 0.01f));
+  tecla(SDLK_RIGHT); passo(0.016f, 80); menu_topo_geo(&g);
+  assert(g.w[1] > g.h && PERTO(g.w[0], g.h, 0.5f));
+  tecla(SDLK_ESCAPE); passo(0.016f, 80);
 
   // TAMANHOS: Pequeno reduz; Médio e Grande aumentam cápsulas e avatar
   // sem deslocar o centro vertical da barra.
