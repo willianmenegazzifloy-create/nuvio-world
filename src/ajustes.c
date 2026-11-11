@@ -708,6 +708,8 @@ typedef enum {
   AJ_MENU_TOPO_MODO,
   AJ_MENU_TOPO_TAMANHO,
   AJ_MENU_TOPO_ORDEM, // packed permutation of top navigation destinations; profile-local
+  AJ_MENU_TOPO_FIXO, // keep top menu visible on Home; profile-local
+  AJ_MENU_TOPO_FOCO_EXPANDIDO, // enlarge menu while focused; profile-local
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -838,7 +840,7 @@ static const char *V_ESCALA_TEXTO[] = { "85%", "90%", "100%", "110%", "120%", "1
 static const char *V_DET_ESPACO[] = { "Compacto", "Normal", "Confortável" };   // stored in detEspacoLocal
 static const char *V_INTERFACE_MODO[] = { "TV", "Mobile", "Automático" };
 static const char *V_MENU_POS[] = { "Na lateral", "No topo" };   // #461
-static const char *V_MENU_TOPO_MODO[] = { "Somente ícones", "Somente texto", "Ícones + texto" };
+static const char *V_MENU_TOPO_MODO[] = { "Somente ícones", "Ícones Mistos" };
 static const char *V_MENU_TOPO_TAMANHO[] = { "Pequeno", "Médio", "Grande" };
 static const char *V_ABAS_ESTILO[] = { "Chips", "Menu suspenso", "Barra central", "Páginas", "Menu no topo" };   // #205
 // F07: the order is cacheboost_cache_mb's (0, 256, 512, 1024 MB).
@@ -1838,6 +1840,8 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Apresentação do menu superior", V_MENU_TOPO_MODO, 3), // por perfil, somente nesta TV
   ESC("Tamanho do menu superior", V_MENU_TOPO_TAMANHO, 3), // por perfil, somente nesta TV
   ACAO("Ordem do menu superior"),
+  ESC("Manter Menu Topo fixo", V_LIGA, 2),
+  ESC("Foco Expandido no Menu de topo", V_LIGA, 2),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2165,6 +2169,8 @@ static const char *CHAVE[] = {
   "menuTopoModoLocal",
   "menuTopoTamanhoLocal",
   "menuTopoOrdemLocal",
+  "menuTopoFixoLocal",
+  "menuTopoFocoExpandidoLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -3477,9 +3483,11 @@ int ajustes_rail_moderna(void)        { return lig(AJ_RAIL_MODERNA); }
 int ajustes_menu_topo(void) {
   return valor[AJ_MENU_TOPO] == 1 && ajustes_home_layout() != HOME_LAYOUT_DINAMICA && !ajRetrato();
 }
-int ajustes_menu_topo_modo(void) { int v = valor[AJ_MENU_TOPO_MODO]; return v >= 0 && v < 3 ? v : 0; }
+int ajustes_menu_topo_modo(void) { return valor[AJ_MENU_TOPO_MODO] == 0 ? 0 : 1; }
 int ajustes_menu_topo_icones(void) { return ajustes_menu_topo_modo() == 0; }
 int ajustes_menu_topo_tamanho(void) { int v = valor[AJ_MENU_TOPO_TAMANHO]; return v >= 0 && v < 3 ? v : 1; }
+int ajustes_menu_topo_fixo(void) { return valor[AJ_MENU_TOPO_FIXO] == 0; }
+int ajustes_menu_topo_foco_expandido(void) { return valor[AJ_MENU_TOPO_FOCO_EXPANDIDO] == 0; }
 
 // A ordem tem oito destinos de tres bits cada. Validar a permutacao inteira
 // evita indices duplicados ou destinos inexistentes vindos de arquivo antigo.
@@ -6026,6 +6034,7 @@ static int somenteDesteAparelho(int op) {
     case AJ_MENU_TOPO_MODO: /* presentation is local to this TV and profile */
     case AJ_MENU_TOPO_TAMANHO: /* size is local to this TV and profile */
     case AJ_MENU_TOPO_ORDEM: /* order is local to this TV and profile */
+    case AJ_MENU_TOPO_FIXO: case AJ_MENU_TOPO_FOCO_EXPANDIDO: /* profile-local top menu behavior */
     case AJ_ABAS_ESTILO:    /* #205: idem */
     case AJ_LOGO_TRAILER:   /* so a protecao de OLED desta TV */
     case AJ_LEG_MOSTRAR:
@@ -6093,7 +6102,7 @@ static int somenteDesteAparelho(int op) {
 // (ajustes-p<N>.txt) e continuam FORA do blob (somenteDesteAparelho).
 static int perfilLocal(int i) {
   return i == AJ_GUIA_ORDEM || i == AJ_GUIA_FONTE || i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
-         i == AJ_MENU_TOPO || i == AJ_MENU_TOPO_MODO || i == AJ_MENU_TOPO_TAMANHO || i == AJ_MENU_TOPO_ORDEM || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS;
+         i == AJ_MENU_TOPO || i == AJ_MENU_TOPO_MODO || i == AJ_MENU_TOPO_TAMANHO || i == AJ_MENU_TOPO_ORDEM || i == AJ_MENU_TOPO_FIXO || i == AJ_MENU_TOPO_FOCO_EXPANDIDO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS;
   return i == AJ_COLECAO_EXIBICAO || i == AJ_CW_FONTE || i == AJ_CW_PROXIMO || i == AJ_SALVOS_DEST || i == AJ_HIST_CONTA || i == AJ_SOCIAL ||
          i == AJ_MENU_TOPO || i == AJ_ABAS_ESTILO || i == AJ_OCULTAR_FILMES_VISTOS || i == AJ_BIB_HOME;
 }
@@ -7144,7 +7153,8 @@ static int inativa(int op) {
     case AJ_VIDRO_CONTORNO: case AJ_FOCO_ACENTO: case AJ_VIDRO_OPAC: case AJ_VIDRO_FOSCO: case AJ_VIDRO_QUALIDADE: return !lig(AJ_VIDRO);
     case AJ_RAIL:         return ajustes_rail_moderna();
     case AJ_MENU_TOPO:    return ajustes_home_layout() == HOME_LAYOUT_DINAMICA;
-    case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO: case AJ_MENU_TOPO_ORDEM: return !ajustes_menu_topo();
+    case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO: case AJ_MENU_TOPO_ORDEM:
+    case AJ_MENU_TOPO_FIXO: case AJ_MENU_TOPO_FOCO_EXPANDIDO: return !ajustes_menu_topo();
     case AJ_RAIL_BLUR:    return !ajustes_rail_moderna();
     case AJ_HERO_CATALOGOS: return !ajustes_hero_ligado();
     // O fundo em tela cheia e da Moderna: no Padrao o destaque e um banner e na
@@ -7369,7 +7379,8 @@ static const char *ajudaOpcaoBase(int op) {
     if (op == AJ_VIDRO_OPAC || op == AJ_VIDRO_FOSCO || op == AJ_VIDRO_QUALIDADE) return "Ative a interface de vidro para ajustar o vidro.";
     if (op == AJ_RAIL) return "Desative a barra lateral moderna para escolher entre recolhida e fixa.";
     if (op == AJ_MENU_TOPO) return "No layout Dinâmica o menu já fica no alto da tela.";
-    if (op == AJ_MENU_TOPO_MODO || op == AJ_MENU_TOPO_TAMANHO || op == AJ_MENU_TOPO_ORDEM)
+    if (op == AJ_MENU_TOPO_MODO || op == AJ_MENU_TOPO_TAMANHO || op == AJ_MENU_TOPO_ORDEM ||
+        op == AJ_MENU_TOPO_FIXO || op == AJ_MENU_TOPO_FOCO_EXPANDIDO)
       return "Ative o menu superior para personalizar a apresentação e a ordem das abas.";
     if (op == AJ_RAIL_BLUR) return "Ative a barra lateral moderna para usar o desfoque.";
     if (op == AJ_HERO_CATALOGOS) return "Ative Mostrar destaque para exibir os catálogos no topo da Home.";
