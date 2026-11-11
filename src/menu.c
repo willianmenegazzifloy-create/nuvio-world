@@ -1543,13 +1543,11 @@ static void topoMedir(TopoTira *t) {
       }
       if (extraFixo + extraTexto > extraDisponivel) {
         float livre = fmaxf(0.0f, extraDisponivel - extraFixo);
+        // Preserva o rotulo inteiro: reduz a fonte quando necessario, mas
+        // nunca aplica largura maxima que gere reticencias. A pilula acompanha
+        // a largura real medida abaixo, mesmo se precisar ultrapassar a faixa
+        // reservada inicialmente para o menu.
         t->txtEscala = fmaxf(0.55f, fminf(1.0f, livre / fmaxf(0.001f, extraTexto)));
-        if (extraFixo + extraTexto * t->txtEscala > extraDisponivel) {
-          t->rotMax = fmaxf(0.1f, livre / fmaxf(0.001f, pesoTexto * t->txtEscala));
-          t->cortado = 1;
-        } else {
-          t->cortado = t->txtEscala < 0.999f;
-        }
       }
     }
   } else {
