@@ -8062,7 +8062,7 @@ static const char *beneficioProprio(int op) {
     case AJ_BUSCA_CINEMETA: return "A busca também consulta o Cinemeta se o catálogo do Nuvio falhar.";
     case AJ_HOME_LAYOUT: return "Como a Home se organiza: Moderna, Padrão ou Dinâmica.";
     case AJ_MENU_TOPO: return "Onde fica o menu: na esquerda ou no alto da tela.";
-    case AJ_MENU_TOPO_MODO: return "Escolhe se as abas do menu superior mostram somente ícones, somente texto ou ícones e texto.";
+    case AJ_MENU_TOPO_MODO: return "Escolhe entre abas só com ícones e ícones que se expandem para mostrar o nome quando recebem foco.";
     case AJ_MENU_TOPO_TAMANHO: return "Aumenta ou reduz o tamanho visual do menu superior.";
     case AJ_MENU_TOPO_ORDEM: return "Muda a posição das abas na barra superior.";
     case AJ_MENU_TOPO_FIXO: return "Mantém a barra e o perfil visíveis na Home rolada.";
@@ -10513,7 +10513,8 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_ESPACO_FILEIRAS: case AJ_ESPACO_TITULOS:
     case AJ_HERO_TRAILER_SOM: case AJ_HERO_TRAILER_ESPERA: case AJ_HERO_TRANSICAO: case AJ_LOGO_TRAILER:
     case AJ_ADDON_FUNDO: case AJ_ADDON_LOGO:
-    case AJ_FIL_ORDEM: case AJ_RAIL: case AJ_RAIL_MODERNA: case AJ_MENU_TOPO: case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO: case AJ_ABAS_ESTILO:
+    case AJ_FIL_ORDEM: case AJ_RAIL: case AJ_RAIL_MODERNA: case AJ_MENU_TOPO: case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO:
+    case AJ_MENU_TOPO_ORDEM: case AJ_MENU_TOPO_FIXO: case AJ_MENU_TOPO_FOCO: case AJ_ABAS_ESTILO:
     case AJ_RAIL_BLUR: case AJ_MIC_BUSCA: case AJ_HERO: case AJ_HERO_CATALOGOS: case AJ_HERO_GENERO:
     case AJ_HERO_SINOPSE: case AJ_HERO_NOTAS: case AJ_HERO_ANO: case AJ_HERO_DURACAO:
     case AJ_PS_FUNDO: case AJ_PS_CONTINUAR: case AJ_DESCOBRIR: case AJ_ROTULOS:
