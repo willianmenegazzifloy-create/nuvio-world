@@ -347,3 +347,5 @@
   0, /* top menu presentation: icons by default, profile-local */
   1, /* top menu size: Medium, slightly larger than the previous fixed size */
   16434824, /* top menu order: canonical destination order, profile-local */
+  1, /* top menu fixed on Home while scrolled: Off */
+  0, /* top menu focus enlargement: On */
