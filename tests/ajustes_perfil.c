@@ -52,6 +52,8 @@ int main(void) {
   valor[AJ_MENU_TOPO] = 0;       // apresentação permanece salva mesmo com menu lateral
   valor[AJ_MENU_TOPO_MODO] = 1;  // somente texto
   valor[AJ_MENU_TOPO_TAMANHO] = 2; // grande
+  valor[AJ_MENU_TOPO_FIXO] = 0; // Ligado
+  valor[AJ_MENU_TOPO_FOCO] = 1; // Desligado
   assert(!ajustes_menu_topo_ordem_definir(ordemInvalida));
   assert(ajustes_menu_topo_ordem_definir(ordem1));
   ajustes_definir_ocultar_filmes_vistos(1);
@@ -67,6 +69,8 @@ int main(void) {
   valor[AJ_ADDONS_PRINCIPAL] = 1;
   valor[AJ_MENU_TOPO_MODO] = 0;  // somente ícones
   valor[AJ_MENU_TOPO_TAMANHO] = 0; // pequeno
+  valor[AJ_MENU_TOPO_FIXO] = 1; // Desligado
+  valor[AJ_MENU_TOPO_FOCO] = 0; // Ligado
   assert(ajustes_menu_topo_ordem_definir(ordem2));
   ajustes_definir_ocultar_filmes_vistos(0);
   ajustes_perfil_guardar(2);
@@ -78,6 +82,8 @@ int main(void) {
   assert(valor[AJ_ADDONS_PRINCIPAL] == 1);   // ajuste desta TV, nao do perfil
   assert(valor[AJ_MENU_TOPO] == 0 && valor[AJ_MENU_TOPO_MODO] == 1 && valor[AJ_MENU_TOPO_TAMANHO] == 2);
   ajustes_menu_topo_ordem(ordemLida); assert(!memcmp(ordemLida, ordem1, sizeof ordem1));
+  assert(valor[AJ_MENU_TOPO_FIXO] == 0 && ajustes_menu_topo_fixo());
+  assert(valor[AJ_MENU_TOPO_FOCO] == 1 && !ajustes_menu_topo_foco_expandido());
   assert(valor[AJ_COLECAO_EXIBICAO] == VT_LAY_AUTO);
   assert(valor[AJ_CW_FONTE] == AJ_CWF_SIMKL && valor[AJ_SALVOS_DEST] == AJ_SALVOS_SIMKL);
   assert(!ajustes_hist_conta() && !ajustes_social());
@@ -89,6 +95,8 @@ int main(void) {
   assert(valor[AJ_CW_FONTE] == AJ_CWF_CONTA && valor[AJ_SALVOS_DEST] == AJ_SALVOS_LOCAL);
   assert(valor[AJ_MENU_TOPO_MODO] == 0 && valor[AJ_MENU_TOPO_TAMANHO] == 0);
   ajustes_menu_topo_ordem(ordemLida); assert(!memcmp(ordemLida, ordem2, sizeof ordem2));
+  assert(valor[AJ_MENU_TOPO_FIXO] == 1 && !ajustes_menu_topo_fixo());
+  assert(valor[AJ_MENU_TOPO_FOCO] == 0 && ajustes_menu_topo_foco_expandido());
   assert(ajustes_hist_conta() && ajustes_social());
   assert(!ajustes_ocultar_filmes_vistos());
 
@@ -118,6 +126,8 @@ int main(void) {
   valor[AJ_MENU_TOPO] = 1;
   valor[AJ_MENU_TOPO_MODO] = 1; // deve voltar a ícones quando a chave não existe
   valor[AJ_MENU_TOPO_TAMANHO] = 2; // deve voltar ao Médio quando a chave não existe
+  valor[AJ_MENU_TOPO_FIXO] = 0; // deve voltar a Desligado sem chave
+  valor[AJ_MENU_TOPO_FOCO] = 1; // deve voltar a Ligado sem chave
   { char *t = dados_ler("ajustes-p2.txt"), *l; FILE *f;
     char nome[600], buf[AJ_N * 56]; size_t u = 0;
     assert(t);
@@ -127,7 +137,9 @@ int main(void) {
           strncmp(l, "menuTopoLocal ", strlen("menuTopoLocal ")) &&
           strncmp(l, "menuTopoModoLocal ", strlen("menuTopoModoLocal ")) &&
           strncmp(l, "menuTopoTamanhoLocal ", strlen("menuTopoTamanhoLocal ")) &&
-          strncmp(l, "menuTopoOrdemLocal ", strlen("menuTopoOrdemLocal "))) {
+          strncmp(l, "menuTopoOrdemLocal ", strlen("menuTopoOrdemLocal ")) &&
+          strncmp(l, "menuTopoFixoLocal ", strlen("menuTopoFixoLocal ")) &&
+          strncmp(l, "menuTopoFocoExpandidoLocal ", strlen("menuTopoFocoExpandidoLocal "))) {
         memcpy(buf + u, l, n); u += n;
       }
       if (!fim) break; l = fim + 1;
@@ -141,6 +153,8 @@ int main(void) {
   assert(valor[AJ_MENU_TOPO_TAMANHO] == 1 && ajustes_menu_topo_tamanho() == 1);
   ajustes_menu_topo_ordem(ordemLida);
   for (int i = 0; i < AJ_MENU_TOPO_ORDEM_N; i++) assert(ordemLida[i] == i);
+  assert(valor[AJ_MENU_TOPO_FIXO] == 1 && !ajustes_menu_topo_fixo());
+  assert(valor[AJ_MENU_TOPO_FOCO] == 0 && ajustes_menu_topo_foco_expandido());
   assert(valor[AJ_COLECAO_EXIBICAO] == VT_LAY_VITRINE); // Missing key receives the new default.
   assert(ajustes_menu_topo() == 0);
 
