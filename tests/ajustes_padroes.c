@@ -487,8 +487,8 @@ int main(void) {
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_MODO) == AJPV_HOME);
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_TAMANHO) == AJPV_HOME);
   valor[AJ_HOME_LAYOUT] = 0; // layout clássico, compatível com o menu superior
-  valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO) && inativa(AJ_MENU_TOPO_TAMANHO) && inativa(AJ_MENU_TOPO_ORDEM));
-  valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO) && !inativa(AJ_MENU_TOPO_TAMANHO) && !inativa(AJ_MENU_TOPO_ORDEM));
+  valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO) && inativa(AJ_MENU_TOPO_TAMANHO) && inativa(AJ_MENU_TOPO_ORDEM) && inativa(AJ_MENU_TOPO_FIXO) && inativa(AJ_MENU_TOPO_FOCO_EXPANDIDO));
+  valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO) && !inativa(AJ_MENU_TOPO_TAMANHO) && !inativa(AJ_MENU_TOPO_ORDEM) && !inativa(AJ_MENU_TOPO_FIXO) && !inativa(AJ_MENU_TOPO_FOCO_EXPANDIDO));
   valor[AJ_MENU_TOPO] = 0;
   { int n = 0; montarTela();
     for (int i = 0; i < AJ_N_TELA; i++) {
@@ -496,9 +496,14 @@ int main(void) {
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_TAMANHO) n++;
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_ORDEM) n++;
     }
-    assert(n == 3); }
+    assert(n == 5); }
+  assert(OPCOES[AJ_MENU_TOPO_MODO].n == 2 && !strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Ícones Mistos"));
+  assert(valor[AJ_MENU_TOPO_FIXO] == 1 && !ajustes_menu_topo_fixo());
+  assert(valor[AJ_MENU_TOPO_FOCO_EXPANDIDO] == 0 && ajustes_menu_topo_foco_expandido());
+  assert(somenteDesteAparelho(AJ_MENU_TOPO_FIXO) && dePerfil(AJ_MENU_TOPO_FIXO));
+  assert(somenteDesteAparelho(AJ_MENU_TOPO_FOCO_EXPANDIDO) && dePerfil(AJ_MENU_TOPO_FOCO_EXPANDIDO));
   valor[AJ_MENU_TOPO_MODO] = 1; assert(!ajustes_menu_topo_icones() && ajustes_menu_topo_modo() == 1);
-  valor[AJ_MENU_TOPO_MODO] = 2; assert(ajustes_menu_topo_modo() == 2);
+  valor[AJ_MENU_TOPO_MODO] = 2; assert(ajustes_menu_topo_modo() == 1);
   valor[AJ_MENU_TOPO_MODO] = 0;
   valor[AJ_MENU_TOPO_TAMANHO] = 0; assert(ajustes_menu_topo_tamanho() == 0);
   valor[AJ_MENU_TOPO_TAMANHO] = 2; assert(ajustes_menu_topo_tamanho() == 2);
