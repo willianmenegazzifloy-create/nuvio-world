@@ -1894,9 +1894,9 @@ static void desenhaFolhaOrdem(void) {
         int sem = bloqueado || (c == 0 && i == 1) || (c == 1 && i == frN);
         float alfaSeta = bloqueado ? 0.18f : sem ? 0.3f : 1.0f;
         ponteiro_alvo_faixa(b.x, b.y, b.w, b.h, topo, base, ajPontFolha, NULL, i, c);
-        if (bf) ajPilulaAcento(b, 28, 1);
-        else ajNeutro(b, 28, 0.08f, AJ_CHIP_SOL, 1);
-        if (bf) ajIconeT(c ? "aj_arrow-down" : "aj_arrow-up", b.x + 14, b.y + 14, 28, alfaSeta);
+        if (bf && !bloqueado) ajPilulaAcento(b, 28, 1);
+        else ajNeutro(b, 28, bloqueado ? 0.035f : 0.08f, AJ_CHIP_SOL, 1);
+        if (bf && !bloqueado) ajIconeT(c ? "aj_arrow-down" : "aj_arrow-up", b.x + 14, b.y + 14, 28, alfaSeta);
         else ajIcone(c ? "aj_arrow-down" : "aj_arrow-up", b.x + 14, b.y + 14, 28, bloqueado ? 0.18f : sem ? 0.3f : 0.85f);
       }
     }
