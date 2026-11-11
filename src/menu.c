@@ -1014,6 +1014,9 @@ void menu_pilula_mostrar(float alvo) {
   // Negativo = some JA, sem mola: ao trocar para uma tela com titulo no canto
   // a pilula nao pode ficar 300 ms por cima dele.
   if (alvo < 0.0f) { tvPilAlvo = tvPilAlfa = 0.0f; return; }
+  // No menu superior classico, a escolha fixa vence a rolagem da Home. O app
+  // ainda manda -1 nas paginas que possuem cabecalho proprio.
+  if (topo() && ajustes_menu_topo_fixo()) alvo = 1.0f;
   tvPilAlvo = alvo > 1.0f ? 1.0f : alvo;
 }
 
@@ -1410,12 +1413,18 @@ static void tvDesenhar(void) {
 // ===========================================================================
 // Medidas do menu superior. O tamanho escala cápsulas, ícones, texto, respiros
 // e avatar juntos; o centro vertical e a ilha do relógio permanecem fixos.
+// Medidas do menu superior. O tamanho escala cápsulas, ícones, texto, respiros
+// e avatar juntos; o centro vertical e a ilha do relógio permanecem fixos.
+static float topoFocoEscala, topoFocoEscalaV;
+static float topoMistura[MENU_N], topoMisturaV[MENU_N];
 static float topoEscalaTamanho(void) {
+  float base;
   switch (ajustes_menu_topo_tamanho()) {
-    case 0: return 0.90f;  // Pequeno
-    case 2: return 1.30f;  // Grande
-    default: return 1.15f; // Médio: padrão, um pouco maior que antes
+    case 0: base = 0.90f; break;  // Pequeno
+    case 2: base = 1.30f; break;  // Grande
+    default: base = 1.15f; break; // Médio: padrão, um pouco maior que antes
   }
+  return base * (1.0f + 0.045f * limita01(topoFocoEscala));
 }
 // TK leva px da tela REAL para a tela da barra.
 #define TK(v)          ((v) / NV_MENU_ESCALA)
@@ -1485,62 +1494,75 @@ static const char *topoRotulo(int i) {
 // o vao entre elas e a largura da area das pilulas (sem a trilha), tudo em px
 // da tela da barra. tab_metrics_from + tab_content_w deles, com o aperto no
 // lugar da rolagem: a nossa tira nunca rola.
-typedef struct { int n, ordem[NV_MENU_FOCOS], cortado, modo; float ws[NV_MENU_FOCOS], vao, pad, rotMax, larg, txtEscala; } TopoTira;
+typedef struct {
+  int n, ordem[NV_MENU_FOCOS], cortado, modo;
+  float ws[NV_MENU_FOCOS], mistura[NV_MENU_FOCOS], texto[NV_MENU_FOCOS];
+  float vao, pad, rotMax, larg, txtEscala;
+} TopoTira;
 _Static_assert(MENU_N == AJ_MENU_TOPO_ORDEM_N, "top menu order must cover every navigation destination");
 
 static void topoMedir(TopoTira *t) {
-  int k, nl = 0, ni = 0;
-  float txt = 0.0f, disp, fixo = 0.0f, disponivel;
+  int k;
+  float disp, base, budget, fixo = 0.0f, textoDesejado = 0.0f, extraTotal = 0.0f;
+  float fator = 1.0f;
   t->n = topoLista(t->ordem);
   t->modo = ajustes_menu_topo_modo();
   t->txtEscala = 1.0f;
+  t->vao = TOPO_VAO;
+  t->pad = 0.0f;
+  t->rotMax = 1e6f;
+  t->cortado = 0;
   if (t->modo == 0) {
-    // Ícones: cada aba ocupa uma cápsula quadrada; não medir nem comprimir texto.
-    t->vao = TOPO_VAO; t->pad = 0.0f; t->rotMax = 0.0f; t->cortado = 0;
+    // Somente ícones: cada aba ocupa uma cápsula quadrada.
     t->larg = t->n > 1 ? (t->n - 1) * t->vao : 0.0f;
     for (k = 0; k < t->n; k++) {
       t->ws[k] = TOPO_PILULA_H;
+      t->mistura[k] = 0.0f;
+      t->texto[k] = 0.0f;
       t->larg += t->ws[k];
     }
     return;
   }
+
+  // Ícones mistos: todos começam quadrados. Só o item em foco ganha uma
+  // extensão animada; o ícone mantém a mesma posição e o texto entra ao lado.
+  disp = NV_TELA_W - 2.0f * TOPO_RELOGIO - 2.0f * TOPO_TRILHA;
+  base = t->n * TOPO_PILULA_H + (t->n > 1 ? (t->n - 1) * t->vao : 0.0f);
+  budget = fmaxf(0.0f, disp - base);
   for (k = 0; k < t->n; k++) {
-    if (t->ordem[k] == MENU_BUSCAR) {
-      ni++;
-    } else {
-      txt += (float)txt_largura(TOPO_TXT, topoRotulo(t->ordem[k]));
-      if (t->modo == 2) fixo += TOPO_ICONE + TOPO_ICON_VAO;
-      nl++;
+    int id = t->ordem[k];
+    float m = id == MENU_BUSCAR ? 0.0f : limita01(topoMistura[id]);
+    t->mistura[k] = m;
+    t->texto[k] = 0.0f;
+    if (m > 0.001f) {
+      fixo += m * (TOPO_ICON_VAO + TOPO_PAD_MIN);
+      textoDesejado += m * txt_largura(TOPO_TXT, topoRotulo(id));
     }
   }
-  disp = NV_TELA_W - 2.0f * TOPO_RELOGIO - 2.0f * TOPO_TRILHA;
-  fixo += ni * TOPO_PILULA_H;
-  t->vao = TOPO_VAO; t->pad = TOPO_PAD; t->rotMax = 1e6f; t->cortado = 0;
-  if (t->n > 1 && fixo + txt + 2.0f * nl * t->pad + (t->n - 1) * t->vao > disp)
-    t->vao = fmaxf(TOPO_VAO_MIN, (disp - fixo - txt - 2.0f * nl * t->pad) / (t->n - 1));
-  if (nl && fixo + txt + 2.0f * nl * t->pad + (t->n - 1) * t->vao > disp)
-    t->pad = fmaxf(TOPO_PAD_MIN, (disp - fixo - txt - (t->n - 1) * t->vao) / (2.0f * nl));
-  disponivel = disp - fixo - 2.0f * nl * t->pad - (t->n > 1 ? (t->n - 1) * t->vao : 0.0f);
-  if (nl && txt > disponivel) {
-    t->txtEscala = fmaxf(0.65f, disponivel / txt);
-    txt = 0.0f;
-    for (k = 0; k < t->n; k++)
-      if (t->ordem[k] != MENU_BUSCAR)
-        txt += (float)txt_largura(TOPO_TXT * t->txtEscala, topoRotulo(t->ordem[k]));
+  if (textoDesejado > 0.0f && fixo + textoDesejado > budget)
+    t->txtEscala = fmaxf(0.65f, (budget - fixo) / textoDesejado);
+
+  for (k = 0; k < t->n; k++) {
+    int id = t->ordem[k];
+    if (t->mistura[k] > 0.001f && budget > TOPO_ICON_VAO + TOPO_PAD_MIN) {
+      float maxTexto = fmaxf(1.0f, budget - TOPO_ICON_VAO - TOPO_PAD_MIN);
+      float natural = txt_largura(TOPO_TXT * t->txtEscala, topoRotulo(id));
+      TxtLinha l = txt_linha_corta(TOPO_TXT * t->txtEscala, topoRotulo(id),
+                                   255, 255, 255, 255, maxTexto);
+      t->texto[k] = l.w;
+      if (l.w + 0.5f < natural || t->txtEscala < 0.995f) t->cortado = 1;
+      extraTotal += t->mistura[k] * (TOPO_ICON_VAO + l.w + TOPO_PAD_MIN);
+    }
   }
-  if (nl && txt > disponivel) {
-    t->rotMax = fmaxf(1.0f, disponivel / nl);
-    t->cortado = 1;
-  }
+  // Em uma troca rápida, a aba anterior ainda pode estar recolhendo enquanto
+  // a nova abre. Limita a soma para que a tira nunca ultrapasse a área útil.
+  if (extraTotal > budget && extraTotal > 0.0f) fator = budget / extraTotal;
   t->larg = t->n > 1 ? (t->n - 1) * t->vao : 0.0f;
   for (k = 0; k < t->n; k++) {
-    if (t->ordem[k] == MENU_BUSCAR) {
-      t->ws[k] = TOPO_PILULA_H;
-    } else {
-      TxtLinha l = txt_linha_corta(TOPO_TXT * t->txtEscala, topoRotulo(t->ordem[k]),
-                                   255, 255, 255, 255, t->rotMax);
-      t->ws[k] = 2.0f * t->pad + (t->modo == 2 ? TOPO_ICONE + TOPO_ICON_VAO : 0.0f) + l.w;
-    }
+    float m = t->mistura[k] * fator;
+    t->mistura[k] = m;
+    t->ws[k] = TOPO_PILULA_H + (m > 0.001f
+      ? m * (TOPO_ICON_VAO + t->texto[k] + TOPO_PAD_MIN) : 0.0f);
     t->larg += t->ws[k];
   }
 }
@@ -1582,16 +1604,21 @@ static float topoCobre(float px, float pw, const TopoCapsula *c) {
 
 static void topoAtualizar(float dt) {
   TopoTira t;
-  int pousa = anim_politica_reduzida || ajustes_animacoes_reduzidas();
+  int i, pousa = anim_politica_reduzida || ajustes_animacoes_reduzidas();
+  float alvoEscala = aberto && ajustes_menu_topo_foco_expandido() ? 1.0f : 0.0f;
   tvPilAlfa = anim_mola(tvPilAlfa, tvPilAlvo, dt, TV_MOLA_PILULA);
+  topoFocoEscala = anim_mola2(&topoFocoEscalaV, topoFocoEscala, alvoEscala, dt, TOPO_K_CAP_A);
+  for (i = 0; i < MENU_N; i++) {
+    float alvo = aberto && ajustes_menu_topo_modo() == 1 && linha == i ? 1.0f : 0.0f;
+    topoMistura[i] = anim_mola2(&topoMisturaV[i], topoMistura[i], alvo, dt, TOPO_K_CAP_A);
+  }
   topoMedir(&t);
-  topoCapsulaPasso(&topoSel, &t, topoIndice(t.ordem, t.n, destino), pousa, dt);
-  // Nos modos com texto, a largura da capsula varia por destino. O rótulo já
-  // é desenhado na posição final; animar a largura/posição da capsula separada
-  // fazia o texto escapar do foco durante a transição. Mantém a mola no modo
-  // somente ícones (largura fixa) e pousa a cápsula nos modos variáveis.
+  // Em Ícones mistos a própria geometria se expande com mola. As cápsulas
+  // pousam na geometria do mesmo quadro, evitando texto fora do foco ou do
+  // balão de seleção durante a mudança de largura.
+  topoCapsulaPasso(&topoSel, &t, topoIndice(t.ordem, t.n, destino), pousa || t.modo == 1, dt);
   topoCapsulaPasso(&topoFoc, &t, aberto ? topoIndice(t.ordem, t.n, linha) : -1,
-                   pousa || t.modo != 0, dt);
+                   pousa || t.modo == 1, dt);
 }
 
 void menu_topo_geo(MenuTopoGeo *o) {
@@ -1681,14 +1708,16 @@ static void topoDesenhar(void) {
     } else if (t.modo == 0) {
       icone(i, r.x + r.w * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
     } else {
-      TxtLinha l = txt_linha_corta(TOPO_TXT * t.txtEscala, topoRotulo(i), 255, 255, 255, 255, t.rotMax);
-      float tx = r.x + (r.w - l.w) * 0.5f;
-      if (t.modo == 2) {
-        float ix = r.x + t.pad + TOPO_ICONE * 0.5f;
-        icone(i, ix, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
-        tx = r.x + t.pad + TOPO_ICONE + TOPO_ICON_VAO;
+      // O ícone permanece no centro do quadrado original. A extensão cresce
+      // para a direita e o texto acompanha o balão e a área clicável.
+      icone(i, r.x + TOPO_PILULA_H * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
+      if (t.mistura[k] > 0.001f && t.texto[k] > 0.1f) {
+        TxtLinha l = txt_linha_corta(TOPO_TXT * t.txtEscala, topoRotulo(i),
+                                     255, 255, 255, 255, t.texto[k]);
+        float tx = r.x + TOPO_PILULA_H + TOPO_ICON_VAO;
+        txt_desenhar_tom(l, tx, y + (TOPO_PILULA_H - l.h) * 0.5f,
+                         tr, tg, tb, ta * t.mistura[k]);
       }
-      txt_desenhar_tom(l, tx, y + (TOPO_PILULA_H - l.h) * 0.5f, tr, tg, tb, ta);
     }
   }
   gfx_sem_recorte();
