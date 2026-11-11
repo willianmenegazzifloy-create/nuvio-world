@@ -490,7 +490,7 @@ int main(void) {
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Ícones mistos"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].rotulo, "Apresentação do menu superior"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].rotulo), "Top menu presentation"));
-  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[1]), "Mixed icons"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[1]), "Ícones mistos"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_TAMANHO].rotulo), "Top menu size"));
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_MODO], "menuTopoModoLocal"));
   assert(somenteDesteAparelho(AJ_MENU_TOPO_MODO) && dePerfil(AJ_MENU_TOPO_MODO));
