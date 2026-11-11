@@ -105,6 +105,29 @@ int main(void) {
     }
   }
 
+  // Ícones Mistos em idiomas longos: cada destino revela seu próprio rótulo,
+  // o fundo acompanha a mesma largura e a Busca continua quadrada.
+  for (j = 0; j < 5; j++) {
+    snprintf(cfg, sizeof cfg, "homeLayoutLocal 0\\nmodernSidebar 0\\nmenuTopoLocal 1\\nmenuTopoModoLocal 1\\nmenuTopoFocoExpandidoLocal 1\\nmenuExplorarLocal 0\\nmenuGuiaLocal 0\\nmenuAgendaLocal 0\\nmenuPerfilLocal 0\\nidioma %d\\n", idiomas[j]);
+    gravar(cfg);
+    menu_iniciar(); menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 90);
+    menu_topo_geo(&g);
+    assert(!g.cortado && g.w[0] > g.h);
+    assert(PERTO(g.foc[0], g.x[0], 0.01f) && PERTO(g.foc[1], g.w[0], 0.5f));
+    for (k = 1; k < g.n; k++) assert(PERTO(g.w[k], g.h, 0.5f));
+    for (k = 1; k < g.n; k++) {
+      tecla(SDLK_RIGHT); passo(0.016f, 90); menu_topo_geo(&g);
+      if (g.busca[k]) {
+        assert(PERTO(g.w[k], g.h, 0.5f));
+      } else {
+        assert(!g.cortado && g.w[k] > g.h);
+        assert(PERTO(g.foc[0], g.x[k], 0.5f) && PERTO(g.foc[1], g.w[k], 0.5f));
+      }
+    }
+    tecla(SDLK_ESCAPE); passo(0.016f, 90); menu_topo_geo(&g);
+    for (k = 0; k < g.n; k++) assert(PERTO(g.w[k], g.h, 0.5f));
+  }
+
   // MODO ÍCONES: todas as abas são quadradas; Busca e avatar mantêm sua geometria.
   gravar(CFG "menuTopoModoLocal 0\nidioma 0\n");
   menu_topo_geo(&g);
