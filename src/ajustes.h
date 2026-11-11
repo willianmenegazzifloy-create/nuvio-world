@@ -324,7 +324,9 @@ int   ajustes_rail_recolhida(void);     // collapseSidebar
 // #461: 1 = o menu e uma barra no topo (menu.c), sem rail na esquerda. 0 no
 // layout Dinamica e no telefone em retrato.
 int   ajustes_menu_topo(void);
-int   ajustes_menu_topo_modo(void); // 0 ícones, 1 texto, 2 ícones + texto
+int   ajustes_menu_topo_modo(void); // 0 somente ícones, 1 ícones mistos
+int   ajustes_menu_topo_fixo(void); // manter a barra visível na Home rolada
+int   ajustes_menu_topo_foco_expandido(void); // ampliar levemente enquanto a barra está aberta
 int   ajustes_menu_topo_icones(void); // compatibilidade: 1 = somente ícones
 int   ajustes_menu_topo_tamanho(void); // 0 pequeno, 1 médio, 2 grande
 #define AJ_MENU_TOPO_ORDEM_N 8
