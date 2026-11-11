@@ -460,7 +460,7 @@ int main(void) {
   assert(AJ_MENU_TOPO_MODO == AJ_PLR_FORMATO + 1);
   assert(AJ_MENU_TOPO_TAMANHO == AJ_MENU_TOPO_MODO + 1 && AJ_N > AJ_MENU_TOPO_TAMANHO);
   assert(valor[AJ_MENU_TOPO_MODO] == 0 && ajustes_menu_topo_icones());
-  assert(OPCOES[AJ_MENU_TOPO_MODO].n == 3);
+  assert(OPCOES[AJ_MENU_TOPO_MODO].n == 2);
   assert(valor[AJ_MENU_TOPO_TAMANHO] == 1 && ajustes_menu_topo_tamanho() == 1);
   assert(OPCOES[AJ_MENU_TOPO_TAMANHO].n == 3);
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_TAMANHO], "menuTopoTamanhoLocal"));
@@ -476,16 +476,16 @@ int main(void) {
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[1], "Médio"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[2], "Grande"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[0], "Somente ícones"));
-  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Somente texto"));
-  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[2], "Ícones + texto"));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Ícones Mistos"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].rotulo, "Apresentação do menu superior"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].rotulo), "Top menu presentation"));
-  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[2]), "Icons + text"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_TAMANHO].rotulo), "Top menu size"));
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_MODO], "menuTopoModoLocal"));
   assert(somenteDesteAparelho(AJ_MENU_TOPO_MODO) && dePerfil(AJ_MENU_TOPO_MODO));
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_MODO) == AJPV_HOME);
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_TAMANHO) == AJPV_HOME);
+  assert(familiaPreviaOpcao(AJ_MENU_TOPO_FIXO) == AJPV_HOME);
+  assert(familiaPreviaOpcao(AJ_MENU_TOPO_FOCO_EXPANDIDO) == AJPV_HOME);
   valor[AJ_HOME_LAYOUT] = 0; // layout clássico, compatível com o menu superior
   valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO) && inativa(AJ_MENU_TOPO_TAMANHO) && inativa(AJ_MENU_TOPO_ORDEM) && inativa(AJ_MENU_TOPO_FIXO) && inativa(AJ_MENU_TOPO_FOCO_EXPANDIDO));
   valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO) && !inativa(AJ_MENU_TOPO_TAMANHO) && !inativa(AJ_MENU_TOPO_ORDEM) && !inativa(AJ_MENU_TOPO_FIXO) && !inativa(AJ_MENU_TOPO_FOCO_EXPANDIDO));
@@ -495,6 +495,8 @@ int main(void) {
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_MODO) n++;
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_TAMANHO) n++;
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_ORDEM) n++;
+      if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_FIXO) n++;
+      if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_FOCO_EXPANDIDO) n++;
     }
     assert(n == 5); }
   assert(OPCOES[AJ_MENU_TOPO_MODO].n == 2 && !strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Ícones Mistos"));
