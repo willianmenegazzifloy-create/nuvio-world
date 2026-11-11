@@ -471,6 +471,8 @@ int main(void) {
   assert(somenteDesteAparelho(AJ_MENU_TOPO_FOCO) && dePerfil(AJ_MENU_TOPO_FOCO));
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_FIXO], "menuTopoFixoLocal"));
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_FOCO], "menuTopoFocoExpandidoLocal"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_FIXO].rotulo), "Keep top menu fixed"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_FOCO].rotulo), "Expand top menu on focus"));
   assert(limita(AJ_MENU_TOPO_MODO, 2) == 1); // Legacy icons + text becomes mixed icons.
   assert(valor[AJ_MENU_TOPO_TAMANHO] == 1 && ajustes_menu_topo_tamanho() == 1);
   assert(OPCOES[AJ_MENU_TOPO_TAMANHO].n == 3);
@@ -490,12 +492,15 @@ int main(void) {
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Ícones mistos"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].rotulo, "Apresentação do menu superior"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].rotulo), "Top menu presentation"));
-  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[1]), "Ícones mistos"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[1]), "Mixed icons"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_TAMANHO].rotulo), "Top menu size"));
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_MODO], "menuTopoModoLocal"));
   assert(somenteDesteAparelho(AJ_MENU_TOPO_MODO) && dePerfil(AJ_MENU_TOPO_MODO));
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_MODO) == AJPV_HOME);
   assert(familiaPreviaOpcao(AJ_MENU_TOPO_TAMANHO) == AJPV_HOME);
+  assert(familiaPreviaOpcao(AJ_MENU_TOPO_FIXO) == AJPV_HOME);
+  assert(familiaPreviaOpcao(AJ_MENU_TOPO_FOCO) == AJPV_HOME);
+  assert(familiaPreviaOpcao(AJ_MENU_TOPO_ORDEM) == AJPV_HOME);
   valor[AJ_HOME_LAYOUT] = 0; // layout clássico, compatível com o menu superior
   valor[AJ_MENU_TOPO] = 0; assert(inativa(AJ_MENU_TOPO_MODO) && inativa(AJ_MENU_TOPO_TAMANHO) && inativa(AJ_MENU_TOPO_ORDEM) && inativa(AJ_MENU_TOPO_FIXO) && inativa(AJ_MENU_TOPO_FOCO));
   valor[AJ_MENU_TOPO] = 1; assert(!inativa(AJ_MENU_TOPO_MODO) && !inativa(AJ_MENU_TOPO_TAMANHO) && !inativa(AJ_MENU_TOPO_ORDEM) && !inativa(AJ_MENU_TOPO_FIXO) && !inativa(AJ_MENU_TOPO_FOCO));
