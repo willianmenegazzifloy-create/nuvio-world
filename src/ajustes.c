@@ -6162,11 +6162,18 @@ int ajustes_perfil_restaurar(int perfil) {
     if (colecaoPropria && valor[AJ_COLECAO_EXIBICAO] != valorPadrao[AJ_COLECAO_EXIBICAO]) {
       valor[AJ_COLECAO_EXIBICAO] = valorPadrao[AJ_COLECAO_EXIBICAO]; mudou++;
     }
+    if (colecaoPropria && valor[AJ_MENU_TOPO_FIXO] != valorPadrao[AJ_MENU_TOPO_FIXO]) {
+      valor[AJ_MENU_TOPO_FIXO] = valorPadrao[AJ_MENU_TOPO_FIXO]; mudou++;
+    }
+    if (colecaoPropria && valor[AJ_MENU_TOPO_FOCO_EXPANDIDO] != valorPadrao[AJ_MENU_TOPO_FOCO_EXPANDIDO]) {
+      valor[AJ_MENU_TOPO_FOCO_EXPANDIDO] = valorPadrao[AJ_MENU_TOPO_FOCO_EXPANDIDO]; mudou++;
+    }
     if (bibliotecaFonteEscolhida) { bibliotecaFonteEscolhida = 0; mudou++; }
     if (mudou) gravar();
     return 0;
   }
-  { int focoAntigo = -1, viuFoco = 0, viuTopo = 0, viuTopoModo = 0, viuTopoTamanho = 0, viuTopoOrdem = 0, viuAbas = 0, viuColecao = 0;
+  { int focoAntigo = -1, viuFoco = 0, viuTopo = 0, viuTopoModo = 0, viuTopoTamanho = 0, viuTopoOrdem = 0,
+        viuTopoFixo = 0, viuTopoFocoExpandido = 0, viuAbas = 0, viuColecao = 0;
   for (l = t; l && *l; ) {
     char chave[64], *fim = strchr(l, '\n');
     int v, i;
@@ -6191,6 +6198,8 @@ int ajustes_perfil_restaurar(int perfil) {
         if (i == AJ_MENU_TOPO_MODO) viuTopoModo = 1;
         if (i == AJ_MENU_TOPO_TAMANHO) viuTopoTamanho = 1;
         if (i == AJ_MENU_TOPO_ORDEM) viuTopoOrdem = 1;
+        if (i == AJ_MENU_TOPO_FIXO) viuTopoFixo = 1;
+        if (i == AJ_MENU_TOPO_FOCO_EXPANDIDO) viuTopoFocoExpandido = 1;
         if (i == AJ_ABAS_ESTILO) viuAbas = 1;
         if (i == AJ_COLECAO_EXIBICAO) viuColecao = 1;
         if (v != valor[i]) { valor[i] = v; mudou++; }
@@ -6215,6 +6224,14 @@ int ajustes_perfil_restaurar(int perfil) {
   // Perfis sem chave de ordem recebem a ordem original, sem herdar a do anterior.
   if (colecaoPropria && !viuTopoOrdem && valor[AJ_MENU_TOPO_ORDEM] != valorPadrao[AJ_MENU_TOPO_ORDEM]) {
     valor[AJ_MENU_TOPO_ORDEM] = valorPadrao[AJ_MENU_TOPO_ORDEM]; mudou++;
+  }
+  // Perfis anteriores às opções novas recebem os padrões: menu fixo desligado,
+  // foco expandido ligado. Preferências explícitas já salvas são preservadas.
+  if (!viuTopoFixo && valor[AJ_MENU_TOPO_FIXO] != valorPadrao[AJ_MENU_TOPO_FIXO]) {
+    valor[AJ_MENU_TOPO_FIXO] = valorPadrao[AJ_MENU_TOPO_FIXO]; mudou++;
+  }
+  if (!viuTopoFocoExpandido && valor[AJ_MENU_TOPO_FOCO_EXPANDIDO] != valorPadrao[AJ_MENU_TOPO_FOCO_EXPANDIDO]) {
+    valor[AJ_MENU_TOPO_FOCO_EXPANDIDO] = valorPadrao[AJ_MENU_TOPO_FOCO_EXPANDIDO]; mudou++;
   }
   // Idem para o estilo das abas (#205).
   if (!viuAbas && valor[AJ_ABAS_ESTILO]) { valor[AJ_ABAS_ESTILO] = 0; mudou++; } }
@@ -7582,9 +7599,11 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_RAIL: return "A barra de navegação da esquerda fica sempre aberta, ou recolhida até você ir até ela.";
     case AJ_ABAS_ESTILO: return "Chips: uma fileira de botões, como sempre. Menu suspenso: escolha Filmes ou Séries e depois o catálogo numa lista. Barra central: uma pílula de vidro no centro do alto da tela. Páginas: um catálogo por página; Esquerda e Direita trocam de página. Vale para este perfil.";
     case AJ_MENU_TOPO: return "Na lateral: o menu fica na esquerda, como sempre. No topo: o menu vira uma barra no alto da tela e o conteúdo usa a largura toda. Para cima no primeiro item da tela chega à barra e Para baixo volta. Vale para este perfil.";
-    case AJ_MENU_TOPO_MODO: return "Somente ícones: as abas mostram os ícones do menu lateral. Somente texto: mostram os nomes das seções. Ícones + texto: cada aba mostra o ícone e o nome. A Busca mantém seu ícone e o Perfil mantém o avatar. Vale para este perfil.";
+    case AJ_MENU_TOPO_MODO: return "Somente ícones mantém todas as abas compactas. Ícones Mistos expande suavemente a aba focada e revela seu nome; ao perder o foco, ela volta a ser apenas um ícone. Busca e avatar do Perfil mantêm seus formatos.";
     case AJ_MENU_TOPO_TAMANHO: return "Ajusta o tamanho das cápsulas, ícones, textos e avatar do menu superior. Médio é um pouco maior que o tamanho anterior. Vale para este perfil.";
     case AJ_MENU_TOPO_ORDEM: return "Reordena as abas do menu superior. A Busca mantém seu ícone quadrado e o avatar do perfil permanece separado. Vale para este perfil nesta TV.";
+    case AJ_MENU_TOPO_FIXO: return "Mantém a barra superior e o avatar do perfil visíveis na tela inicial, mesmo quando o foco está nas fileiras.";
+    case AJ_MENU_TOPO_FOCO_EXPANDIDO: return "Aumenta levemente a barra superior quando ela recebe foco e retorna ao tamanho normal ao sair. A transição é animada.";
     case AJ_RAIL_MODERNA: return "Troca a barra lateral pela versão nova, com ícones maiores. Ela ignora a escolha entre recolhida e fixa.";
     case AJ_RAIL_BLUR: return "Desfoca a arte atrás da barra lateral moderna em vez de usar um fundo sólido.";
 #ifndef NV_ANDROID
@@ -8037,7 +8056,9 @@ static const char *beneficioProprio(int op) {
     case AJ_BUSCA_CINEMETA: return "A busca também consulta o Cinemeta se o catálogo do Nuvio falhar.";
     case AJ_HOME_LAYOUT: return "Como a Home se organiza: Moderna, Padrão ou Dinâmica.";
     case AJ_MENU_TOPO: return "Onde fica o menu: na esquerda ou no alto da tela.";
-    case AJ_MENU_TOPO_MODO: return "Escolhe se as abas do menu superior mostram somente ícones, somente texto ou ícones e texto.";
+    case AJ_MENU_TOPO_MODO: return "Escolhe entre abas compactas com somente ícones e Ícones Mistos, que expande o item focado para mostrar seu nome.";
+    case AJ_MENU_TOPO_FIXO: return "Mantém o menu superior e o avatar visíveis na Home.";
+    case AJ_MENU_TOPO_FOCO_EXPANDIDO: return "Amplia levemente o menu superior enquanto ele recebe foco.";
     case AJ_MENU_TOPO_TAMANHO: return "Aumenta ou reduz o tamanho visual do menu superior.";
     case AJ_MENU_TOPO_ORDEM: return "Muda a posição das abas na barra superior.";
     case AJ_ABAS_ESTILO: return "Como as abas de uma coleção de streaming aparecem: chips, menu suspenso, barra central ou páginas.";
@@ -10486,7 +10507,8 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_ESPACO_FILEIRAS: case AJ_ESPACO_TITULOS:
     case AJ_HERO_TRAILER_SOM: case AJ_HERO_TRAILER_ESPERA: case AJ_HERO_TRANSICAO: case AJ_LOGO_TRAILER:
     case AJ_ADDON_FUNDO: case AJ_ADDON_LOGO:
-    case AJ_FIL_ORDEM: case AJ_RAIL: case AJ_RAIL_MODERNA: case AJ_MENU_TOPO: case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO: case AJ_ABAS_ESTILO:
+    case AJ_FIL_ORDEM: case AJ_RAIL: case AJ_RAIL_MODERNA: case AJ_MENU_TOPO: case AJ_MENU_TOPO_MODO: case AJ_MENU_TOPO_TAMANHO:
+    case AJ_MENU_TOPO_FIXO: case AJ_MENU_TOPO_FOCO_EXPANDIDO: case AJ_ABAS_ESTILO:
     case AJ_RAIL_BLUR: case AJ_MIC_BUSCA: case AJ_HERO: case AJ_HERO_CATALOGOS: case AJ_HERO_GENERO:
     case AJ_HERO_SINOPSE: case AJ_HERO_NOTAS: case AJ_HERO_ANO: case AJ_HERO_DURACAO:
     case AJ_PS_FUNDO: case AJ_PS_CONTINUAR: case AJ_DESCOBRIR: case AJ_ROTULOS:
