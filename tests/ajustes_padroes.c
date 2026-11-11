@@ -487,11 +487,10 @@ int main(void) {
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[1], "Médio"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_TAMANHO].valores[2], "Grande"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[0], "Somente ícones"));
-  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Somente texto"));
-  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[2], "Ícones + texto"));
+  assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].valores[1], "Ícones mistos"));
   assert(!strcmp(OPCOES[AJ_MENU_TOPO_MODO].rotulo, "Apresentação do menu superior"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].rotulo), "Top menu presentation"));
-  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[2]), "Icons + text"));
+  assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_MODO].valores[1]), "Mixed icons"));
   assert(!strcmp(i18n(OPCOES[AJ_MENU_TOPO_TAMANHO].rotulo), "Top menu size"));
   assert(!strcmp(CHAVE[AJ_MENU_TOPO_MODO], "menuTopoModoLocal"));
   assert(somenteDesteAparelho(AJ_MENU_TOPO_MODO) && dePerfil(AJ_MENU_TOPO_MODO));
@@ -510,7 +509,6 @@ int main(void) {
       if (TELA[i].tipo == IT_OPC && TELA[i].op == AJ_MENU_TOPO_FOCO) n++;
     }
     assert(n == 5); }
-  valor[AJ_MENU_TOPO_MODO] = 1; assert(!ajustes_menu_topo_icones() && ajustes_menu_topo_modo() == 1);
   valor[AJ_MENU_TOPO_MODO] = 1; assert(!ajustes_menu_topo_icones() && ajustes_menu_topo_modo() == 1);
   valor[AJ_MENU_TOPO_MODO] = 2; assert(limita(AJ_MENU_TOPO_MODO, 2) == 1);
   valor[AJ_MENU_TOPO_MODO] = 0;
