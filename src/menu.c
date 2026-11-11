@@ -1423,6 +1423,9 @@ static float topoEscalaTamanho(void) {
   }
   return base * topoFocoEscala;
 }
+static float topoEscalaTexto(void) {
+  return topoEscalaTamanho() * (ajustes_menu_topo_tamanho() == 0 ? 0.80f : 1.0f);
+}
 // TK leva px da tela REAL para a tela da barra.
 #define TK(v)          ((v) / NV_MENU_ESCALA)
 #define TP(v)          TK((v) * 0.9f)
@@ -1440,7 +1443,7 @@ static float topoEscalaTamanho(void) {
 #define TOPO_Y         (TOPO_CY - TOPO_H * 0.5f)
 #define TOPO_VAO_MIN   TS(1.0f)
 #define TOPO_PAD_MIN   TS(10.0f)
-#define TOPO_TXT       (TXT_BODY * topoEscalaTamanho())
+#define TOPO_TXT       (TXT_BODY * topoEscalaTexto())
 #define TOPO_RELOGIO   ((NV_ILHA_MARGEM_D * gfx_escala_ui_base() + ilha_relogio_largura() + 16.0f) / NV_MENU_ESCALA)
 
 // AS CAPSULAS VIAJAM entre as pilulas (Capsule::step deles): mola criticamente
@@ -1452,6 +1455,7 @@ static float topoEscalaTamanho(void) {
 // de atravessar a fileira. Animacoes reduzidas: sempre pousa.
 #define TOPO_K_CAP     15.4919f     // sqrt(240)
 #define TOPO_K_CAP_A   17.3205f     // sqrt(300)
+#define TOPO_K_MISTOS  21.0f
 #define TOPO_POUSA_A   0.02f
 typedef struct { float x, vx, w, vw, a, va; int em; } TopoCapsula;
 static TopoCapsula topoSel = { .em = -1 }, topoFoc = { .em = -1 };
@@ -1616,7 +1620,7 @@ static void topoAtualizar(float dt) {
   for (k = 0; k < AJ_MENU_TOPO_ORDEM_N; k++) {
     float alvo = ajustes_menu_topo_modo() == 1 && aberto && linha == k && k != MENU_BUSCAR ? 1.0f : 0.0f;
     if (pousa) { topoMixAlfa[k] = alvo; topoMixVel[k] = 0.0f; }
-    else topoMixAlfa[k] = anim_mola2(&topoMixVel[k], topoMixAlfa[k], alvo, dt, TOPO_K_CAP_A);
+    else topoMixAlfa[k] = anim_mola2(&topoMixVel[k], topoMixAlfa[k], alvo, dt, TOPO_K_MISTOS);
   }
   topoMedir(&t);
   topoCapsulaPasso(&topoSel, &t, topoIndice(t.ordem, t.n, destino), pousa, dt);
