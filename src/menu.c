@@ -1609,10 +1609,12 @@ static void topoAtualizar(float dt) {
   int i, pousa = anim_politica_reduzida || ajustes_animacoes_reduzidas();
   float alvoEscala = aberto && ajustes_menu_topo_foco_expandido() ? 1.0f : 0.0f;
   tvPilAlfa = anim_mola(tvPilAlfa, tvPilAlvo, dt, TV_MOLA_PILULA);
-  topoFocoEscala = anim_mola2(&topoFocoEscalaV, topoFocoEscala, alvoEscala, dt, TOPO_K_CAP_A);
+  if (pousa) { topoFocoEscala = alvoEscala; topoFocoEscalaV = 0.0f; }
+  else topoFocoEscala = anim_mola2(&topoFocoEscalaV, topoFocoEscala, alvoEscala, dt, TOPO_K_CAP_A);
   for (i = 0; i < MENU_N; i++) {
     float alvo = aberto && ajustes_menu_topo_modo() == 1 && linha == i ? 1.0f : 0.0f;
-    topoMistura[i] = anim_mola2(&topoMisturaV[i], topoMistura[i], alvo, dt, TOPO_K_CAP_A);
+    if (pousa) { topoMistura[i] = alvo; topoMisturaV[i] = 0.0f; }
+    else topoMistura[i] = anim_mola2(&topoMisturaV[i], topoMistura[i], alvo, dt, TOPO_K_CAP_A);
   }
   topoMedir(&t);
   // Em Ícones mistos a própria geometria se expande com mola. As cápsulas
