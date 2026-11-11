@@ -1560,9 +1560,8 @@ static void topoMedir(TopoTira *t) {
   for (k = 0; k < t->n; k++) {
     float m = t->mistura[k] * fator;
     t->mistura[k] = m;
-    // A largura efetiva do texto acompanha a mesma compressão da cápsula;
-    // assim, durante a troca rápida de foco, nada escapa do balão.
-    t->texto[k] *= fator;
+    // O texto será recortado pela mesma fração m usada pela cápsula;
+    // geometria e conteúdo revelado permanecem sempre dentro do balão.
     t->ws[k] = TOPO_PILULA_H + (m > 0.001f
       ? m * (TOPO_ICON_VAO + t->texto[k] + TOPO_PAD_MIN) : 0.0f);
     t->larg += t->ws[k];
@@ -1716,11 +1715,14 @@ static void topoDesenhar(void) {
       // para a direita e o texto acompanha o balão e a área clicável.
       icone(i, r.x + TOPO_PILULA_H * 0.5f, y + TOPO_PILULA_H * 0.5f, TOPO_ICONE, tr, tg, tb, ta);
       if (t.mistura[k] > 0.001f && t.texto[k] > 0.1f) {
+        float m = t.mistura[k];
+        float largura = t.texto[k] * m;
         TxtLinha l = txt_linha_corta(TOPO_TXT * t.txtEscala, topoRotulo(i),
-                                     255, 255, 255, 255, t.texto[k]);
-        float tx = r.x + TOPO_PILULA_H + TOPO_ICON_VAO;
-        txt_desenhar_tom(l, tx, y + (TOPO_PILULA_H - l.h) * 0.5f,
-                         tr, tg, tb, ta * t.mistura[k]);
+                                     255, 255, 255, 255, largura);
+        float tx = r.x + TOPO_PILULA_H + TOPO_ICON_VAO * m;
+        if (largura > 0.1f)
+          txt_desenhar_tom(l, tx, y + (TOPO_PILULA_H - l.h) * 0.5f,
+                           tr, tg, tb, ta * m);
       }
     }
   }
