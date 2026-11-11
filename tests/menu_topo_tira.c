@@ -138,7 +138,7 @@ int main(void) {
 
   // Foco Expandido: desligado preserva o tamanho; ligado amplia e volta
   // suavemente ao normal quando o menu perde o foco.
-  gravar(CFG "menuTopoModoLocal 0\\nmenuTopoFocoExpandidoLocal 1\\n");
+  gravar(CFG "menuTopoModoLocal 0\nmenuTopoFocoExpandidoLocal 1\\n");
   menu_iniciar(); menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 90);
   menu_topo_geo(&g);
   assert(PERTO(g.h, 48.0f * 1.15f, 0.1f));
@@ -146,7 +146,7 @@ int main(void) {
   menu_topo_geo(&g);
   assert(PERTO(g.h, 48.0f * 1.15f, 0.1f));
 
-  gravar(CFG "menuTopoModoLocal 0\\nmenuTopoFocoExpandidoLocal 0\\n");
+  gravar(CFG "menuTopoModoLocal 0\nmenuTopoFocoExpandidoLocal 0\\n");
   menu_iniciar(); menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 90);
   menu_topo_geo(&g);
   assert(PERTO(g.h, 48.0f * 1.15f * 1.045f, 0.1f));
