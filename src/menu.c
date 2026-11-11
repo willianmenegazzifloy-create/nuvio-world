@@ -1633,11 +1633,11 @@ static void topoAtualizar(float dt) {
       topoFoc.w = t.ws[idx];
       topoFoc.vx = topoFoc.vw = 0.0f;
       if (pousa) { topoFoc.a = 1.0f; topoFoc.va = 0.0f; }
-      else topoFoc.a = anim_mola2(&topoFoc.va, topoFoc.a, 1.0f, dt, TOPO_K_CAP_A);
+      else topoFoc.a = anim_mola2(&topoFoc.va, topoFoc.a, 1.0f, dt, TOPO_K_MISTOS);
     } else {
       topoFoc.em = -1;
       if (pousa) { topoFoc.a = 0.0f; topoFoc.va = 0.0f; }
-      else topoFoc.a = anim_mola2(&topoFoc.va, topoFoc.a, 0.0f, dt, TOPO_K_CAP_A);
+      else topoFoc.a = anim_mola2(&topoFoc.va, topoFoc.a, 0.0f, dt, TOPO_K_MISTOS);
     }
   } else {
     topoCapsulaPasso(&topoFoc, &t, aberto ? topoIndice(t.ordem, t.n, linha) : -1, pousa, dt);
