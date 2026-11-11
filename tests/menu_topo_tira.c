@@ -108,7 +108,7 @@ int main(void) {
   // Ícones Mistos em idiomas longos: cada destino revela seu próprio rótulo,
   // o fundo acompanha a mesma largura e a Busca continua quadrada.
   for (j = 0; j < 5; j++) {
-    snprintf(cfg, sizeof cfg, "homeLayoutLocal 0\\nmodernSidebar 0\\nmenuTopoLocal 1\\nmenuTopoModoLocal 1\\nmenuTopoFocoExpandidoLocal 1\\nmenuExplorarLocal 0\\nmenuGuiaLocal 0\\nmenuAgendaLocal 0\\nmenuPerfilLocal 0\\nidioma %d\\n", idiomas[j]);
+    snprintf(cfg, sizeof cfg, "homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoModoLocal 1\nmenuTopoFocoExpandidoLocal 1\nmenuExplorarLocal 0\nmenuGuiaLocal 0\nmenuAgendaLocal 0\nmenuPerfilLocal 0\nidioma %d\n", idiomas[j]);
     gravar(cfg);
     menu_iniciar(); menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 90);
     menu_topo_geo(&g);
@@ -161,7 +161,7 @@ int main(void) {
 
   // Foco Expandido: desligado preserva o tamanho; ligado amplia e volta
   // suavemente ao normal quando o menu perde o foco.
-  gravar(CFG "menuTopoModoLocal 0\nmenuTopoFocoExpandidoLocal 1\\n");
+  gravar(CFG "menuTopoModoLocal 0\nmenuTopoFocoExpandidoLocal 1\n");
   menu_iniciar(); menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 90);
   menu_topo_geo(&g);
   assert(PERTO(g.h, 48.0f * 1.15f, 0.1f));
@@ -169,7 +169,7 @@ int main(void) {
   menu_topo_geo(&g);
   assert(PERTO(g.h, 48.0f * 1.15f, 0.1f));
 
-  gravar(CFG "menuTopoModoLocal 0\nmenuTopoFocoExpandidoLocal 0\\n");
+  gravar(CFG "menuTopoModoLocal 0\nmenuTopoFocoExpandidoLocal 0\n");
   menu_iniciar(); menu_definir_destino(MENU_INICIO); menu_abrir(); passo(0.016f, 90);
   menu_topo_geo(&g);
   assert(PERTO(g.h, 48.0f * 1.15f * 1.045f, 0.1f));
