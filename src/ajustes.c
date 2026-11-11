@@ -4057,6 +4057,7 @@ static const char *const *literaisDe(int op) {
 
 static int limita(int op, int v) {
   const Opcao *o = &OPCOES[op];
+  if (op == AJ_MENU_TOPO_MODO) return v == 0 ? 0 : 1; // old text and icon+text values become Ícones Mistos
   if (op == AJ_MENU_TOPO_ORDEM) return ajMenuTopoOrdemValida(v) ? v : valorPadrao[op];
   if (o->tipo == OP_ESCOLHA) return (v >= 0 && v < nValores(op)) ? v : valor[op];
   if (o->tipo == OP_NUMERO)  return v < o->min ? o->min : (v > o->max ? o->max : v);
