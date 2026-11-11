@@ -184,6 +184,8 @@ static int   sobre   = 0, semRail = 0, escolheu = 0;
 // do painel (rail -> aberto), na mola da ilha; passa de 1 no repique.
 static float desliza = 0.0f;
 static float expande = 0.0f, expandeV = 0.0f;
+static float topoFocoEscala = 1.0f, topoFocoEscalaV;
+static float topoMixAlfa[AJ_MENU_TOPO_ORDEM_N], topoMixVel[AJ_MENU_TOPO_ORDEM_N];
 static float animFoco[NV_MENU_FOCOS_TV];
 static int   pediuColecao = -1;   // col_folder da pasta escolhida na barra
 // SEGURAR OK EM "BUSCAR" abre o Spotlight (spotlight.h). E o caminho da LG,
@@ -1412,8 +1414,6 @@ static void tvDesenhar(void) {
 // ===========================================================================
 // Medidas do menu superior. O tamanho escala cápsulas, ícones, texto, respiros
 // e avatar juntos; o centro vertical e a ilha do relógio permanecem fixos.
-static float topoFocoEscala = 1.0f, topoFocoEscalaV;
-static float topoMixAlfa[AJ_MENU_TOPO_ORDEM_N], topoMixVel[AJ_MENU_TOPO_ORDEM_N];
 static float topoEscalaTamanho(void) {
   float base;
   switch (ajustes_menu_topo_tamanho()) {
