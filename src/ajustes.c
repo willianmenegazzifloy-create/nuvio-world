@@ -3,6 +3,7 @@
 // cancela. A lista mostra valor e chevron, a ficha explica alcance e padrao.
 // IDs, chaves persistidas e indices de valores continuam os legados.
 #include "ajustes.h"
+#include "menu.h"
 #include "logrede.h"
 #include "jsw.h"
 #include <limits.h>
@@ -8984,6 +8985,15 @@ static int frN;
 static char frNome[FR_FOLHA_MAX][FR_NOME_MAX];
 static char frApoio[FR_FOLHA_MAX][64];
 static int frMenuOrdem[AJ_MENU_TOPO_ORDEM_N];
+static int frMenuDesativado(int id) {
+  switch (id) {
+    case MENU_EXPLORAR: return !ajustes_menu_explorar();
+    case MENU_GUIA:     return !ajustes_menu_guia();
+    case MENU_AGENDA:   return !ajustes_menu_agenda();
+    case MENU_PERFIL:   return !ajustes_menu_perfil();
+    default:            return 0;
+  }
+}
 static void frPor(const char *nome, const char *apoio) {
   int k;
   if (!nome || !nome[0] || frN >= FR_FOLHA_MAX) return;
@@ -9038,10 +9048,12 @@ static void frMontar(void) {
     frN = AJ_MENU_TOPO_ORDEM_N;
     for (i = 0; i < frN; i++) {
       snprintf(frNome[i], FR_NOME_MAX, "%s", i18n(rotulos[frMenuOrdem[i]]));
-      frApoio[i][0] = 0;
+      snprintf(frApoio[i], sizeof frApoio[i], "%s",
+               frMenuDesativado(frMenuOrdem[i]) ? "Desativado" : "");
     }
     return;
   }
+  if (j < 0 || j >= frN) return;
   if (frAberta == 7) {
     frN = EX_NFONTES;
     for (i = 0; i < frN; i++) {
@@ -9078,9 +9090,19 @@ static void frOrdemMover(int k, int dir) {
   const char *ptr[FR_FOLHA_MAX];
   char tmp[FR_NOME_MAX], ap[64];
   int j = k + dir, i;
-  if (k < 0 || k >= frN || j < 0 || j >= frN) return;
+  if (k < 0 || k >= frN) return;
   if (frAberta == 9) {
-    int t = frMenuOrdem[k];
+    int t;
+    if (frMenuDesativado(frMenuOrdem[k])) {
+      uxNotificar("Esta opção está desativada.");
+      return;
+    }
+    if (j < 0 || j >= frN) return;
+    if (frMenuDesativado(frMenuOrdem[j])) {
+      uxNotificar("Esta opção está desativada.");
+      return;
+    }
+    t = frMenuOrdem[k];
     frMenuOrdem[k] = frMenuOrdem[j];
     frMenuOrdem[j] = t;
     if (ajustes_menu_topo_ordem_definir(frMenuOrdem)) frFoco = j + 1;
