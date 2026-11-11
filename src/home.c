@@ -4265,6 +4265,9 @@ int home_streaming_barra(const int **pastas) {
 // topo: 1 com o destaque inteiro na tela, 0 depois de ~140 px de rolagem.
 float home_topo_fracao(void) {
   float f;
+  // A preferência fixa mantém barra e avatar à vista na Home, independente
+  // do foco nas fileiras e da posição de rolagem do destaque.
+  if (ajustes_menu_topo() && ajustes_menu_topo_fixo()) return 1.0f;
   // Barra no topo (#461): so com o foco no destaque, como a pilula na pagina rolada.
   if (ajustes_home_layout() != HOME_LAYOUT_DINAMICA) return ajustes_menu_topo() ? (float)focoHero : 1.0f;
   f = 1.0f + dinHeroY() / 140.0f;
