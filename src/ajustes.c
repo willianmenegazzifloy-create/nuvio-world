@@ -9049,7 +9049,7 @@ static void frMontar(void) {
     for (i = 0; i < frN; i++) {
       snprintf(frNome[i], FR_NOME_MAX, "%s", i18n(rotulos[frMenuOrdem[i]]));
       snprintf(frApoio[i], sizeof frApoio[i], "%s",
-               frMenuDesativado(frMenuOrdem[i]) ? "Desativado" : "");
+               frMenuDesativado(frMenuOrdem[i]) ? "Desligado" : "");
     }
     return;
   }
@@ -9094,7 +9094,7 @@ static void frOrdemMover(int k, int dir) {
   if (frAberta == 9) {
     int t;
     if (frMenuDesativado(frMenuOrdem[k])) {
-      uxNotificar("Esta opção está desativada.");
+      uxNotificar(i18n("Desligado"));
       return;
     }
     if (j < 0 || j >= frN) return;
