@@ -22,7 +22,7 @@ code = '''
 #include <strings.h>
 #include "src/anim.h"
 #define COL_SOURCE_MAX 16
-typedef struct { char title[128], type[16], catId[64]; } ColSource;
+typedef struct { char title[128], type[16], catId[64], prov[8], midia[8]; } ColSource;
 typedef struct { char title[128]; ColSource *sources; int nSources; } ColFolder;
 static ColFolder *collection;
 static int tabFocus, tabCursor;
@@ -35,12 +35,19 @@ static int estAbas = VT_AB_CHIPS;
 static int estiloAbas(void) { return estAbas; }
 static int cabN(void) { return collection ? collection->nSources : 0; }
 static const char *i18n(const char *s) { return s; }
+static int col_fonte_e_serie(const ColSource *s) {
+  const char *m = s && s->prov[0] ? s->midia : s ? s->type : "";
+  return !strcasecmp(m, "TV") || !strcasecmp(m, "SERIES") ||
+         !strcasecmp(m, "SERIE") || !strcasecmp(m, "SHOW") ||
+         !strcasecmp(m, "SHOWS") || !strcasecmp(m, "TV_SHOW") ||
+         !strcasecmp(m, "TV-SHOW");
+}
 static void col_nome_fonte(const ColSource *s, const char *m, char *dst, unsigned n)
   { (void)m; snprintf(dst, n, "%s", s->title); }
 static const char *desc_nome_catalogo(const char *b, const char *t, const char *c)
   { (void)b; (void)t; (void)c; return ""; }
 static const char *baseDaFonte(const ColSource *s) { (void)s; return ""; }
-''' + function('abaRotulos') + function('abaRolRecentrar') + function('abaFade') + \
+''' + function('abaSerie') + function('doisTipos') + function('abaRotulos') + function('abaRolRecentrar') + function('abaFade') + \
     function('abasCapsulaAtualizar') + '''
 int main(void) {
   ColSource fs[4]; ColFolder pasta;
@@ -68,6 +75,24 @@ int main(void) {
     abaRotulos(r2, big.nSources);
     assert(n == 16 && strstr(r2[15], "Cat 15"));
     collection = &pasta; }
+
+  // TMDB/Trakt usam mediaType; não têm source.type como os addons.
+  {
+    ColSource provider[4]; ColFolder mixed; char labels[4][180];
+    memset(provider, 0, sizeof provider); memset(&mixed, 0, sizeof mixed);
+    strcpy(provider[0].title, "Latest"); strcpy(provider[0].prov, "tmdb"); strcpy(provider[0].midia, "MOVIE");
+    strcpy(provider[1].title, "Latest"); strcpy(provider[1].prov, "tmdb"); strcpy(provider[1].midia, "SERIES");
+    strcpy(provider[2].title, "Popular"); strcpy(provider[2].prov, "trakt"); strcpy(provider[2].midia, "tv");
+    strcpy(provider[3].title, "Popular"); strcpy(provider[3].type, "series");
+    mixed.sources = provider; mixed.nSources = 4; collection = &mixed;
+    abaRotulos(labels, 4);
+    assert(strstr(labels[0], "Filmes"));
+    assert(strstr(labels[1], "Séries"));
+    assert(strstr(labels[2], "Séries"));
+    assert(strstr(labels[3], "Séries"));
+    assert(doisTipos() && !abaSerie(0) && abaSerie(1));
+    collection = &pasta;
+  }
 
   // 2) FIRST TAB X: the strip rolls to the logo when the target fits whole.
   {
