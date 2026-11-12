@@ -36,7 +36,7 @@ static int estiloAbas(void) { return estAbas; }
 static int cabN(void) { return collection ? collection->nSources : 0; }
 static const char *i18n(const char *s) { return s; }
 static int col_fonte_e_serie(const ColSource *s) {
-  const char *m = s && s->prov[0] ? s->midia : s ? s->type : "";
+  const char *m = s && s->midia[0] ? s->midia : s ? s->type : "";
   return !strcasecmp(m, "TV") || !strcasecmp(m, "SERIES") ||
          !strcasecmp(m, "SERIE") || !strcasecmp(m, "SHOW") ||
          !strcasecmp(m, "SHOWS") || !strcasecmp(m, "TV_SHOW") ||
@@ -78,23 +78,26 @@ int main(void) {
 
   // TMDB/Trakt usam mediaType; não têm source.type como os addons.
   {
-    ColSource provider[4]; ColFolder mixed; char labels[4][180];
+    ColSource provider[5]; ColFolder mixed; char labels[5][180];
     memset(provider, 0, sizeof provider); memset(&mixed, 0, sizeof mixed);
     strcpy(provider[0].title, "Latest"); strcpy(provider[0].prov, "tmdb"); strcpy(provider[0].midia, "MOVIE");
     strcpy(provider[1].title, "Latest"); strcpy(provider[1].prov, "tmdb"); strcpy(provider[1].midia, "SERIES");
     strcpy(provider[2].title, "Popular"); strcpy(provider[2].prov, "trakt"); strcpy(provider[2].midia, "tv");
     strcpy(provider[3].title, "Popular"); strcpy(provider[3].type, "series");
-    mixed.sources = provider; mixed.nSources = 4; collection = &mixed;
-    abaRotulos(labels, 4);
+    strcpy(provider[4].title, "Legacy TV"); strcpy(provider[4].prov, "tmdb"); strcpy(provider[4].type, "series");
+    mixed.sources = provider; mixed.nSources = 5; collection = &mixed;
+    abaRotulos(labels, 5);
     assert(strstr(labels[0], "Filmes"));
     assert(strstr(labels[1], "Séries"));
     assert(strstr(labels[2], "Séries"));
     assert(strstr(labels[3], "Séries"));
-    { char vitLabels[4][180]; rotulosAbas(vitLabels);
+    assert(strstr(labels[4], "Séries"));
+    { char vitLabels[5][180]; rotulosAbas(vitLabels);
       assert(strstr(vitLabels[0], "Filmes"));
       assert(strstr(vitLabels[1], "Séries"));
-      assert(strstr(vitLabels[2], "Séries")); }
-    assert(doisTipos() && !abaSerie(0) && abaSerie(1));
+      assert(strstr(vitLabels[2], "Séries"));
+      assert(strstr(vitLabels[4], "Séries")); }
+    assert(doisTipos() && !abaSerie(0) && abaSerie(1) && abaSerie(4));
     collection = &pasta;
   }
 
