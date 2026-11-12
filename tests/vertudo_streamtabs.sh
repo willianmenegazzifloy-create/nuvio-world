@@ -47,7 +47,7 @@ static void col_nome_fonte(const ColSource *s, const char *m, char *dst, unsigne
 static const char *desc_nome_catalogo(const char *b, const char *t, const char *c)
   { (void)b; (void)t; (void)c; return ""; }
 static const char *baseDaFonte(const ColSource *s) { (void)s; return ""; }
-''' + function('abaSerie') + function('doisTipos') + function('abaRotulos') + function('abaRolRecentrar') + function('abaFade') + \
+''' + function('abaSerie') + function('doisTipos') + function('rotulosAbas') + function('abaRotulos') + function('abaRolRecentrar') + function('abaFade') + \
     function('abasCapsulaAtualizar') + '''
 int main(void) {
   ColSource fs[4]; ColFolder pasta;
@@ -90,6 +90,10 @@ int main(void) {
     assert(strstr(labels[1], "Séries"));
     assert(strstr(labels[2], "Séries"));
     assert(strstr(labels[3], "Séries"));
+    { char vitLabels[4][180]; rotulosAbas(vitLabels);
+      assert(strstr(vitLabels[0], "Filmes"));
+      assert(strstr(vitLabels[1], "Séries"));
+      assert(strstr(vitLabels[2], "Séries")); }
     assert(doisTipos() && !abaSerie(0) && abaSerie(1));
     collection = &pasta;
   }
