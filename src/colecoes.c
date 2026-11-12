@@ -661,8 +661,13 @@ static int lerColecaoWeb(const char *c, const char *ce) {
       v->forma = col_forma_texto(forma); }
     { char b[8];
       if (js_bruto(p, pe, "focusGifEnabled", b, sizeof b) && strstr(b, "false")) v->focusGif[0] = 0; }
-    const char *src = js_array(p, pe, "sources");
-    if (!src) src = js_array(p, pe, "catalogSources");
+    // catalogSources e a lista explicita de catalogos Stremio da pasta.
+    // Quando existe e nao esta vazia, ela vence sources: este ultimo campo
+    // tambem pode conter fontes TMDB/Trakt do editor, que nao sao catalogos
+    // fornecidos por addons. Se catalogSources estiver ausente/vazio, usa
+    // sources para manter compatibilidade com colecoes antigas.
+    const char *src = js_array(p, pe, "catalogSources");
+    if (!src || *src == ']') src = js_array(p, pe, "sources");
     for (const char *s = src, *se = NULL; s && v->nSources < COL_SOURCE_MAX; s = js_prox(se)) {
       se = js_fim(s); ColSource *a = &v->sources[v->nSources]; char prov[16] = "";
       memset(a, 0, sizeof *a);
