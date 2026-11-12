@@ -127,6 +127,10 @@ unsigned col_revisao(void);
 // A complete account snapshot was accepted for this profile, even when empty.
 int col_tem_conta(void);
 const ColFolder *col_folder(int i);
+// Normaliza a classificação de mídia dos provedores TMDB/Trakt e das fontes addon.
+// Aceita TV/SERIES/SHOW e variantes em minúsculas; fonte addon usa `type`.
+int col_midia_e_serie(const char *midia);
+int col_fonte_e_serie(const ColSource *fonte);
 // IMPRESSAO DA ESTRUTURA das colecoes para o snapshot da Home (homeestado.c):
 // grupo, id e fontes de cada pasta, SEM arte (URL de arte muda sem criar
 // fileira nova). Calculada inteira sob a trava das colecoes (#203): pode ser
