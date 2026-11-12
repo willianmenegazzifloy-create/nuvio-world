@@ -14,9 +14,10 @@ int main(void) {
   assert(nlanc_data_futura("2026-11-13", hoje));
   assert(!nlanc_data_futura("2026-11-12", hoje));
   assert(!nlanc_data_futura("2026-11-11", hoje));
+  assert(nlanc_data_futura("2026-11-13T00:00:00Z", hoje));
+  assert(!nlanc_data_futura("2026-11-12T00:00:00Z", hoje));
   assert(nlanc_futuro("2026-12-01", "2026", hoje, 2026));
   assert(nlanc_futuro("2027-01-01", "2027", hoje, 2026));
-  assert(nlanc_futuro("2026-12-01", "2026", hoje, 2026));
   assert(!nlanc_futuro("", "2026", hoje, 2026));
   assert(nlanc_futuro("", "2027", hoje, 2026));
   assert(!nlanc_futuro("", "2025", hoje, 2026));
