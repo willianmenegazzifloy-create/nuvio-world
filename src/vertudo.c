@@ -1286,6 +1286,76 @@ static CatItem *vitItem(int r, int c) {
   int i = vitVis[r][c];
   return i < vitCap ? &vitBuf[r * vitCap + i] : &vitExtra[r][i - vitCap];
 }
+
+// A Vitrine da coleção também recebe cache antecipado. Cada fonte publica a
+// própria fileira; pedimos uma arte por intervalo, sem disputar com o cartaz
+// focado, e limitamos o lote para não baixar toda a biblioteca de uma vez.
+#define VIT_CACHE_AQUECER_MAX 24
+#define VIT_CACHE_AQUECER_POR_LINHA 8
+#define VIT_CACHE_AQUECER_INTERVALO_MS 110
+static unsigned long vitCacheHashes[VIT_CACHE_AQUECER_MAX];
+static int vitCacheHashN, vitCacheLinha, vitCacheColuna, vitCacheN;
+static Uint32 vitCacheProximo;
+
+static unsigned long vitCacheHash(const char *s) {
+  unsigned long h = 2166136261UL;
+  if (!s) return 0;
+  while (*s) { h ^= (unsigned char)*s++; h *= 16777619UL; }
+  return h ? h : 1;
+}
+static int vitCacheJaPediu(const char *url) {
+  unsigned long h;
+  if (!url || !*url) return 1;
+  h = vitCacheHash(url);
+  for (int i = 0; i < vitCacheHashN; i++)
+    if (vitCacheHashes[i] == h) return 1;
+  if (vitCacheHashN < VIT_CACHE_AQUECER_MAX)
+    vitCacheHashes[vitCacheHashN++] = h;
+  return 0;
+}
+static int vitCachePedirURL(const char *url, Uint32 agora) {
+  if (!url || !*url || vitCacheN >= VIT_CACHE_AQUECER_MAX ||
+      vitCacheJaPediu(url)) return 0;
+  (void)tex_arquivo(url);
+  vitCacheN++;
+  vitCacheProximo = agora + VIT_CACHE_AQUECER_INTERVALO_MS;
+  if (vitCacheN == VIT_CACHE_AQUECER_MAX) {
+    printf("[vertudo-cache] aquecimento da coleção: %d cartazes solicitados\\n", vitCacheN);
+    fflush(stdout);
+  }
+  return 1;
+}
+static void vitCacheRecomecarVarredura(void) {
+  if (vitCacheN >= VIT_CACHE_AQUECER_MAX) return;
+  vitCacheLinha = vitCacheColuna = 0;
+}
+static void vitCacheReiniciar(void) {
+  memset(vitCacheHashes, 0, sizeof vitCacheHashes);
+  vitCacheHashN = vitCacheLinha = vitCacheColuna = vitCacheN = 0;
+  vitCacheProximo = 0;
+}
+static void vitCachePrecarregarPasso(Uint32 agora) {
+  if (!vitMulti || lay != VT_LAY_VITRINE || !vitBuf || !collection ||
+      vitCacheN >= VIT_CACHE_AQUECER_MAX) return;
+  if (vitCacheProximo && (Sint32)(agora - vitCacheProximo) < 0) return;
+  // O foco segue usando tex_obter_foco_larg, que entra na frente da fila.
+  // Aqui só aquecemos os vizinhos de cada fileira pronta.
+  for (int tentativas = 0; tentativas < 48 && vitCacheLinha < vitN; tentativas++) {
+    int r = vitCacheLinha;
+    if (vitLin[r].estado != VIT_PRONTA || vitLin[r].semFonte) {
+      vitCacheLinha++; vitCacheColuna = 0; continue;
+    }
+    if (vitCacheColuna >= vitLin[r].n ||
+        vitCacheColuna >= VIT_CACHE_AQUECER_POR_LINHA) {
+      vitCacheLinha++; vitCacheColuna = 0; continue;
+    }
+    CatItem *it = vitItem(r, vitCacheColuna++);
+    if (!it) continue;
+    const char *poster = posterprov_card_addon(it->origem, it->imdb, it->tmdb,
+                                                it->tipo, it->poster);
+    if (vitCachePedirURL(poster, agora)) return;
+  }
+}
 static CatItem *vitChave(int k) { return k < 0 ? NULL : vitItem(k / vitCap, k % vitCap); }
 static int vitTemVerTudo(int r) { return r >= 0 && r < vitN && vitLin[r].n > 0 && !vitLin[r].semFonte; }
 static int vitColunas(int r) { return vitLin[r].n + vitTemVerTudo(r); }
