@@ -3,6 +3,7 @@
 // cancela. A lista mostra valor e chevron, a ficha explica alcance e padrao.
 // IDs, chaves persistidas e indices de valores continuam os legados.
 #include "ajustes.h"
+#include "configtransfer.h"
 #include "menu.h"
 #include "logrede.h"
 #include "jsw.h"
@@ -711,6 +712,10 @@ typedef enum {
   AJ_MENU_TOPO_ORDEM, // packed permutation of top navigation destinations; profile-local
   AJ_MENU_TOPO_FIXO, // keep top menu visible on Home; profile-local
   AJ_MENU_TOPO_FOCO_EXPANDIDO, // enlarge menu while focused; profile-local
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+  AJ_CONFIG_EXPORTAR, AJ_CONFIG_IMPORTAR,
+#endif
+  AJ_CONFIG_COPIAR,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -1843,6 +1848,11 @@ static const Opcao OPCOES[AJ_N] = {
   ACAO("Ordem do menu superior"),
   ESC("Manter Menu Topo fixo", V_LIGA, 2),
   ESC("Foco Expandido no Menu de topo", V_LIGA, 2),
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+  ACAO("Exportar configurações"),
+  ACAO("Importar configurações"),
+#endif
+  ACAO("Copiar configurações de outro perfil"),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2172,6 +2182,10 @@ static const char *CHAVE[] = {
   "menuTopoOrdemLocal",
   "menuTopoFixoLocal",
   "menuTopoFocoExpandidoLocal",
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+  "-configExportar", "-configImportar",
+#endif
+  "-configCopiar",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -2536,6 +2550,7 @@ void ajustes_log_vazar_tudo(void) { ajlog_vazar_tudo(); }
 // Pedido de abrir a lista de addons, lido e zerado pelo app.c. A tela nao e
 // aberta daqui porque quem troca de tela e o app.c — ajustes.c nao conhece as
 // outras telas, e ganhar essa dependencia agora era o comeco de um no.
+static int configCopiaPendente;
 static int pediuAddons;
 int ajustes_pediu_addons(void) { int v = pediuAddons; pediuAddons = 0; return v; }
 static int pediuPlugins;
@@ -7863,6 +7878,12 @@ static const char *ajudaOpcaoBase(int op) {
 #ifdef NV_ANDROID
     case AJ_BAIXAR_REGISTRO: return "Salva o registro desta sessão em um arquivo de texto, sem senhas nem chaves.";
 #endif
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+    case AJ_CONFIG_EXPORTAR: return "Salva as preferências em um arquivo JSON. Senhas, tokens, chaves e credenciais não entram no pacote.";
+    case AJ_CONFIG_IMPORTAR: return "Importa um pacote JSON de preferências e aplica ao perfil atual. Reinicie o Nuvio depois da importação.";
+#endif
+    case AJ_CONFIG_COPIAR: return "Copia a interface, Collections, reprodução e filtros de outro perfil para o perfil atual, sem copiar credenciais.";
+
     case AJ_MEDIDOR: return "Mostra quadros por segundo, o pior quadro e a memória dentro da ilha do relógio, atualizados a cada 3 s. Mínimo fica na linha da hora, Menor ganha uma segunda linha e Grande abre o painel completo. Quando a ilha mostra um aviso, o medidor se recolhe e volta depois.";
     case AJ_AVISO_LEGAL: return "Aviso legal";
     case AJ_GUIA: return "O que o Nuvio faz, em 12 capítulos. Cada recurso diz onde fica e tem um atalho para ele.";
@@ -9616,6 +9637,29 @@ static void eventoTela(const SDL_Event *e) {
       return;
     }
 #endif
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+    if (focoOp == AJ_CONFIG_EXPORTAR) { configtransfer_pedir_exportacao(); return; }
+    if (focoOp == AJ_CONFIG_IMPORTAR) { configtransfer_pedir_importacao(); return; }
+#endif
+    if (focoOp == AJ_CONFIG_COPIAR) {
+      static char dica[180];
+      size_t p = 0;
+      int n = perfis_n();
+      for (int i = 0; i < n && i < CONTA_PERFIL_MAX; i++) {
+        const ContaPerfil *perfil = perfis_item(i);
+        if (!perfil || perfil->temPin) continue;
+        p += (size_t)snprintf(dica + p, sizeof dica - p, "%s%d: %s",
+          p ? " · " : "Perfis: ", perfil->indice, perfil->nome);
+        if (p >= sizeof dica) { p = sizeof dica - 1; break; }
+      }
+      if (!p) snprintf(dica, sizeof dica, "%s", "Não há outro perfil disponível sem PIN.");
+      configCopiaPendente = p != 0 && n > 1;
+      if (configCopiaPendente)
+        teclado_abrir_com("Copiar configurações", dica, 1, "12345678", NULL);
+      else configtransfer_notificar(0, 2);
+      return;
+    }
+
     if (focoOp == AJ_GUIA) { guiaAbrir(0); return; }
     if (focoOp == AJ_DICASCONTROLE) { pediuDicasControle = 1; return; }
     if (focoOp == AJ_NOVIDADES20) { pediuNovidades20 = 1; return; }
