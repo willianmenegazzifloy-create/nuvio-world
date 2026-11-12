@@ -797,7 +797,8 @@ static const char *cacheMetadataLanguage(void) {
 // Version 8 adds per-source Saved membership, including builds where padding
 // keeps sizeof(CatItem) unchanged. Old shared marks cannot identify a source.
 // Version 9 records metadata language: cached poster URLs are localized too.
-#define CACHE_VERSAO 9
+// Version 10 stores the full ISO release date in CatItem.
+#define CACHE_VERSAO 10
 // Mesmo cabecalho, itens CODIFICADOS (zeros em corrida). Um CatItem tem ~16 KB
 // e quase tudo e zero (buffers de URL dimensionados para o pior caso): 1600
 // titulos eram 25,6 MB gravados na MEMFS dentro da trava do sistema de arquivos
