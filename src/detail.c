@@ -3674,7 +3674,7 @@ static void detail_atualizar_(float dt, Uint32 agora) {
     if (toquerol_livre(&toqueColecao)) { colListaScroll = toquerol_clamp(colListaScroll, 0, maxY); colListaVel = 0; }
     else
 #endif
-    colListaScroll = anim_mola2(&colListaVel, colListaScroll, alvo, dt, NV_MOLA2_SCROLL);
+    colListaScroll = anim_mola2(&colListaVel, colListaScroll, alvo, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
   }
   trocaarte_atualizar(dt);
   // OK NA TELA DE ESCOLHA: a arte congelada na abertura (arteFixa/logoFixo)
@@ -4053,7 +4053,7 @@ static void detail_atualizar_(float dt, Uint32 agora) {
 #ifdef NV_TOUCH_UI
       if (!toquerol_livre(&toqueSec[r]))
 #endif
-      scrollSec[r] = anim_mola2(&velSec[r], scrollSec[r], alvo, dt, NV_MOLA2_SCROLL);
+      scrollSec[r] = anim_mola2(&velSec[r], scrollSec[r], alvo, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
     }
     // A fileira de episodios rola ATRAS da aba de temporada mesmo sem o foco:
     // e o que da ao seletor a resposta visual que ele perdeu ao deixar de
@@ -4067,7 +4067,7 @@ static void detail_atualizar_(float dt, Uint32 agora) {
       if (ax < 0.0f) ax = 0.0f;
       scrollSec[SEC_EPISODIOS] = anim_mola2(&velSec[SEC_EPISODIOS],
                                             scrollSec[SEC_EPISODIOS], ax, dt,
-                                            NV_MOLA2_SCROLL);
+                                            (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
     } }
 
   // --- rolagem VERTICAL -----------------------------------------------------
@@ -4132,7 +4132,7 @@ static void detail_atualizar_(float dt, Uint32 agora) {
   if (toquerol_livre(&toqueDetalhe)) { scrollY = toquerol_clamp(scrollY, 0, fmaxf(0, docFim - NV_TELA_H)); velY = 0; }
   else
 #endif
-  scrollY = anim_mola2(&velY, scrollY, alvoY, dt, NV_MOLA2_SCROLL);
+  scrollY = anim_mola2(&velY, scrollY, alvoY, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
 }
 
 // ---------------------------------------------------------------------------
