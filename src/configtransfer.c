@@ -21,6 +21,7 @@
 #define CT_MAX_ITENS 6
 
 typedef struct { char nome[64]; char *conteudo; } CtItem;
+static int apagarSeExiste(const char *nome);
 
 static void aplicarPerfilAtual(int perfil) {
   ajustes_perfil_restaurar(perfil);
@@ -125,15 +126,15 @@ int configtransfer_importar(const char *caminho) {
   json[tamanho] = 0; fclose(f); f = NULL;
   fim = js_fim(json);
   { char formato[32];
-    const char *v = strstr(json, "\\"version\\"");
-    const char *fch = strstr(json, "\\"files\\"");
+    const char *v = strstr(json, "\"version\"");
+    const char *fch = strstr(json, "\"files\"");
     if (!fim || !js_texto_raiz(json, "format", formato, sizeof formato) ||
         strcmp(formato, "nuvio-settings") || !v || !fch || v > fch) goto fim;
     v = strchr(v, ':');
     if (!v) goto fim;
     v++;
-    while (*v == ' ' || *v == '\\t') v++;
-    if (*v != '1' || (v[1] != ',' && v[1] != ' ' && v[1] != '\\n' && v[1] != '\\r' && v[1] != '}')) goto fim;
+    while (*v == ' ' || *v == '\t') v++;
+    if (*v != '1' || (v[1] != ',' && v[1] != ' ' && v[1] != '\n' && v[1] != '\r' && v[1] != '}')) goto fim;
   }
   arr = js_array(json, fim, "files");
   if (!arr) goto fim;
