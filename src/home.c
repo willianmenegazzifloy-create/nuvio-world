@@ -8223,7 +8223,10 @@ static void home_desenhar_(Uint32 agora) {
           // Pede pela largura REAL do card: e esta fileira que multiplica.
           // Com o teto unico de 640 cada poster custava 2,4 MB e o cache
           // estourava com ~40 texturas, despejando o que ainda estava na tela.
-          GLuint t = caminho ? tex_obter_larg(caminho, tipo == FILEIRA_PALCO ? lw : w) : 0;
+          int cartaoEmFoco = !focoHero && focus_indice(&foco, r, c);
+          GLuint t = caminho ? (cartaoEmFoco
+            ? tex_obter_foco_larg(caminho, tipo == FILEIRA_PALCO ? lw : w)
+            : tex_obter_larg(caminho, tipo == FILEIRA_PALCO ? lw : w)) : 0;
           // ARTE CHEGANDO: so esvanece quem foi visto esperando (revela.h).
           float aArte = revela_arte(&revArte[r][c], t != 0, agora);
           // ANEL DE FOCO: 4 px de #FFFFFF, POR FORA da arte.
