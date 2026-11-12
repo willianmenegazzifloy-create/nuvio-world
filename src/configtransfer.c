@@ -230,7 +230,7 @@ EM_JS(void, ct_browser_importar, (), {
   input.click();
 });
 EM_JS(void, ct_browser_notificar, (int ok, int tipo), {
-  var msg = !ok ? "Não foi possível aplicar as configurações. Verifique o arquivo e tente novamente."
+  var msg = !ok ? (tipo === 3 ? "Não foi possível exportar as configurações." : "Não foi possível aplicar as configurações. Verifique o arquivo e tente novamente.")
     : (tipo === 1 ? "Configurações importadas. Reinicie o Nuvio para aplicar."
        : "Configurações copiadas. Reinicie o Nuvio para aplicar.");
   alert(msg);
@@ -255,7 +255,7 @@ void configtransfer_notificar(int sucesso, int tipo) {
 void configtransfer_pedir_exportacao(void) {
   char caminho[600];
   if (!configtransfer_exportar(caminho, sizeof caminho)) {
-    configtransfer_notificar(0, 1);
+    configtransfer_notificar(0, 3);
     return;
   }
 #ifdef NV_ANDROID
@@ -263,7 +263,7 @@ void configtransfer_pedir_exportacao(void) {
 #elif defined(__EMSCRIPTEN__)
   ct_browser_exportar(caminho);
 #else
-  configtransfer_notificar(0, 1);
+  configtransfer_notificar(0, 3);
 #endif
 }
 
