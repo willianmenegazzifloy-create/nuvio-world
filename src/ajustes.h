@@ -417,8 +417,8 @@ void  ajustes_area_conteudo(float padEsq, float padDir, float *x, float *w);
 int   ajustes_rotulos_poster(void);     // posterLabelsEnabled
 int   ajustes_nome_addon(void);         // catalogAddonNameEnabled
 int   ajustes_sufixo_tipo(void);        // catalogTypeSuffixEnabled
-int   ajustes_ocultar_nao_lancados(void);   // hideUnreleasedContent
-void  ajustes_definir_ocultar_nao_lancados(int ligado);
+int   ajustes_ocultar_nao_lancados(void);   // legado: sempre ligado
+void  ajustes_definir_ocultar_nao_lancados(int ligado); // legado: ignorado
 int   ajustes_data_completa(void);      // showFullReleaseDate
 // Onde o "+" escreve. 1 = tambem na watchlist do Trakt, 0 = so na lista local
 // desta TV. LOCAL: nao existe campo equivalente no perfil da conta, entao a
