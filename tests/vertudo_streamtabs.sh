@@ -84,7 +84,7 @@ int main(void) {
     strcpy(provider[1].title, "Latest"); strcpy(provider[1].prov, "tmdb"); strcpy(provider[1].midia, "SERIES");
     strcpy(provider[2].title, "Popular"); strcpy(provider[2].prov, "trakt"); strcpy(provider[2].midia, "tv");
     strcpy(provider[3].title, "Popular"); strcpy(provider[3].type, "series");
-    strcpy(provider[4].title, "Legacy TV"); strcpy(provider[4].prov, "tmdb"); strcpy(provider[4].type, "series");
+    strcpy(provider[4].title, "Latest"); strcpy(provider[4].prov, "tmdb"); strcpy(provider[4].type, "series");
     mixed.sources = provider; mixed.nSources = 5; collection = &mixed;
     abaRotulos(labels, 5);
     assert(strstr(labels[0], "Filmes"));
