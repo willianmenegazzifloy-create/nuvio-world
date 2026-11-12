@@ -30,7 +30,7 @@ typedef struct {
   char ordem[8];       // sort_how do Trakt: "asc" | "desc"
   long traktLista;     // id da lista no Trakt
   char filtros[384];   // objeto "filters" cru; o montador da URL traduz
-  /* 1 nas fontes TMDB das pastas Descobrir / Novos Filmes e Novas Séries:
+  /* 1 nas fontes TMDB das pastas Novos Filmes e Novas Séries:
      limita a consulta ao dia atual para nao mostrar titulos futuros. */
   int somenteLancados;
 } ColSource;
