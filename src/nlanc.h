@@ -34,15 +34,22 @@ static inline int nlanc_data_futura(const char *data, const char *hoje) {
 }
 
 // Fallback para fontes que so enviam o ano (por exemplo, listas do Trakt).
+static inline int nlanc_meta_tem_ano(const char *meta) {
+  if (!meta) return 0;
+  for (int i = 0; i < 4; i++)
+    if (meta[i] < '0' || meta[i] > '9') return 0;
+  return !(meta[4] >= '0' && meta[4] <= '9');
+}
 static inline int nlanc_meta_futuro(const char *meta, int anoAtual) {
   int ano = 0;
-  if (!meta) return 0;
-  for (int i = 0; i < 4; i++) {
-    if (meta[i] < '0' || meta[i] > '9') return 0;
-    ano = ano * 10 + (meta[i] - '0');
-  }
-  if (meta[4] >= '0' && meta[4] <= '9') return 0;
+  if (!nlanc_meta_tem_ano(meta)) return 0;
+  for (int i = 0; i < 4; i++) ano = ano * 10 + (meta[i] - '0');
   return ano > anoAtual;
+}
+
+// TMDB/Trakt sem data ou ano nao permitem provar que o titulo ja estreou.
+static inline int nlanc_tem_info(const char *data, const char *meta) {
+  return nlanc_iso_valida(data) || nlanc_meta_tem_ano(meta);
 }
 
 static inline int nlanc_futuro(const char *data, const char *meta,
