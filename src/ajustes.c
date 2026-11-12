@@ -716,6 +716,7 @@ typedef enum {
   AJ_CONFIG_EXPORTAR, AJ_CONFIG_IMPORTAR,
 #endif
   AJ_CONFIG_COPIAR,
+  AJ_NAV_VELOCIDADE,
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -765,6 +766,7 @@ _Static_assert(sizeof V_FUNDO_DIN_COR / sizeof *V_FUNDO_DIN_COR == sizeof FUNDO_
                "V_FUNDO_DIN_COR: um nome por linha de FUNDO_DIN_TEMA");
 static const char *V_QUALIDADE[] = { "Automática", "4K", "1080p", "720p" };
 static const char *V_LIGA[]      = { "Ligado", "Desligado" };
+static const char *V_NAV_VELOCIDADE[] = { "Lenta", "Normal", "Rápida" };
 static const char *V_LIGA_AUTO[] = { "Ligado", "Desligado", "Automático" };
 // Estilo da fileira de formato do player; o indice e o PLR_FMT_* de ajustes.h
 // e o gravado em "plrFormatoLocal".
@@ -1853,6 +1855,7 @@ static const Opcao OPCOES[AJ_N] = {
   ACAO("Importar configurações"),
 #endif
   ACAO("Copiar configurações de outro perfil"),
+  ESC("Velocidade da navegação", V_NAV_VELOCIDADE, 3),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2186,6 +2189,7 @@ static const char *CHAVE[] = {
   "-configExportar", "-configImportar",
 #endif
   "-configCopiar",
+  "navVelocidadeLocal",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -3815,6 +3819,11 @@ int ajustes_meta_so_cinemeta(void)    { return lig(AJ_DET_SO_CINEMETA); }
 int   ajustes_expandir_poster(void)   { return lig(AJ_EXPANDIR); }
 float ajustes_expandir_poster_atraso(void) { return (float)valor[AJ_EXPANDIR_ATRASO]; }
 int   ajustes_navegacao_horizontal_rapida(void) { return lig(AJ_NAV_RAPIDA); }
+float ajustes_navegacao_velocidade(void) {
+  static const float fator[] = { 0.72f, 1.0f, 1.22f };
+  int v = valor[AJ_NAV_VELOCIDADE];
+  return v >= 0 && v < 3 ? fator[v] : 1.0f;
+}
 int   ajustes_borda_foco(void) { return lig(AJ_BORDA_FOCO); }
 
 int   ajustes_profundidade(void)      { return lig(AJ_PROF); }
@@ -7883,6 +7892,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_CONFIG_IMPORTAR: return "Importa um pacote JSON de preferências e aplica ao perfil atual. Reinicie o Nuvio depois da importação.";
 #endif
     case AJ_CONFIG_COPIAR: return "Copia a interface, Collections, reprodução e filtros de outro perfil para o perfil atual, sem copiar credenciais.";
+    case AJ_NAV_VELOCIDADE: return "Ajusta a velocidade do movimento entre cartazes e fileiras. Lenta reduz o deslize; Rápida acelera a navegação.";
 
     case AJ_MEDIDOR: return "Mostra quadros por segundo, o pior quadro e a memória dentro da ilha do relógio, atualizados a cada 3 s. Mínimo fica na linha da hora, Menor ganha uma segunda linha e Grande abre o painel completo. Quando a ilha mostra um aviso, o medidor se recolhe e volta depois.";
     case AJ_AVISO_LEGAL: return "Aviso legal";
@@ -10608,7 +10618,7 @@ static AjPreview familiaPreviaOpcao(int op) {
     case AJ_TRAILER_AUDIO:
       return AJPV_DETALHE;
     case AJ_EXPANDIR: case AJ_EXPANDIR_ATRASO: case AJ_NAV_RAPIDA:
-    case AJ_BORDA_FOCO:
+    case AJ_NAV_VELOCIDADE: case AJ_BORDA_FOCO:
       return AJPV_FOCO;
     case AJ_PROF: case AJ_PROF_BORDA: case AJ_PROF_BRILHO:
     case AJ_PROF_COBERTURA: case AJ_PROF_POSTERS: case AJ_PROF_CW:
