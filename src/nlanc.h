@@ -52,6 +52,23 @@ static inline int nlanc_tem_info(const char *data, const char *meta) {
   return nlanc_iso_valida(data) || nlanc_meta_tem_ano(meta);
 }
 
+/* Prefere a data autoritativa da fonte; releaseInfo continua sendo o fallback
+   visual quando tambem carrega uma data ISO completa. */
+static inline int nlanc_data_escolher(char *dst, size_t tam,
+                                      const char *released,
+                                      const char *firstAired,
+                                      const char *releaseInfo) {
+  const char *escolhida = NULL;
+  if (!dst || !tam) return 0;
+  dst[0] = 0;
+  if (nlanc_iso_valida(released)) escolhida = released;
+  else if (nlanc_iso_valida(firstAired)) escolhida = firstAired;
+  else if (nlanc_iso_valida(releaseInfo)) escolhida = releaseInfo;
+  if (!escolhida || tam < 11) return 0;
+  snprintf(dst, tam, "%.10s", escolhida);
+  return 1;
+}
+
 static inline int nlanc_futuro(const char *data, const char *meta,
                                const char *hoje, int anoAtual) {
   if (nlanc_iso_valida(data) && nlanc_iso_valida(hoje))
