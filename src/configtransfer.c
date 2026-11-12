@@ -2,6 +2,8 @@
 #include "dados.h"
 #include "ajustes.h"
 #include "perfis.h"
+#include "fileiras.h"
+#include "player.h"
 #include "js.h"
 #include "jsw.h"
 #ifdef NV_ANDROID
@@ -19,6 +21,12 @@
 #define CT_MAX_ITENS 6
 
 typedef struct { char nome[64]; char *conteudo; } CtItem;
+
+static void aplicarPerfilAtual(int perfil) {
+  ajustes_perfil_restaurar(perfil);
+  fil_definir_perfil(perfil);
+  fil_recarregar();
+}
 
 static int perfilAtual(void) {
   int p = perfis_ativo();
@@ -148,6 +156,12 @@ int configtransfer_importar(const char *caminho) {
       : dados_apagar(itens[k].nome);
     if (!gravou) goto fim;
   }
+  // Recarrega valores e caches em memoria para que uma gravacao posterior
+  // nao sobrescreva o pacote importado com o estado antigo da sessao.
+  ajustes_dir(dados_dir());
+  aplicarPerfilAtual(perfil);
+  player_dir(dados_dir());
+  player_leg_estilo_carregar();
   printf("[config] preferencias importadas para o perfil %d; reinicie o app para aplicar\n", perfil);
   ok = 1;
 fim:
@@ -174,6 +188,7 @@ int configtransfer_copiar_perfil(int origem, int destino) {
   if (!copiar(a, b)) return 0;
   nomePerfil(a, sizeof a, "fileirasui", origem); nomePerfil(b, sizeof b, "fileirasui", destino);
   if (!copiar(a, b)) return 0;
+  if (destino == perfilAtual()) aplicarPerfilAtual(destino);
   printf("[config] preferencias do perfil %d copiadas para %d; reinicie o app para aplicar\n", origem, destino);
   return 1;
 }
