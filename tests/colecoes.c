@@ -82,6 +82,20 @@ int main(void) {
   assert(col_folder(2)->sources[0].somenteLancados == 0);
   puts("ok  filtro de lancamentos futuros segue o nome da pasta, sem depender do grupo; mídia SERIES normalizada");
 
+  // As subdivisoes das categorias especiais mantem o limite de estreia.
+  const char *subdivisoes =
+    "{\"collections\":[{\"id\":\"d2\",\"title\":\"Categorias\",\"folders\":["
+    "{\"id\":\"a\",\"title\":\"Novos Filmes de Ação\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
+    "{\"id\":\"b\",\"title\":\"New Movies - Drama\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
+    "{\"id\":\"c\",\"title\":\"New Films\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
+    "{\"id\":\"d\",\"title\":\"Novas Séries de Drama\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"SERIES\"}]},"
+    "{\"id\":\"e\",\"title\":\"New Series - Crime\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"SERIES\"}]},"
+    "{\"id\":\"f\",\"title\":\"Filmes em Alta\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]}]}]}";
+  assert(col_definir_json(subdivisoes) == 6);
+  for (int i = 0; i < 5; i++) assert(col_folder(i)->sources[0].somenteLancados == 1);
+  assert(col_folder(5)->sources[0].somenteLancados == 0);
+  puts("ok  todas as subdivisoes New Movies/New Films/New Series preservam data-limite");
+
   // A capacidade real usada pela collection do usuario: 249 pastas numa
   // fileira e ate 52 fontes dentro de uma pasta (o codigo antigo parava em 32).
   {
