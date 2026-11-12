@@ -11,6 +11,22 @@
 #include <strings.h>
 #include <unistd.h>
 #include <pthread.h>
+
+// O editor web já enviou "TV", mas versões e integrações também podem usar
+// "SERIES", "series" ou "show". Todos precisam seguir o mesmo endpoint e rótulo.
+int col_midia_e_serie(const char *midia) {
+  return midia && (!strcasecmp(midia, "TV") ||
+                   !strcasecmp(midia, "SERIES") ||
+                   !strcasecmp(midia, "SERIE") ||
+                   !strcasecmp(midia, "SHOW") ||
+                   !strcasecmp(midia, "SHOWS") ||
+                   !strcasecmp(midia, "TV_SHOW") ||
+                   !strcasecmp(midia, "TV-SHOW"));
+}
+int col_fonte_e_serie(const ColSource *fonte) {
+  if (!fonte) return 0;
+  return col_midia_e_serie(fonte->prov[0] ? fonte->midia : fonte->type);
+}
 static pthread_mutex_t colTrava = PTHREAD_MUTEX_INITIALIZER;
 // PASTAS EM BLOCOS (#255). Um bloco de 64 so e alocado quando a montagem chega
 // nele, e nunca e devolvido: col_folder entrega o ENDERECO da pasta, e quem o
@@ -605,15 +621,15 @@ static char fPrimeiraPulada[128];
 // Os dois catalogos de descoberta precisam mostrar somente titulos cuja
 // data de lancamento/primeira exibicao ja chegou. O sinal e colocado em cada
 // fonte TMDB da pasta, sem alterar outras consultas DISCOVER da collection.
-static int pastaDescobertaSomenteLancados(const char *grupo, const char *pasta) {
-  int descobrir = grupo && (!strcasecmp(grupo, "Descobrir") ||
-                            !strcasecmp(grupo, "Discover"));
+static int pastaDescobertaSomenteLancados(const char *pasta) {
+  // A pasta pode estar em outro grupo, ou o grupo ter sido renomeado no web.
+  // A semântica pertence ao nome da categoria, não ao rótulo do agrupamento.
   int novosFilmes = pasta && (!strcasecmp(pasta, "Novos Filmes") ||
                               !strcasecmp(pasta, "New Movies"));
   int novasSeries = pasta && (!strcasecmp(pasta, "Novas Séries") ||
                               !strcasecmp(pasta, "Novas Series") ||
                               !strcasecmp(pasta, "New Series"));
-  return descobrir && (novosFilmes || novasSeries);
+  return novosFilmes || novasSeries;
 }
 
 // Devolve 0 quando a colecao NAO COUBE (teto de pastas, de fontes ou falta de
@@ -632,7 +648,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     snprintf(v->group, sizeof v->group, "%s", group);
     snprintf(v->groupId, sizeof v->groupId, "%s", groupId);
     js_texto_raiz_em(p, pe, "id", v->id, sizeof v->id); js_texto_raiz_em(p, pe, "title", v->title, sizeof v->title);
-    int somenteLancados = pastaDescobertaSomenteLancados(group, v->title);
+    int somenteLancados = pastaDescobertaSomenteLancados(v->title);
     js_texto(p, pe, "coverImageUrl", v->cover, sizeof v->cover);
     js_texto(p, pe, "heroBackdropUrl", v->hero, sizeof v->hero);
     snprintf(v->groupBackdrop, sizeof v->groupBackdrop, "%s", fundo);
