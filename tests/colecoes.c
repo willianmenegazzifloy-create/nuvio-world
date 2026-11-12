@@ -96,6 +96,34 @@ int main(void) {
   assert(col_folder(5)->sources[0].somenteLancados == 0);
   puts("ok  todas as subdivisoes New Movies/New Films/New Series preservam data-limite");
 
+  // Semantica das fontes TMDB como no NuvioTV 1.1.0:
+  // LIST preserva tipos reais; COLLECTION e filme; NETWORK e serie;
+  // DISCOVER/PERSON/DIRECTOR seguem mediaType.
+  {
+    ColSource src; memset(&src, 0, sizeof src);
+    strcpy(src.prov, "tmdb"); strcpy(src.tmdbTipo, "LIST"); strcpy(src.midia, "TV");
+    assert(!strcmp(col_tmdb_tipo_padrao(&src), "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&src, "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&src, "series"));
+    strcpy(src.tmdbTipo, "COLLECTION");
+    assert(!strcmp(col_tmdb_tipo_padrao(&src), "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&src, "movie"));
+    assert(!col_tmdb_fonte_aceita_tipo(&src, "series"));
+    strcpy(src.tmdbTipo, "NETWORK"); strcpy(src.midia, "MOVIE");
+    assert(!strcmp(col_tmdb_tipo_padrao(&src), "series"));
+    assert(col_tmdb_fonte_aceita_tipo(&src, "series"));
+    assert(!col_tmdb_fonte_aceita_tipo(&src, "movie"));
+    strcpy(src.tmdbTipo, "PERSON"); strcpy(src.midia, "SERIES");
+    assert(!strcmp(col_tmdb_tipo_padrao(&src), "series"));
+    assert(col_tmdb_fonte_aceita_tipo(&src, "series"));
+    assert(!col_tmdb_fonte_aceita_tipo(&src, "movie"));
+    strcpy(src.tmdbTipo, "DISCOVER"); strcpy(src.midia, "MOVIE");
+    assert(!strcmp(col_tmdb_tipo_padrao(&src), "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&src, "movie"));
+    assert(!col_tmdb_fonte_aceita_tipo(&src, "series"));
+  }
+  puts("ok  tipos TMDB seguem LIST misto, COLLECTION movie, NETWORK series e mediaType");
+
   // A capacidade real usada pela collection do usuario: 249 pastas numa
   // fileira e ate 52 fontes dentro de uma pasta (o codigo antigo parava em 32).
   {
