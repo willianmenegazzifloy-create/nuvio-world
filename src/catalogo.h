@@ -58,6 +58,7 @@ typedef struct {
   char titulo[160];
   char genero[160];    // "Programa de TV · Drama · Misterio"
   char meta[96];       // "2022 · 3 temporadas"
+  char dataEstreia[16]; // ISO YYYY-MM-DD; vazio quando a fonte so informa o ano
   char classificacao[8];
   char sinopse[900];
   // Elenco real: nome, papel e a foto (quando o TMDB tem). Sem isto a secao
