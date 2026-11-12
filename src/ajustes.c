@@ -1406,7 +1406,6 @@ static const Opcao OPCOES[AJ_N] = {
   ESC("Rótulos nos pôsteres",       V_LIGA, 2),   // posterLabelsEnabled
   ESC("Nome do addon no catálogo",  V_LIGA, 2),   // catalogAddonNameEnabled
   ESC("Tipo de conteúdo",           V_LIGA, 2),   // catalogTypeSuffixEnabled
-  ESC("Ocultar não lançados",       V_LIGA, 2),   // hideUnreleasedContent
   ESC("Avaliações gerais",          V_NOTAS, 2),  // homeImdbRatingsVisibility
   ESC("Gradiente de foco clássico", V_LIGA, 2),   // classicFocusGradientEnabled
 
@@ -3598,13 +3597,10 @@ int ajustes_gradiente_foco_classico(void) { return lig(AJ_GRAD_CLASSICO); }
 int ajustes_rotulos_poster(void)      { return lig(AJ_ROTULOS); }
 int ajustes_nome_addon(void)          { return lig(AJ_NOME_ADDON); }
 int ajustes_sufixo_tipo(void)         { return lig(AJ_SUFIXO_TIPO); }
-int ajustes_ocultar_nao_lancados(void){ return lig(AJ_OCULTAR_NLANC); }
-// O blob da ordem de catalogos (plataforma home_catalog_shared) traz esta mesma
-// opcao, separada do blob de ajustes do perfil. Setter proprio porque so vale
-// quando a chave EXISTE la: ausente nao e `false`, e "mantem o que esta na TV".
-void ajustes_definir_ocultar_nao_lancados(int ligado) {
-  valor[AJ_OCULTAR_NLANC] = ligado ? 0 : 1;
-}
+// Regra do produto: conteúdo ainda não lançado nunca é exibido. A chave antiga
+// continua reservada para ler perfis antigos, mas não controla mais a interface.
+int ajustes_ocultar_nao_lancados(void) { return 1; }
+void ajustes_definir_ocultar_nao_lancados(int ligado) { (void)ligado; }
 // 1 = o "+" tambem publica na watchlist do Trakt. A lista LOCAL e escrita nos
 // dois casos; ver a nota de V_SALVOS e a de abertura de salvos.h.
 int ajustes_salvos_no_trakt(void)     { return ajustes_fonte_biblioteca() == AJ_SALVOS_TRAKT; }
