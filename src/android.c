@@ -253,6 +253,63 @@ void android_limpar_cache(void) {
   if (fdArquivo >= 0) { ftruncate(fdArquivo, 0); lseek(fdArquivo, 0, SEEK_SET); }
 }
 
+void android_config_exportar(const char *arquivo) {
+  JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
+  jobject act = (jobject)SDL_AndroidGetActivity();
+  jclass cls; jmethodID m; jstring js = NULL;
+  if (!env || !act || !arquivo) return;
+  cls = (*env)->GetObjectClass(env, act);
+  m = cls ? (*env)->GetMethodID(env, cls, "exportarConfiguracoes", "(Ljava/lang/String;)V") : NULL;
+  if (m) { js = (*env)->NewStringUTF(env, arquivo); if (js) (*env)->CallVoidMethod(env, act, m, js); }
+  if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+  if (js) (*env)->DeleteLocalRef(env, js);
+  if (cls) (*env)->DeleteLocalRef(env, cls);
+  (*env)->DeleteLocalRef(env, act);
+}
+void android_config_importar(void) {
+  JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
+  jobject act = (jobject)SDL_AndroidGetActivity();
+  jclass cls; jmethodID m;
+  if (!env || !act) return;
+  cls = (*env)->GetObjectClass(env, act);
+  m = cls ? (*env)->GetMethodID(env, cls, "importarConfiguracoes", "()V") : NULL;
+  if (m) (*env)->CallVoidMethod(env, act, m);
+  if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+  if (cls) (*env)->DeleteLocalRef(env, cls);
+  (*env)->DeleteLocalRef(env, act);
+}
+int android_config_evento(char *dst, size_t n) {
+  JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
+  jobject act = (jobject)SDL_AndroidGetActivity();
+  jclass cls; jmethodID m; jstring js = NULL; int r = 0;
+  if (n) dst[0] = 0;
+  if (!env || !act) return 0;
+  cls = (*env)->GetObjectClass(env, act);
+  m = cls ? (*env)->GetMethodID(env, cls, "proximoEventoConfig", "()Ljava/lang/String;") : NULL;
+  if (m) js = (jstring)(*env)->CallObjectMethod(env, act, m);
+  if ((*env)->ExceptionCheck(env)) { (*env)->ExceptionClear(env); js = NULL; }
+  if (js) {
+    const char *s = (*env)->GetStringUTFChars(env, js, NULL);
+    if (s) { snprintf(dst, n, "%s", s); r = 1; (*env)->ReleaseStringUTFChars(env, js, s); }
+    (*env)->DeleteLocalRef(env, js);
+  }
+  if (cls) (*env)->DeleteLocalRef(env, cls);
+  (*env)->DeleteLocalRef(env, act);
+  return r;
+}
+void android_config_resultado(int sucesso, int tipo) {
+  JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
+  jobject act = (jobject)SDL_AndroidGetActivity();
+  jclass cls; jmethodID m;
+  if (!env || !act) return;
+  cls = (*env)->GetObjectClass(env, act);
+  m = cls ? (*env)->GetMethodID(env, cls, "resultadoConfiguracoes", "(ZI)V") : NULL;
+  if (m) (*env)->CallVoidMethod(env, act, m, sucesso ? JNI_TRUE : JNI_FALSE, (jint)tipo);
+  if ((*env)->ExceptionCheck(env)) (*env)->ExceptionClear(env);
+  if (cls) (*env)->DeleteLocalRef(env, cls);
+  (*env)->DeleteLocalRef(env, act);
+}
+
 int android_hdr_interface(int ativa) {
   JNIEnv *env = (JNIEnv *)SDL_AndroidGetJNIEnv();
   jobject act = (jobject)SDL_AndroidGetActivity();
