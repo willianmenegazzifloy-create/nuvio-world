@@ -1996,7 +1996,7 @@ static void vitAtualizar(float dt, Uint32 agora) {
   if (vitToqueY.livre) vitScroll = anim_clamp(vitScroll, 0.0f, vitToqueMaxY());
   else
 #endif
-  vitScroll = anim_mola2(&vitScrollV, vitScroll, alvo, dt, NV_MOLA2_SCROLL);
+  vitScroll = anim_mola2(&vitScrollV, vitScroll, alvo, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
   for (int r = 0; r < vitN; r++) {
     // A fileira em foco anda ate o cartaz caber com um vizinho a vista.
 #ifdef NV_TOUCH_UI
@@ -2005,7 +2005,7 @@ static void vitAtualizar(float dt, Uint32 agora) {
 #endif
     if (r == vitFR)
       vitSx[r] = anim_mola2(&vitSv[r], vitSx[r], vitFC > 1 ? (vitFC - 1) * passo : 0.0f,
-                            dt, NV_MOLA2_SCROLL);
+                            dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
   }
 }
 
@@ -2317,7 +2317,7 @@ void vertudo_atualizar(float dt, Uint32 agora) {
   if (toqueLivre) scrollY = anim_clamp(scrollY, 0.0f, maxY);
   else
 #endif
-    scrollY = anim_mola2(&velY, scrollY, alvo, dt, NV_MOLA2_SCROLL);
+    scrollY = anim_mola2(&velY, scrollY, alvo, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
 }
 
 // PAINEL DA DIREITA: o que a grade sozinha nao diz — sinopse, generos, nota.
