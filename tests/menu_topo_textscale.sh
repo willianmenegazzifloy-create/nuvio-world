@@ -7,7 +7,7 @@ import re, subprocess, tempfile
 s = Path("src/menu.c").read_text()
 
 def function(name):
-    m = re.search(r"static [^\\n]+\\b" + name + r"\\([^\\n]*\\)\\s*\\{", s)
+    m = re.search(r"static [^\n]+\b" + name + r"\([^\n]*\)\s*\{", s)
     assert m, "missing function: " + name
     end = m.end()
     depth = 1
