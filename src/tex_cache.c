@@ -3987,6 +3987,15 @@ GLuint tex_obter_larg(const char *caminho, float largLayout) {
   return tex_obter_limite(caminho, cap, cap > NV_TEX_LARG_MAX, 0);
 }
 
+// O cartaz sob o foco e demanda imediata: sobe para a frente da fila de rede e
+// decode sem aumentar o teto de pixels nem transformar o poster em hero.
+GLuint tex_obter_foco_larg(const char *caminho, float largLayout) {
+  int cap;
+  if (largLayout <= 1.0f) return tex_obter(caminho);
+  cap = capDeLargura(largLayout);
+  return tex_obter_limite(caminho, cap, 1, 0);
+}
+
 int tex_lookahead_parado(TexLookahead *s, float scroll) {
   float delta = scroll - s->scroll;
   if (!s->quadro || fabsf(delta) > 0.25f || s->quadro + 1 != quadroAtual) {
