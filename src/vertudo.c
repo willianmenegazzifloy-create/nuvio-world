@@ -573,6 +573,20 @@ static const char *mensagemSemFonte(const ColSource *s) {
   return i18n("O addon desta coleção não está instalado nesta TV.");
 }
 
+#define COLECAO_CATALOGO_PADRAO_URL "https://catalog.nuvio.tv/%7B%22language%22%3A%22pt-BR%22%2C%22region%22%3A%22BR%22%7D/configure"
+static int colecaoTemCatalogoAtivo(void) {
+  for (int i = 0; i < addons_n(); i++) if (addons_tem_catalogo(i)) return 1;
+  return 0;
+}
+static int colecaoAdicionarCatalogoPadrao(void) {
+  if (colecaoTemCatalogoAtivo()) return 0;
+  if (!addons_ativar_url(COLECAO_CATALOGO_PADRAO_URL) &&
+      !addons_adicionar("Nuvio Catalog Addon", COLECAO_CATALOGO_PADRAO_URL))
+    return 0;
+  desc_repetir_addons();
+  return 1;
+}
+
 static void vitIniciar(void);
 static float vitPasso(void);
 static void carregarFonte(void);
@@ -2184,6 +2198,11 @@ void vertudo_evento(const SDL_Event *e) {
     exibAberta = 0;
     if (k == SDLK_RETURN || k == SDLK_KP_ENTER) { escolherExibicao(LAY_CICLO[exibCursor]); return; }
   }
+  // OK no estado vazio adiciona ou reativa o catalogo oficial.
+  if ((k == SDLK_RETURN || k == SDLK_KP_ENTER) && n < 1 &&
+      collection && !colecaoTemCatalogoAtivo()) {
+    if (colecaoAdicionarCatalogoPadrao()) return;
+  }
   if (lay == VT_LAY_VITRINE) { vitEvento(k); return; }
   // #414: OK on the current catalog retries even while the header has focus.
   // Other tabs, the layout button and the Menu selector (menuOk) keep theirs.
@@ -2838,7 +2857,10 @@ static void themeHeader(float a,float x0) {
   cabCy=fmaxf(218.0f,fim+40.0f);
   if(nAbas())cabCy=fminf(cabCy,VT_AB_Y-NV_CTRL_H*.5f-6.0f);   // acima da fileira das abas
   char caption[180];int n=nItens();
-  if(semFonte) {
+  if(semFonte && collection && !colecaoTemCatalogoAtivo()) {
+    snprintf(caption,sizeof caption,"%s",i18n("OK para adicionar e ativar o catálogo padrão."));
+  }
+  else if(semFonte) {
     snprintf(caption,sizeof caption,"%s",
       mensagemSemFonte(collection&&source<collection->nSources?&collection->sources[source]:NULL));
   }
@@ -3525,8 +3547,10 @@ static void vitDesenhar(float a, float x0) {
                (vitLin[r].mais && !vitLin[r].n)) {
       const ColSource *s = vitMulti && collection && r < collection->nSources
                             ? &collection->sources[r] : NULL;
-      const char *msg = l->semFonte ? mensagemSemFonte(s)
-                                    : i18n("Nenhum título nesta lista.");
+      const char *msg = l->semFonte && !colecaoTemCatalogoAtivo()
+                          ? i18n("OK para adicionar e ativar o catálogo padrão.")
+                          : l->semFonte ? mensagemSemFonte(s)
+                                        : i18n("Nenhum título nesta lista.");
       TxtLinha m = txt_linha_corta(TXT_DET_META2, msg, 196, 202, 213, 255, 1200);
       txt_desenhar_alpha(m, x0, cy + 12.0f, ac * 0.9f);
       if (l->mais) botaoMaisVistos(ac, x0, cy + 60.0f, r);
@@ -3541,7 +3565,9 @@ static void vitDesenhar(float a, float x0) {
     }
   }
   if (!vitN) {   // nada para repartir em fileiras ainda: diz por que
-    const char *msg = semFonte
+    const char *msg = semFonte && collection && !colecaoTemCatalogoAtivo()
+      ? i18n("OK para adicionar e ativar o catálogo padrão.")
+      : semFonte
       ? mensagemSemFonte(collection && source < collection->nSources ? &collection->sources[source] : NULL)
       : desc_vertudo_erro() ? "Não foi possível carregar. OK para tentar novamente."
       : desc_vertudo_carregando() ? "Carregando títulos…" : "Nenhum título nesta lista.";
