@@ -871,7 +871,7 @@ static int lerBusca(const char *tipo, const char *termo, CatItem *saida,
   p = js_array(corpo, NULL, "metas");
   while (p && n < max) {
     const char *f = js_fim(p);
-    if (deMeta(p, f, tipo, &saida[n])) n++;
+    if (deMeta(p, f, tipo, &saida[n]) && !descOcultaNaoLancado(&saida[n])) n++;
     p = js_prox(f);
   }
   free(corpo);
@@ -1037,7 +1037,7 @@ static int consultarAlvo(const AlvoBusca *a, const char *termo,
     int exatos = 0;
     while (it && p) {
       const char *f = js_fim(p);
-      if (deMeta(p, f, a->tipo, it)) {
+      if (deMeta(p, f, a->tipo, it) && !descOcultaNaoLancado(it)) {
         int exato = exatos < max && !strcasecmp(it->titulo, termo);
         snprintf(it->origem, sizeof it->origem, "%s", orig);
         if (exato) {
