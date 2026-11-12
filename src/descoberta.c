@@ -726,13 +726,15 @@ static void fotosDoElenco(CatItem *d, const char *imdbSerie, int serie, int mant
 // Definida adiante, junto do resto do parse de meta do Stremio; declarada aqui
 // porque a busca, logo abaixo, monta CatItem a partir da mesma resposta.
 static int deMeta(const char *ini, const char *fim, const char *tipo, CatItem *d);
-// "Ocultar nao lancados" (hideUnreleasedContent) nas fileiras da Home e na grade
-// de colecao / Ver tudo; ver nlanc.h. Desligado, nunca esconde nada.
+// Regra fixa do Nuvio World: títulos cuja estreia ainda está no futuro não
+// entram na Home, nas coleções, no Ver tudo nem nos resultados de catálogo.
+// A data ISO completa tem prioridade; o ano é apenas fallback para fontes que
+// não fornecem uma data completa (ver nlanc.h).
 static int descOcultaNaoLancado(const CatItem *it) {
   time_t t;
   struct tm tmv;
   char hoje[11];
-  if (!ajustes_ocultar_nao_lancados()) return 0;
+  if (!it) return 0;
   t = time(NULL);
   if (!localtime_r(&t, &tmv)) return 0;
   snprintf(hoje, sizeof hoje, "%04d-%02d-%02d",
