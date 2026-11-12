@@ -45,8 +45,8 @@ int configtransfer_exportar(char *dst, size_t tam) {
   jsw_iniciar(&w);
   jsw_obj_ini(&w);
   jsw_cs(&w, "format", "nuvio-settings");
-  jsw_int(&w, "version", 1);
-  jsw_int(&w, "profile", perfil);
+  jsw_ci(&w, "version", 1);
+  jsw_ci(&w, "profile", perfil);
   jsw_chave(&w, "files"); jsw_arr_ini(&w);
   escreverArquivo(&w, "ajustes.txt");
   escreverArquivo(&w, "player.txt");
