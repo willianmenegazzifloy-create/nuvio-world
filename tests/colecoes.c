@@ -76,6 +76,9 @@ int main(void) {
   assert(col_folder(1)->sources[0].somenteLancados == 1);
   assert(col_midia_e_serie("SERIES") && col_midia_e_serie("tv") && col_midia_e_serie("show"));
   assert(col_fonte_e_serie(&col_folder(1)->sources[0]) && !col_fonte_e_serie(&col_folder(0)->sources[0]));
+  { ColSource legado; memset(&legado, 0, sizeof legado);
+    strcpy(legado.prov, "tmdb"); strcpy(legado.type, "series");
+    assert(col_fonte_e_serie(&legado)); }
   assert(col_folder(2)->sources[0].somenteLancados == 0);
   puts("ok  filtro de lancamentos futuros segue o nome da pasta, sem depender do grupo; mídia SERIES normalizada");
 
