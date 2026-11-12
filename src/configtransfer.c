@@ -125,8 +125,15 @@ int configtransfer_importar(const char *caminho) {
   json[tamanho] = 0; fclose(f); f = NULL;
   fim = js_fim(json);
   { char formato[32];
-    if (!fim || !js_texto(json, fim, "format", formato, sizeof formato) || strcmp(formato, "nuvio-settings") ||
-        (int)js_num(json, fim, "version", 0) != 1) goto fim;
+    const char *v = strstr(json, "\\"version\\"");
+    const char *fch = strstr(json, "\\"files\\"");
+    if (!fim || !js_texto_raiz(json, "format", formato, sizeof formato) ||
+        strcmp(formato, "nuvio-settings") || !v || !fch || v > fch) goto fim;
+    v = strchr(v, ':');
+    if (!v) goto fim;
+    v++;
+    while (*v == ' ' || *v == '\\t') v++;
+    if (*v != '1' || (v[1] != ',' && v[1] != ' ' && v[1] != '\\n' && v[1] != '\\r' && v[1] != '}')) goto fim;
   }
   arr = js_array(json, fim, "files");
   if (!arr) goto fim;
