@@ -7,6 +7,7 @@
 #include "badges.h"
 #include "descoberta.h"
 #include "catalogo.h"
+#include "colecoes.h"
 #include "gfx.h"
 #include "text.h"
 #include "sinopse.h"
@@ -1022,7 +1023,7 @@ static int estiloAbas(void) {
   int e = ajustes_abas_estilo();
   return nAbas() && e > VT_AB_CHIPS && e <= VT_AB_TOPO ? e : VT_AB_CHIPS;
 }
-static int abaSerie(int i) { return !strcmp(collection->sources[i].type, "series"); }
+static int abaSerie(int i) { return collection && i >= 0 && i < collection->nSources && col_fonte_e_serie(&collection->sources[i]); }
 // So ha primeiro nivel (Filmes/Séries) quando a colecao tem os dois tipos.
 static int doisTipos(void) {
   int f = 0, s = 0;
@@ -1399,7 +1400,7 @@ static void rotulosAbas(char (*rot)[180]) {
   }
   for (int i = 0; i < n; i++) {
     const ColSource *s = &collection->sources[i];
-    const char *tipo = i18n(!strcmp(s->type, "series") ? "Séries" : "Filmes");
+    const char *tipo = i18n(abaSerie(i) ? "Séries" : "Filmes");
     int repete = 0;
     for (int j = 0; j < n && nomeAba[i][0]; j++) if (j != i && !strcmp(nomeAba[i], nomeAba[j])) repete = 1;
     if (!nomeAba[i][0]) snprintf(rot[i], 180, "%s", tipo);
