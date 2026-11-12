@@ -1424,7 +1424,7 @@ static float topoEscalaTamanho(void) {
   return base * topoFocoEscala;
 }
 static float topoEscalaTexto(void) {
-  return topoEscalaTamanho() * (ajustes_menu_topo_tamanho() == 0 ? 0.80f : 1.0f);
+  return topoEscalaTamanho() * (ajustes_menu_topo_tamanho() == 0 ? 0.68f : 1.0f);
 }
 // TK leva px da tela REAL para a tela da barra.
 #define TK(v)          ((v) / NV_MENU_ESCALA)
@@ -1652,6 +1652,7 @@ void menu_topo_geo(MenuTopoGeo *o) {
   memset(o, 0, sizeof *o);
   x0 = floorf((NV_TELA_W - t.larg) * 0.5f);
   o->n = t.n; o->cortado = t.cortado;
+  o->textoEscala = topoEscalaTexto();
   o->y = (TOPO_CY - TOPO_PILULA_H * 0.5f) * e; o->h = TOPO_PILULA_H * e;
   for (k = 0; k < t.n && k < MENU_TOPO_MAX; k++) {
     o->x[k] = (x0 + topoPilulaX(&t, k)) * e; o->w[k] = t.ws[k] * e;
