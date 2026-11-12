@@ -22,6 +22,9 @@ int main(void) {
   assert(nlanc_futuro("", "2027", hoje, 2026));
   assert(!nlanc_futuro("", "2025", hoje, 2026));
   assert(!nlanc_meta_futuro("20245", 2026));
+  assert(nlanc_tem_info("2026-11-12", ""));
+  assert(nlanc_tem_info("", "2026"));
+  assert(!nlanc_tem_info("", ""));
   puts("nlanc: exact premiere-date filtering PASS");
   return 0;
 }
