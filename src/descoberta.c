@@ -8958,7 +8958,7 @@ static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv,
 // ou "parts") e 0 quando falta a chave da API.
 static const char *tmdbMontarUrl(const ColSource *f, int pagina,
                                  char *url, size_t n) {
-  int isTv = col_midia_e_serie(f->midia) || !strcasecmp(f->tmdbTipo, "NETWORK");
+  int isTv = col_fonte_e_serie(f) || !strcasecmp(f->tmdbTipo, "NETWORK");
   const char *mt = isTv ? "tv" : "movie";
   const char *chave = desc_chave_tmdb();
   if (!chave[0]) return NULL;
@@ -9139,7 +9139,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       pronta = cli[0] && w >= 0 && (size_t)w < sizeof cabChave;
       w = snprintf(url, sizeof url,
         "https://api.trakt.tv/lists/%ld/items/%s?page=%d&limit=40&sort_by=%s&sort_how=%s",
-        f.traktLista, col_midia_e_serie(f.midia) ? "show" : "movie", pagina,
+        f.traktLista, col_fonte_e_serie(&f) ? "show" : "movie", pagina,
         f.ordenar[0] ? f.ordenar : "rank", f.ordem[0] ? f.ordem : "asc");
       pronta = pronta && w >= 0 && (size_t)w < sizeof url;
     } else {
@@ -9191,8 +9191,8 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
         js_texto(p, fimItem, "job", trabalho, sizeof trabalho);
         if (strcasecmp(trabalho, "director")) { nv_perfil_sessao_destravar(); continue; }
       }
-      ok = prov == 1 ? deMetaTmdb(p, fimItem, col_midia_e_serie(f.midia) ? "series" : "movie", &item) :
-           prov == 2 ? deMetaTrakt(p, fimItem, f.midia, &item) : deMeta(p, fimItem, f.type, &item);
+      ok = prov == 1 ? deMetaTmdb(p, fimItem, col_fonte_e_serie(&f) ? "series" : "movie", &item) :
+           prov == 2 ? deMetaTrakt(p, fimItem, f.midia[0] ? f.midia : f.type, &item) : deMeta(p, fimItem, f.type, &item);
       if (!ok) { nv_perfil_sessao_destravar(); continue; }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
       if (!prov) origemDaBase(origem, item.origem, sizeof item.origem);
