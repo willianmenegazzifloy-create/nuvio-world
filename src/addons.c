@@ -3671,6 +3671,21 @@ int addons_adicionar(const char *nome, const char *urlManifest) {
   return r;
 }
 
+// Reativa o catalogo padrao se ja estiver instalado, sem criar duplicata.
+int addons_ativar_url(const char *url) {
+  char alvo[NV_ADDON_URL_MAX], atual[NV_ADDON_URL_MAX];
+  nv_addon_base(url, alvo, sizeof alvo);
+  if (!alvo[0]) return 0;
+  for (int i = 0; i < addons_n(); i++) {
+    nv_addon_base(addons_base(i), atual, sizeof atual);
+    if (!strcmp(alvo, atual)) {
+      if (!addons_ativo(i)) addons_alternar(i);
+      return 1;
+    }
+  }
+  return 0;
+}
+
 int addons_alternar(int i) {
   int r;
   char base[NV_ADDON_URL_MAX] = "";
