@@ -108,7 +108,7 @@ float menu_barra_borda(void);
 #define MENU_TOPO_MAX 16
 typedef struct {
   int n, cortado, busca[MENU_TOPO_MAX];
-  float y, h, x[MENU_TOPO_MAX], w[MENU_TOPO_MAX], foco[MENU_TOPO_MAX];
+  float y, h, textoEscala, x[MENU_TOPO_MAX], w[MENU_TOPO_MAX], foco[MENU_TOPO_MAX];
   float trilha[4], avatar[4], sel[3], foc[3];
 } MenuTopoGeo;
 void menu_topo_geo(MenuTopoGeo *g);
