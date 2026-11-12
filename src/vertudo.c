@@ -1398,6 +1398,30 @@ static void vitFocoInicial(void) {
   for (int r = 0; r < vitN; r++) if (vitLin[r].n > 0) { vitFR = r; vitFC = 0; return; }
 }
 static void vitLembrarFoco(void) { guardarChave(&vitFocoChave, vitItem(vitFR, vitFC)); }
+
+/* A fonte de uma pasta e uma categoria, mesmo quando o provedor devolve
+   resultados inconsistentes. Normaliza o tipo declarado sem presumir que
+   qualquer valor desconhecido significa filme. */
+static int vitTipoFonte(const ColSource *fonte) {
+  const char *m, *t;
+  if (!fonte) return -1;
+  m = fonte->midia;
+  t = fonte->type;
+  if (col_midia_e_serie(m) || !strcasecmp(t, "series") ||
+      !strcasecmp(t, "serie") || !strcasecmp(t, "show") ||
+      !strcasecmp(t, "tv")) return 1;
+  if (!strcasecmp(m, "MOVIE") || !strcasecmp(m, "MOVIES") ||
+      !strcasecmp(m, "FILM") || !strcasecmp(m, "FILMS") ||
+      !strcasecmp(t, "movie") || !strcasecmp(t, "film")) return 0;
+  return -1;
+}
+/* Identidade do titulo dentro da mesma fonte. Nao compara apenas o poster:
+   IMDb + tipo e a chave principal; TMDB e o fallback para itens sem IMDb. */
+static int vitMesmoItem(const CatItem *a, const CatItem *b) {
+  if (!a || !b || strcmp(a->tipo, b->tipo)) return 0;
+  if (a->imdb[0] && b->imdb[0]) return !strcmp(a->imdb, b->imdb);
+  return a->tmdb > 0 && b->tmdb > 0 && a->tmdb == b->tmdb;
+}
 static void vitProjetar(void) {
   int ocultar = ajustes_ocultar_filmes_vistos();
   unsigned revisao = cat_revisao_itens();
@@ -1415,7 +1439,17 @@ static void vitProjetar(void) {
     for (int i = 0; i < l->brutoN + (ocultar ? l->extraN : 0) && l->n < vitCap; i++) {
       int bruto = i < l->brutoN ? i : vitCap + i - l->brutoN;
       CatItem *it = bruto < vitCap ? &vitBuf[r * vitCap + bruto] : &vitExtra[r][bruto - vitCap];
+      int tipoFonte = vitMulti ? vitTipoFonte(&vitFontes[r]) : -1;
+      int repetido = 0;
+      if (tipoFonte >= 0 && strcmp(it->tipo, tipoFonte ? "series" : "movie")) continue;
       if (ocultar && desc_filme_visto(it)) continue;
+      for (int j = 0; j < l->n; j++) {
+        int anterior = vitVis[r][j];
+        CatItem *ja = anterior < vitCap ? &vitBuf[r * vitCap + anterior]
+                                        : &vitExtra[r][anterior - vitCap];
+        if (vitMesmoItem(ja, it)) { repetido = 1; break; }
+      }
+      if (repetido) continue;
       vitVis[r][l->n] = (short)bruto;
       if (bruto == lembrado) vitColLemb[r] = l->n;
       l->n++;
