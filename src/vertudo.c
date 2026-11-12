@@ -1291,7 +1291,7 @@ static CatItem *vitItem(int r, int c) {
 // própria fileira; pedimos uma arte por intervalo, sem disputar com o cartaz
 // focado, e limitamos o lote para não baixar toda a biblioteca de uma vez.
 #define VIT_CACHE_AQUECER_MAX 24
-#define VIT_CACHE_AQUECER_POR_LINHA 8
+#define VIT_CACHE_AQUECER_POR_LINHA 4
 #define VIT_CACHE_AQUECER_INTERVALO_MS 110
 static unsigned long vitCacheHashes[VIT_CACHE_AQUECER_MAX];
 static int vitCacheHashN, vitCacheLinha, vitCacheColuna, vitCacheN;
@@ -1336,20 +1336,17 @@ static void vitCacheReiniciar(void) {
 }
 static void vitCachePrecarregarPasso(Uint32 agora) {
   if (!vitMulti || lay != VT_LAY_VITRINE || !vitBuf || !collection ||
-      vitCacheN >= VIT_CACHE_AQUECER_MAX) return;
+      vitN <= 0 || vitCacheN >= VIT_CACHE_AQUECER_MAX) return;
   if (vitCacheProximo && (Sint32)(agora - vitCacheProximo) < 0) return;
-  // O foco segue usando tex_obter_foco_larg, que entra na frente da fila.
-  // Aqui só aquecemos os vizinhos de cada fileira pronta.
-  for (int tentativas = 0; tentativas < 48 && vitCacheLinha < vitN; tentativas++) {
-    int r = vitCacheLinha;
-    if (vitLin[r].estado != VIT_PRONTA || vitLin[r].semFonte) {
-      vitCacheLinha++; vitCacheColuna = 0; continue;
-    }
-    if (vitCacheColuna >= vitLin[r].n ||
-        vitCacheColuna >= VIT_CACHE_AQUECER_POR_LINHA) {
-      vitCacheLinha++; vitCacheColuna = 0; continue;
-    }
-    CatItem *it = vitItem(r, vitCacheColuna++);
+  // Rodízio por coluna: não deixa uma fonte lenta ocupar todo o lote antes
+  // que as demais fileiras recebam seus primeiros cartazes.
+  for (int tentativas = 0; tentativas < 48 && vitCacheColuna < VIT_CACHE_AQUECER_POR_LINHA; tentativas++) {
+    if (vitCacheLinha >= vitN) { vitCacheLinha = 0; vitCacheColuna++; }
+    if (vitCacheColuna >= VIT_CACHE_AQUECER_POR_LINHA) return;
+    int r = vitCacheLinha++;
+    if (vitLin[r].estado != VIT_PRONTA || vitLin[r].semFonte ||
+        vitCacheColuna >= vitLin[r].n) continue;
+    CatItem *it = vitItem(r, vitCacheColuna);
     if (!it) continue;
     const char *poster = posterprov_card_addon(it->origem, it->imdb, it->tmdb,
                                                 it->tipo, it->poster);
