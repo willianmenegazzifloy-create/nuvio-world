@@ -9654,9 +9654,10 @@ static void eventoTela(const SDL_Event *e) {
         if (p >= sizeof dica) { p = sizeof dica - 1; break; }
       }
       configCopiaPendente = opcoes > 0;
-      if (configCopiaPendente)
+      if (configCopiaPendente) {
+        stCampo = 0;
         teclado_abrir_com("Copiar configurações", dica, 1, "12345678", NULL);
-      else configtransfer_notificar(0, 2);
+      } else uxNotificar("Não há outro perfil disponível sem PIN.");
       return;
     }
 
@@ -9895,7 +9896,7 @@ void ajustes_atualizar(float dt, Uint32 agora) {
           if (perfil && !perfil->temPin && perfil->indice == origem && origem != ativo) { valido = 1; break; }
         }
         if (valido) configtransfer_notificar(configtransfer_copiar_perfil(origem, ativo), 2);
-        else configtransfer_notificar(0, 2);
+        else uxNotificar("Perfil inválido ou protegido por PIN.");
       }
     }
     if (r == TECLADO_PRONTO && stCampo) {
