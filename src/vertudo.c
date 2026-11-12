@@ -605,7 +605,7 @@ static void carregarFonte(void) {
   if (s->prov[0]) {
     semFonte = 1;
     snprintf(catalogId,sizeof catalogId,"%s",s->title);
-    printf("[vertudo] fonte %s desabilitada: catalogos de colecao exigem addon: %s\\n",
+    printf("[vertudo] fonte %s desabilitada: catalogos de colecao exigem addon: %s\n",
            s->prov, s->title);
     fflush(stdout);
     return;
