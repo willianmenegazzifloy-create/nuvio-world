@@ -228,7 +228,7 @@ EM_JS(void, ct_browser_importar, (), {
     reader.onload = function () {
       try {
         FS.writeFile("/tmp/nuvio-config-import.json", new Uint8Array(reader.result));
-        Module.ccall("configtransfer_importar_callback", "void", [], []);
+        Module._configtransfer_importar_callback();
       } catch (e) { alert("Não foi possível ler o arquivo de configurações."); }
     };
     reader.onerror = function () { alert("Não foi possível ler o arquivo de configurações."); };
