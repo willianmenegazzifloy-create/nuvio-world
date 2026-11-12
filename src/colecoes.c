@@ -616,6 +616,47 @@ static int pastaDescobertaSomenteLancados(const char *grupo, const char *pasta) 
   return descobrir && (novosFilmes || novasSeries);
 }
 
+// Traduz as fontes TMDB padrao do editor para os catalogos equivalentes do
+// Nuvio Catalog Addon. TMDB/Trakt continuam disponiveis para metadados; aqui
+// apenas trocamos a origem dos itens da colecao por um catalogo Stremio real.
+static const char *catalogoPadraoDaFonte(const char *titulo, const char *midia) {
+  int serie = midia && (!strcasecmp(midia, "TV") || !strcasecmp(midia, "series"));
+  if (!titulo) return NULL;
+  if (!strcasecmp(titulo, "Novos Filmes") || !strcasecmp(titulo, "New Movies"))
+    return serie ? NULL : "new-and-upcoming-movies";
+  if (!strcasecmp(titulo, "Novas Séries") || !strcasecmp(titulo, "Novas Series") ||
+      !strcasecmp(titulo, "New Series"))
+    return serie ? "new-and-returning-series" : NULL;
+  if (!strcasecmp(titulo, "Filmes Populares") || !strcasecmp(titulo, "Popular Movies"))
+    return serie ? NULL : "popular-movies";
+  if (!strcasecmp(titulo, "Séries Populares") || !strcasecmp(titulo, "Series Populares") ||
+      !strcasecmp(titulo, "Popular Series"))
+    return serie ? "popular-series" : NULL;
+  if (!strcasecmp(titulo, "Melhores Filmes de Todos os Tempos") ||
+      !strcasecmp(titulo, "Critically Acclaimed Movies"))
+    return serie ? NULL : "critically-acclaimed-movies";
+  if (!strcasecmp(titulo, "Melhores Séries de Todos os Tempos") ||
+      !strcasecmp(titulo, "Critically Acclaimed Series"))
+    return serie ? "critically-acclaimed-series" : NULL;
+  return NULL;
+}
+static int converterFonteTmdbParaAddon(ColSource *a, const char *grupo) {
+  const char *cat = catalogoPadraoDaFonte(a->title, a->midia);
+  if (!cat) return 0;
+  snprintf(a->addonId, sizeof a->addonId, "com.nuvio.tmdb.catalogs");
+  baseCabe(a, addons_base_por_id(a->addonId));
+  snprintf(a->type, sizeof a->type, "%s",
+           (!strcasecmp(a->midia, "TV") || !strcasecmp(a->midia, "series")) ? "series" : "movie");
+  snprintf(a->catId, sizeof a->catId, "%s", cat);
+  // O catalogo oficial recebe o genero como extra Stremio; preserva a
+  // intencao das colecoes tematicas mais comuns.
+  if (grupo && !strcasecmp(grupo, "ACTION"))
+    snprintf(a->genre, sizeof a->genre, "%s",
+             !strcmp(a->type, "series") ? "Action & Adventure" : "Action");
+  a->prov[0] = 0;
+  return 1;
+}
+
 // Devolve 0 quando a colecao NAO COUBE (teto de pastas, de fontes ou falta de
 // memoria). Quem chama desfaz a colecao inteira: cortar no meio deixava a
 // colecao com parte das pastas e o resto das fontes solto na Home (#255).
@@ -689,6 +730,11 @@ static int lerColecaoWeb(const char *c, const char *ce) {
         if (!a->title[0])
           snprintf(a->title, sizeof a->title, "%s", a->tmdbTipo[0] ? a->tmdbTipo : "TMDB");
         a->somenteLancados = somenteLancados;
+        if (converterFonteTmdbParaAddon(a, group)) {
+          printf("[colecoes] fonte TMDB '%s' convertida para catalogo addon %s/%s\\n",
+                 a->title, a->type, a->catId);
+          v->nSources++; continue;
+        }
         snprintf(a->prov, sizeof a->prov, "tmdb"); v->nSources++; continue;
       }
       if (!strcasecmp(prov, "trakt")) {
