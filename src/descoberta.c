@@ -742,6 +742,15 @@ static int descOcultaNaoLancado(const CatItem *it) {
   return nlanc_futuro(it->dataEstreia, it->meta, hoje, tmv.tm_year + 1900);
 }
 
+// Mantem a regra leniente dos addons (muitos omitem datas), mas segue o
+// comportamento do NuvioTV 1.1.0 para TMDB/Trakt: sem data/ano nao ha prova de
+// estreia, portanto o item nao entra. O filtro e aplicado em cada fonte/linha,
+// antes de publicar os cards, tanto na Vitrine quanto na grade tradicional.
+static int descOcultaNaoLancadoFonte(const CatItem *it, int prov) {
+  if (!it || descOcultaNaoLancado(it)) return 1;
+  return (prov == 1 || prov == 2) && !nlanc_tem_info(it->dataEstreia, it->meta);
+}
+
 // O meta da rede nao tem a posicao local de playback. Reusar so a evidencia
 // do item canonico faz o filtro acompanhar o selo tambem sem historico remoto;
 // cat_visto continua dando precedencia a um "nao visto" explicito. A copia
@@ -9203,7 +9212,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       ok = prov == 1 ? deMetaTmdb(p, fimItem, col_fonte_e_serie(&f) ? "series" : "movie", &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia[0] ? f.midia : f.type, &item) : deMeta(p, fimItem, f.type, &item);
       if (!ok) { nv_perfil_sessao_destravar(); continue; }
-      if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
+      if (descOcultaNaoLancadoFonte(&item, prov)) { novos++; nv_perfil_sessao_destravar(); continue; }
       if (!prov) origemDaBase(origem, item.origem, sizeof item.origem);
       visto = desc_filme_visto(&item);
       nv_perfil_sessao_destravar();
@@ -9292,7 +9301,7 @@ static void *fioVerTudo(void *u) {
             if (strcasecmp(job,"director")) continue;
           }
           if (deMetaTmdb(p,f,padrao,&lote[nl])) {
-            if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
+            if (descOcultaNaoLancadoFonte(&lote[nl], prov)) ocultos++; else nl++;
           }
         }
         if (!strcasecmp(fonte.tmdbTipo,"COLLECTION")||
@@ -9325,7 +9334,7 @@ static void *fioVerTudo(void *u) {
           for(;p&&nl<48;p=js_prox(js_fim(p))) {
             const char *f=js_fim(p);raw++;
             if (deMetaTrakt(p,f,fonte.midia[0]?fonte.midia:fonte.type,&lote[nl])) {
-              if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
+              if (descOcultaNaoLancadoFonte(&lote[nl], prov)) ocultos++; else nl++;
             }
           }
           // rede_baixar nao devolve cabecalhos; menos que a pagina cheia e o
