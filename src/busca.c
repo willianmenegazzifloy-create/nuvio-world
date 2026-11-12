@@ -1518,7 +1518,7 @@ static void busca_atualizar_(float dt, Uint32 agora) {
 #ifdef NV_TOUCH_UI
     if (!buTelefone() || !toqueLivreX[r])
 #endif
-      scrollX[r] = anim_mola2(&velX[r], scrollX[r], alvoX, dt, NV_MOLA2_SCROLL);
+      scrollX[r] = anim_mola2(&velX[r], scrollX[r], alvoX, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
   } else {
 #ifdef NV_TOUCH_UI
     if (!buTelefone() || !toqueLivreY)
@@ -1535,7 +1535,7 @@ static void busca_atualizar_(float dt, Uint32 agora) {
   if (buTelefone() && toqueLivreY) scrollY = scrollAlvo = anim_clamp(scrollY, 0.0f, toqueBuscaMaxY());
   else
 #endif
-    scrollY = anim_mola2(&velY, scrollY, scrollAlvo, dt, NV_MOLA2_SCROLL);
+    scrollY = anim_mola2(&velY, scrollY, scrollAlvo, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()));
 #ifdef NV_TOUCH_UI
   if (buTelefone()) scrollY = anim_clamp(scrollY, 0.0f, toqueBuscaMaxY());
 #endif
