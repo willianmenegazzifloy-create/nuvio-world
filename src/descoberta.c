@@ -8869,15 +8869,11 @@ static int deMetaTrakt(const char *p, const char *f, const char *midia,
   const char *e, *fe;
   int serie;
   memset(d, 0, sizeof *d);
-  // O objeto do titulo fica sob "movie" ou "show"; a midia da fonte diz qual,
-  // mas aceita os dois porque listas mistas existem. js_bruto devolve o
-  // objeto cru, com as chaves — o parse acontece sobre essa copia.
+  // A fonte escolhe o tipo no proprio endpoint (/items/movie ou /items/show).
+  // Igual ao TraktPublicListSourceResolver: nao troca para o outro objeto se
+  // a resposta nao contiver o tipo selecionado.
   serie = col_midia_e_serie(midia);
-  if (!js_bruto(p, f, serie ? "show" : "movie", bruto, sizeof bruto)) {
-    serie = !serie;
-    if (!js_bruto(p, f, serie ? "show" : "movie", bruto, sizeof bruto))
-      return 0;
-  }
+  if (!js_bruto(p, f, serie ? "show" : "movie", bruto, sizeof bruto)) return 0;
   e = bruto; fe = bruto + strlen(bruto);
   if (!js_bruto(e, fe, "ids", ids, sizeof ids) ||
       !js_texto(ids, ids + strlen(ids), "imdb", v, sizeof v) || !v[0])
@@ -9218,9 +9214,11 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
         js_texto(p, fimItem, "job", trabalho, sizeof trabalho);
         if (strcasecmp(trabalho, "director")) { nv_perfil_sessao_destravar(); continue; }
       }
-      ok = prov == 1 ? deMetaTmdb(p, fimItem, col_fonte_e_serie(&f) ? "series" : "movie", &item) :
+      ok = prov == 1 ? deMetaTmdb(p, fimItem, col_tmdb_tipo_padrao(&f), &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia[0] ? f.midia : f.type, &item) : deMeta(p, fimItem, f.type, &item);
-      if (!ok) { nv_perfil_sessao_destravar(); continue; }
+      if (!ok || (prov == 1 && !col_tmdb_fonte_aceita_tipo(&f, item.tipo))) {
+        nv_perfil_sessao_destravar(); continue;
+      }
       if (descOcultaNaoLancadoFonte(&item, prov)) { novos++; nv_perfil_sessao_destravar(); continue; }
       if (!prov) origemDaBase(origem, item.origem, sizeof item.origem);
       visto = desc_filme_visto(&item);
@@ -9298,7 +9296,7 @@ static void *fioVerTudo(void *u) {
       const char *vetor=tmdbMontarUrl(&fonte,skip,url,sizeof url);
       if (vetor) corpo=rede_baixar(url,12);
       if (corpo) {
-        const char *padrao=col_fonte_e_serie(&fonte)?"series":"movie";
+        const char *padrao=col_tmdb_tipo_padrao(&fonte);
         const char *p=js_array(corpo,NULL,vetor);
         for(;p&&nl<48;p=js_prox(js_fim(p))) {
           const char *f=js_fim(p);raw++;
@@ -9309,7 +9307,8 @@ static void *fioVerTudo(void *u) {
             js_texto(p,f,"job",job,sizeof job);
             if (strcasecmp(job,"director")) continue;
           }
-          if (deMetaTmdb(p,f,padrao,&lote[nl])) {
+          if (deMetaTmdb(p,f,padrao,&lote[nl]) &&
+              col_tmdb_fonte_aceita_tipo(&fonte, lote[nl].tipo)) {
             if (descOcultaNaoLancadoFonte(&lote[nl], prov)) ocultos++; else nl++;
           }
         }
