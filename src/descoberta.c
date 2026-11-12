@@ -8868,6 +8868,13 @@ static int deMetaTrakt(const char *p, const char *f, const char *midia,
   if (!js_texto(e, fe, "title", d->titulo, sizeof d->titulo) &&
       !js_texto(e, fe, "name", d->titulo, sizeof d->titulo)) return 0;
   { long ano = (long)js_num(e, fe, "year", 0.0);
+    v[0] = 0;
+    if (!js_texto(e, fe, "released", v, sizeof v) || !nlanc_iso_valida(v)) {
+      v[0] = 0;
+      js_texto(e, fe, "first_aired", v, sizeof v);
+    }
+    if (nlanc_iso_valida(v))
+      snprintf(d->dataEstreia, sizeof d->dataEstreia, "%.10s", v);
     if (ano) snprintf(d->meta, sizeof d->meta, "%ld", ano); }
   snprintf(d->tipo, sizeof d->tipo, "%s", serie ? "series" : "movie");
   snprintf(d->genero, sizeof d->genero, "%s", i18n(rotuloTipoSing(d->tipo)));
