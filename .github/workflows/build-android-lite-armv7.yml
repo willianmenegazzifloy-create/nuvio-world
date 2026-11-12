@@ -101,7 +101,7 @@ jobs:
       - name: Upload ARMv7 APK
         uses: actions/upload-artifact@v4
         with:
-          name: Nuvio-World-2.0.12-Android-TV-ARMv7
-          path: build/android/Nuvio-2.0.12-android-lite-armv7-debug.apk
+          name: Nuvio-World-2.0.13-Android-TV-ARMv7
+          path: build/android/Nuvio-2.0.13-android-lite-armv7-debug.apk
           if-no-files-found: error
           retention-days: 14
