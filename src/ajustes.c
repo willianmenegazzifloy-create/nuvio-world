@@ -9644,16 +9644,16 @@ static void eventoTela(const SDL_Event *e) {
     if (focoOp == AJ_CONFIG_COPIAR) {
       static char dica[180];
       size_t p = 0;
-      int n = perfis_n();
-      for (int i = 0; i < n && i < CONTA_PERFIL_MAX; i++) {
+      int opcoes = 0, ativo = perfis_ativo();
+      for (int i = 0; i < perfis_n() && i < CONTA_PERFIL_MAX; i++) {
         const ContaPerfil *perfil = perfis_item(i);
-        if (!perfil || perfil->temPin) continue;
+        if (!perfil || perfil->temPin || perfil->indice == ativo) continue;
         p += (size_t)snprintf(dica + p, sizeof dica - p, "%s%d: %s",
           p ? " · " : "Perfis: ", perfil->indice, perfil->nome);
+        opcoes++;
         if (p >= sizeof dica) { p = sizeof dica - 1; break; }
       }
-      if (!p) snprintf(dica, sizeof dica, "%s", "Não há outro perfil disponível sem PIN.");
-      configCopiaPendente = p != 0 && n > 1;
+      configCopiaPendente = opcoes > 0;
       if (configCopiaPendente)
         teclado_abrir_com("Copiar configurações", dica, 1, "12345678", NULL);
       else configtransfer_notificar(0, 2);
@@ -9861,6 +9861,7 @@ static void eventoTela(const SDL_Event *e) {
 
 static void aj2Atualizar(float dt);
 void ajustes_atualizar(float dt, Uint32 agora) {
+  configtransfer_processar_eventos();
   if(iptvForm.tipo && !nv_perfil_sessao_atual(iptvForm.sessao)) { ajIptvLimparForm();uxCancelar();stCampo=0;teclado_esquecer(); }
   ajLegendaEspelhar(); ajIptvEspelhar();
   AJ_ESCALA_INI();
@@ -9885,6 +9886,18 @@ void ajustes_atualizar(float dt, Uint32 agora) {
   // resultado antes de ela ver (e o apelido digitado se perderia em silencio).
   if (!pessoas_aberto()) hcTecladoLer();
   { int r = pessoas_aberto() ? TECLADO_NADA : teclado_resultado();
+    if (configCopiaPendente && r != TECLADO_NADA) {
+      configCopiaPendente = 0;
+      if (r == TECLADO_PRONTO) {
+        int origem = atoi(teclado_texto()), valido = 0, ativo = perfis_ativo();
+        for (int i = 0; i < perfis_n() && i < CONTA_PERFIL_MAX; i++) {
+          const ContaPerfil *perfil = perfis_item(i);
+          if (perfil && !perfil->temPin && perfil->indice == origem && origem != ativo) { valido = 1; break; }
+        }
+        if (valido) configtransfer_notificar(configtransfer_copiar_perfil(origem, ativo), 2);
+        else configtransfer_notificar(0, 2);
+      }
+    }
     if (r == TECLADO_PRONTO && stCampo) {
       size_t cap;char *rascunho=ajIptvRascunho(stCampo,&cap);
       if(rascunho) {
