@@ -1487,6 +1487,7 @@ static void vitNomes(void) {
 
 static void vitIniciar(void) {
   vitCancelar();
+  vitCacheReiniciar();
   vitSessao = nv_perfil_sessao_ler();
   vitColecoesRev = col_revisao();
   vitColecaoChave[0] = 0;
@@ -2037,7 +2038,12 @@ static float vitToqueMaxX(int r) {
 static void vitAtualizar(float dt, Uint32 agora) {
   float w, h, passo, rot, alvo;
   vitCarregar(agora);
-  vitProjetar();
+  {
+    int projetoNovo = vitProjetoSujo;
+    vitProjetar();
+    if (projetoNovo) vitCacheRecomecarVarredura();
+  }
+  vitCachePrecarregarPasso(agora);
   if (!vitMexeu) vitFocoInicial();
   vitLembrarFoco();
   // Destaque: o item sob o foco; so troca depois de 140 ms parado e com a arte
