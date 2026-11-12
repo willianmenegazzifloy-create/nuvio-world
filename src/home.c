@@ -2202,7 +2202,7 @@ static float homeScrollYPasso(float alvo, float dt, int reduzido) {
   if (telefoneui_ativo() && toqueLivreY)
     return anim_clamp(scrollY, -empurraHero(), toqueHomeMaxY());
 #endif
-  return anim_mola2_reduzida(&velY, scrollY, alvo, dt, NV_MOLA2_SCROLL, reduzido);
+  return anim_mola2_reduzida(&velY, scrollY, alvo, dt, (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()), reduzido);
 }
 
 // FilTipo (escolha em Ajustes) -> TipoFileira (forma que o desenho conhece).
@@ -4031,7 +4031,7 @@ static void home_atualizar_(float dt, Uint32 agora) {
       float alvo = alvoScrollFil(r, col, scrollX[r], abre);
       if (fileiras[r].tipo != FILEIRA_PALCO)
         scrollX[r] = anim_mola2_reduzida(&velX[r], scrollX[r], alvo, dt,
-                                       NV_MOLA2_SCROLL, motionReduzido);
+                                       (NV_MOLA2_SCROLL * ajustes_navegacao_velocidade()), motionReduzido);
     }
   }
 
