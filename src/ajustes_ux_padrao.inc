@@ -349,3 +349,7 @@
   16434824, /* top menu order: canonical destination order, profile-local */
   1, /* top menu fixed on Home: Off by default, profile-local */
   0, /* top menu focus expansion: On by default, profile-local */
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+  0, 0, /* export/import actions */
+#endif
+  0, /* copy settings from another profile */
