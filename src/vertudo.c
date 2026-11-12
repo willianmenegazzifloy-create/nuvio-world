@@ -564,8 +564,7 @@ static const char *baseDaFonte(const ColSource *s) {
   return base;
 }
 static const char *mensagemSemFonte(const ColSource *s) {
-  if (s && !strcmp(s->prov, "tmdb")) return i18n("O TMDB não está configurado nesta TV.");
-  if (s && !strcmp(s->prov, "trakt")) return i18n("O Trakt não está configurado nesta TV.");
+  if (s && s->prov[0]) return i18n("Desabilitada no momento.");
   AddonIdentidadeEstado estado = addons_identidade_estado(s ? s->addonId : "");
   if (estado == ADD_IDENTIDADE_PENDENTE || estado == ADD_IDENTIDADE_PRONTA)
     return i18n("Carregando…");
@@ -600,22 +599,15 @@ static void carregarFonte(void) {
   toqueLivre = 0;
   toquerol_limpar(&toqueAbas);
 #endif
-  // FONTE NAO-ADDON (issue #44): "tmdb"/"trakt" vinda do site. Nao tem base
-  // de catalogo — o conteudo e pedido direto ao servico pelo
-  // desc_vertudo_fonte. "Sem fonte" aqui quer dizer servico nao configurado
-  // nesta TV (sem chave do TMDB / sem client id do Trakt), nao addon
-  // faltando.
+  // Fontes TMDB/Trakt permanecem visiveis na colecao, mas nao fornecem
+  // catalogo. A regra segue o NuvioTV Original: somente addons de catalogo
+  // podem preencher as fontes de uma colecao.
   if (s->prov[0]) {
-    semFonte = !strcmp(s->prov,"tmdb") ? !desc_chave_tmdb()[0]
-                                      : !nuvem_trakt_cliente()[0];
+    semFonte = 1;
     snprintf(catalogId,sizeof catalogId,"%s",s->title);
-    if (semFonte) {
-      printf("[vertudo] fonte %s sem servico configurado: %s\n",
-             s->prov, s->title);
-      fflush(stdout);
-      return;
-    }
-    desc_vertudo_fonte_desde(s, vitPaginaFonte());
+    printf("[vertudo] fonte %s desabilitada: catalogos de colecao exigem addon: %s\\n",
+           s->prov, s->title);
+    fflush(stdout);
     return;
   }
   // BASE VAZIA NAO VIRA PEDIDO.
@@ -651,7 +643,7 @@ void vertudo_colecao(const ColFolder *folder) {
   // Numa pasta com varias abas e comum que so parte dos addons esteja instalada
   // aqui; abrir na aba morta faz a pasta inteira parecer vazia.
   for (i = 0; i < folder->nSources; i++)
-    if (folder->sources[i].prov[0] || baseDaFonte(&folder->sources[i])[0])
+    if (!folder->sources[i].prov[0] && baseDaFonte(&folder->sources[i])[0])
       { source = tabCursor = i; break; }
   snprintf(titulo,sizeof titulo,"%s",folder->title);openSource();
   // O cursor do cabecalho nasce na posicao certa (no Menu suspenso e o botao
@@ -1453,7 +1445,7 @@ static void vitIniciar(void) {
       snprintf(vitBases[r], sizeof vitBases[r], "%s", baseDaFonte(&vitFontes[r]));
     }
     vitNomes();
-    for (int r = 0; r < vitN; r++) vitLin[r].pagina = collection->sources[r].prov[0] ? 1 : 0;
+    for (int r = 0; r < vitN; r++) vitLin[r].pagina = 0;
   } else {
     vitFontes[0] = collection->sources[source];
     snprintf(vitBases[0], sizeof vitBases[0], "%s", baseDaFonte(&vitFontes[0]));
@@ -1690,7 +1682,7 @@ static void vitCarregar(Uint32 agora) {
       vitPedidoSoltar(vitPedidos[r]); vitPedidos[r] = NULL;
       free(vitExtra[r]); vitExtra[r] = NULL;
       vitLin[r].n = vitLin[r].brutoN = vitLin[r].extraN = 0;
-      vitLin[r].mais = 0; vitLin[r].pagina = s->prov[0] ? 1 : 0;
+      vitLin[r].mais = 0; vitLin[r].pagina = 0;
       vitLin[r].estado = VIT_PEND; vitLin[r].semFonte = 0;
       vitRetentarEm[r] = 0;
       vitDesligada[r] = 2;   // a nova fonte ainda nao foi conferida
@@ -1698,7 +1690,25 @@ static void vitCarregar(Uint32 agora) {
       snprintf(vitBases[r], sizeof vitBases[r], "%s", base);
       vitProjetoSujo = 1;
     }
-    int desligada = !s->prov[0] && base[0] && addons_base_desligada(base);
+    // Fontes nao-addon ficam visiveis, mas vazias e sem requisicoes.
+    if (s->prov[0]) {
+      if (vitManualFonte == r) vitManualFonte = -1;
+      vitManualPendente[r] = 0;
+      vitPedidoSoltar(vitPedidos[r]); vitPedidos[r] = NULL;
+      free(vitExtra[r]); vitExtra[r] = NULL;
+      if (vitLin[r].estado != VIT_VAZIA || !vitLin[r].semFonte ||
+          vitLin[r].n || vitLin[r].brutoN || vitLin[r].extraN || vitLin[r].mais) {
+        vitLin[r].n = vitLin[r].brutoN = vitLin[r].extraN = 0;
+        vitLin[r].mais = 0;
+        vitLin[r].estado = VIT_VAZIA;
+        vitLin[r].semFonte = 1;
+        vitProjetoSujo = 1;
+      }
+      vitRetentarEm[r] = 0;
+      vitDesligada[r] = 0;
+      continue;
+    }
+    int desligada = base[0] && addons_base_desligada(base);
     if (vitDesligada[r] != desligada) {
       if (vitManualFonte == r) vitManualFonte = -1;
       vitManualPendente[r] = 0;
@@ -1706,7 +1716,7 @@ static void vitCarregar(Uint32 agora) {
       vitPedidoSoltar(vitPedidos[r]); vitPedidos[r] = NULL;
       free(vitExtra[r]); vitExtra[r] = NULL;
       vitLin[r].n = vitLin[r].brutoN = vitLin[r].extraN = 0;
-      vitLin[r].mais = 0; vitLin[r].pagina = s->prov[0] ? 1 : 0;
+      vitLin[r].mais = 0; vitLin[r].pagina = 0;
       vitLin[r].estado = desligada ? VIT_VAZIA : VIT_PEND;
       vitLin[r].semFonte = 0; vitRetentarEm[r] = 0;
       vitProjetoSujo = 1;
@@ -1849,7 +1859,7 @@ static int vitVoltarTudo(void) {
 
 static int primeiraFonte(void) {
   for (int i = 0; i < collection->nSources; i++)
-    if (collection->sources[i].prov[0] || baseDaFonte(&collection->sources[i])[0]) return i;
+    if (!collection->sources[i].prov[0] && baseDaFonte(&collection->sources[i])[0]) return i;
   return 0;
 }
 // A EXIBICAO ESCOLHIDA no trilho aberto, e ela fica gravada para esta pasta.
