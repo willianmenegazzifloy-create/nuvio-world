@@ -70,10 +70,18 @@ int main(void) {
   gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\n");
   assert(ajustes_menu_topo());
   assert(ajustes_menu_topo_icones()); // instalação/perfil sem chave nasce em ícones
-  { MenuTopoGeo g; menu_topo_geo(&g);
-    assert(g.n >= 5 && !g.cortado);
+  { MenuTopoGeo g; float pequeno, medio, grande;
+    gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoTamanhoLocal 0\n");
+    menu_topo_geo(&g); pequeno = g.textoEscala;
+    assert(g.n >= 5 && !g.cortado && pequeno > 0.45f && pequeno < 0.65f);
     for (int k = 0; k < g.n; k++) assert(g.w[k] == g.h);
-    assert(g.busca[g.n - 1]); }
+    assert(g.busca[g.n - 1]);
+    gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoTamanhoLocal 1\n");
+    menu_topo_geo(&g); medio = g.textoEscala;
+    gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoTamanhoLocal 2\n");
+    menu_topo_geo(&g); grande = g.textoEscala;
+    assert(pequeno < medio && medio < grande);
+    gravar("homeLayoutLocal 0\nmodernSidebar 0\nmenuTopoLocal 1\nmenuTopoTamanhoLocal 1\n"); }
   assert(ajustes_rail_largura_fixa() == 0.0f);
   assert(ajustes_conteudo_x() == NV_CONTENT_PAD);
   menu_iniciar();
