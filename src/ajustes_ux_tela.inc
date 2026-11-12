@@ -250,6 +250,11 @@ static const Item TELA[] = {
     ROT("Trakt e Simkl"),
       OPC(AJ_TRAKT), OPC(AJ_SIMKL), OPC(AJ_SALVOS_DEST), OPC(AJ_CW_FONTE), OPC(AJ_CW_PROXIMO), OPC(AJ_HIST_CONTA), OPC(AJ_SOCIAL), OPC(AJ_DISCORD),
     ROT("Notificações"), OPC(AJ_ENQUETES),
+    ROT("Gerenciamento de configurações"),
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+      OPC(AJ_CONFIG_EXPORTAR), OPC(AJ_CONFIG_IMPORTAR),
+#endif
+      OPC(AJ_CONFIG_COPIAR),
 
   SEC("Esta TV", "Resolução, imagens, efeitos e diagnóstico", "aj_monitor-cog"),
 OPC(AJ_RESOLUCAO), OPC(AJ_GPU_EFEITOS), OPC(AJ_AMPLIAR_UI), OPC(AJ_AMPLIACAO_ALGO), OPC(AJ_AMPLIACAO_NITIDEZ), OPC(AJ_HDR_INTERFACE), OPC(AJ_QUALIDADE_IMG),
