@@ -25,7 +25,10 @@ int col_midia_e_serie(const char *midia) {
 }
 int col_fonte_e_serie(const ColSource *fonte) {
   if (!fonte) return 0;
-  return col_midia_e_serie(fonte->prov[0] ? fonte->midia : fonte->type);
+  // mediaType e o dado canonico dos provedores; fontes legadas podem nao
+  // preenche-lo e ainda informar o tipo pelo campo type.
+  const char *midia = fonte->midia[0] ? fonte->midia : fonte->type;
+  return col_midia_e_serie(midia);
 }
 static pthread_mutex_t colTrava = PTHREAD_MUTEX_INITIALIZER;
 // PASTAS EM BLOCOS (#255). Um bloco de 64 so e alocado quando a montagem chega
