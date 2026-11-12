@@ -1,18 +1,33 @@
-// "OCULTAR NAO LANCADOS" (hideUnreleasedContent) PARA O QUE VEM DO CATALOGO.
-//
-// O ajuste existia e so a Biblioteca o lia (biblioteca.c). As fileiras da Home
-// e a grade de uma colecao / "Ver tudo" mostravam um filme de 2099 mesmo com ele
-// ligado (issue #369, item 1).
-//
-// A regra e a unica que o catalogo prova: o ANO que abre `CatItem.meta`
-// ("2099", "2099  ·  120 min", "2099-") e MAIOR que o ano de agora. Sem ano no
-// meta (muito addon nao manda releaseInfo) nao se esconde: nao ha como saber, e
-// esconder faria sumir titulo bom. Titulo que estreia ainda neste ano tambem
-// fica: o meta so tem o ano, nao a data.
+// "OCULTAR NAO LANCADOS" (hideUnreleasedContent) para catalogos e colecoes.
+// Prefere a data ISO completa; quando a fonte so informa o ano, conserva o
+// comportamento seguro anterior: so esconde anos posteriores ao atual.
 #ifndef NV_NLANC_H
 #define NV_NLANC_H
-// 1 = o meta traz um ano de 4 digitos no inicio e ele e > anoAtual.
-// So cabecalho: descoberta.c entra em muitos testes com lista fixa de fontes.
+#include <stddef.h>
+
+static inline int nlanc_iso_valida(const char *s) {
+  if (!s || s[0] < '0' || s[0] > '9' ||
+      s[1] < '0' || s[1] > '9' || s[2] < '0' || s[2] > '9' ||
+      s[3] < '0' || s[3] > '9' || s[4] != '-' ||
+      s[5] < '0' || s[5] > '9' || s[6] < '0' || s[6] > '9' ||
+      s[7] != '-' || s[8] < '0' || s[8] > '9' ||
+      s[9] < '0' || s[9] > '9') return 0;
+  int mes = (s[5]-'0')*10 + s[6]-'0';
+  int dia = (s[8]-'0')*10 + s[9]-'0';
+  return mes >= 1 && mes <= 12 && dia >= 1 && dia <= 31;
+}
+
+// 1 quando a data completa e posterior a hoje. Datas ISO YYYY-MM-DD podem
+// ser comparadas como texto porque seus campos estao em ordem decrescente.
+static inline int nlanc_data_futura(const char *data, const char *hoje) {
+  char a[11], b[11];
+  if (!nlanc_iso_valida(data) || !nlanc_iso_valida(hoje)) return 0;
+  for (int i = 0; i < 10; i++) { a[i] = data[i]; b[i] = hoje[i]; }
+  a[10] = b[10] = 0;
+  return a[0] && b[0] && __builtin_strcmp(a, b) > 0;
+}
+
+// Fallback para fontes que so enviam o ano (por exemplo, listas do Trakt).
 static inline int nlanc_meta_futuro(const char *meta, int anoAtual) {
   int ano = 0;
   if (!meta) return 0;
@@ -20,8 +35,14 @@ static inline int nlanc_meta_futuro(const char *meta, int anoAtual) {
     if (meta[i] < '0' || meta[i] > '9') return 0;
     ano = ano * 10 + (meta[i] - '0');
   }
-  // "20245" nao e ano: o quinto digito invalida a leitura.
   if (meta[4] >= '0' && meta[4] <= '9') return 0;
   return ano > anoAtual;
+}
+
+static inline int nlanc_futuro(const char *data, const char *meta,
+                               const char *hoje, int anoAtual) {
+  if (nlanc_iso_valida(data) && nlanc_iso_valida(hoje))
+    return nlanc_data_futura(data, hoje);
+  return nlanc_meta_futuro(meta, anoAtual);
 }
 #endif
