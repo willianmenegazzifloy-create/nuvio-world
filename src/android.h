@@ -14,6 +14,11 @@ void android_interface_modo(int mobile);
 // Salva uma copia local do registro pelo seletor de arquivos do Android.
 // As mensagens ja vem traduzidas; nao envia nem altera o registro original.
 void android_baixar_registro(const char *arquivo, const char *sucesso, const char *falha);
+// Seletor SAF para exportar/importar o pacote JSON de configurações.
+void android_config_exportar(const char *arquivo);
+void android_config_importar(void);
+int android_config_evento(char *dst, size_t n);
+void android_config_resultado(int sucesso, int tipo);
 // Android device classification captured before SDL starts; never a screen heuristic.
 int android_interface_mobile_auto(void);
 #ifdef NV_TOUCH_UI
