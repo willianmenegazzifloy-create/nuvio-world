@@ -178,6 +178,11 @@ static const char *uxSinonimos(int op) {
   if (ajLegendaPrincipal(op) || op == AJ_LEG1_RESTAURAR || ajLegendaSecundaria(op))
     return "legenda estilo fonte tamanho cor opacidade fundo posicao borda contorno negrito atraso subtitle style font size color opacity position outline bold delay";
   switch (op) {
+#if defined(NV_ANDROID) || defined(__EMSCRIPTEN__)
+    case AJ_CONFIG_EXPORTAR: case AJ_CONFIG_IMPORTAR:
+#endif
+    case AJ_CONFIG_COPIAR:
+      return "configurações exportar importar JSON backup restaurar copiar perfil preferências";
     case AJ_IDIOMA: return "idioma interface menus language portugues ingles espanhol";
     case AJ_AUD_LINGUA: return "idioma audio dublado dublagem original voz language";
     case AJ_AUD_LINGUA2: return "idioma audio segundo secundario dublado dublagem voz language second secondary";
