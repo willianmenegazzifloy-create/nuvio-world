@@ -30,6 +30,23 @@ int col_fonte_e_serie(const ColSource *fonte) {
   const char *midia = fonte->midia[0] ? fonte->midia : fonte->type;
   return col_midia_e_serie(midia);
 }
+
+// Semantica equivalente a TmdbCollectionSourceResolver do NuvioTV 1.1.0:
+// LIST pode conter filmes e series; COLLECTION sempre retorna filmes;
+// NETWORK sempre retorna series; os outros tipos seguem mediaType.
+const char *col_tmdb_tipo_padrao(const ColSource *fonte) {
+  if (!fonte) return "movie";
+  if (!strcasecmp(fonte->tmdbTipo, "LIST") ||
+      !strcasecmp(fonte->tmdbTipo, "COLLECTION")) return "movie";
+  if (!strcasecmp(fonte->tmdbTipo, "NETWORK")) return "series";
+  return col_fonte_e_serie(fonte) ? "series" : "movie";
+}
+int col_tmdb_fonte_aceita_tipo(const ColSource *fonte, const char *tipo) {
+  if (!fonte || !tipo) return 0;
+  if (!strcasecmp(fonte->tmdbTipo, "LIST"))
+    return !strcmp(tipo, "movie") || !strcmp(tipo, "series");
+  return !strcmp(tipo, col_tmdb_tipo_padrao(fonte));
+}
 static pthread_mutex_t colTrava = PTHREAD_MUTEX_INITIALIZER;
 // PASTAS EM BLOCOS (#255). Um bloco de 64 so e alocado quando a montagem chega
 // nele, e nunca e devolvido: col_folder entrega o ENDERECO da pasta, e quem o
