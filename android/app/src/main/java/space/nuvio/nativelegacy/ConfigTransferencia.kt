@@ -83,9 +83,10 @@ class ConfigTransferencia(private val activity: NuvioActivity) {
 
     fun notificar(sucesso: Boolean, tipo: Int) {
         val mensagem = when {
-            !sucesso -> if (tipo == EXPORTAR) "Não foi possível exportar as configurações." else "Arquivo inválido ou não foi possível aplicar as configurações."
-            tipo == IMPORTAR -> "Configurações importadas. Reinicie o Nuvio para aplicar."
-            tipo == COPIAR -> "Configurações copiadas. Reinicie o Nuvio para aplicar."
+            !sucesso -> if (tipo == NOTIF_EXPORTAR) "Não foi possível exportar as configurações." else "Arquivo inválido ou não foi possível aplicar as configurações."
+            tipo == NOTIF_IMPORTAR -> "Configurações importadas. Reinicie o Nuvio para aplicar."
+            tipo == NOTIF_COPIAR -> "Configurações copiadas. Reinicie o Nuvio para aplicar."
+            tipo == NOTIF_EXPORTAR -> "Configurações exportadas."
             else -> "Operação concluída."
         }
         avisar(mensagem)
@@ -122,7 +123,9 @@ class ConfigTransferencia(private val activity: NuvioActivity) {
     companion object {
         private const val EXPORTAR = 1
         private const val IMPORTAR = 2
-        private const val COPIAR = 3
+        private const val NOTIF_IMPORTAR = 1
+        private const val NOTIF_COPIAR = 2
+        private const val NOTIF_EXPORTAR = 3
         private const val PEDIDO_EXPORTAR = 49118
         private const val PEDIDO_IMPORTAR = 49119
         private const val MAX_BYTES = 512 * 1024
