@@ -2431,6 +2431,8 @@ static void homeMarcarURL(const char *url, float largura) {
   tex_cache_marcar_larg(NV_CACHE_ARTE_GRUPO_HOME, url, largura, 1, 0);
 }
 
+static void homeCacheRecomecarVarredura(void);
+
 static void homeAtualizarReferenciasArte(void) {
   int r, i;
   cachearte_limpar_referencias_grupo(NV_CACHE_ARTE_GRUPO_HOME);
@@ -2452,6 +2454,7 @@ static void homeAtualizarReferenciasArte(void) {
   for (i = 0; i < heroSetN; i++)
     homeMarcarURL(arte_por_identidade(heroSet[i], 2), NV_TELA_W);
   cachearte_estatisticas_pedir();
+  homeCacheRecomecarVarredura();
 }
 
 // A Home fica montada por trás do seletor de perfil, mas antes desta etapa os
@@ -3764,6 +3767,7 @@ static void home_atualizar_(float dt, Uint32 agora) {
   if (!telefoneui_ativo()) { toqueHomeLimpar(); toqueHeroCancelar(); }
 #endif
   sincronizarFileiras();
+  homePrecarregarPasso(agora);
   // A FILEIRA DE AMIGOS tem tantas colunas quantos rostos (+ "Adicionar"), e
   // isso muda sem o catalogo mudar (um amigo novo chega do recomenda.c).
   for (int r = 0; r < nFileiras; r++) {
@@ -8725,6 +8729,7 @@ void home_abrir_sessao(void) {
   okHold = 0.0f;
   home_retomar_esquecer();
   nFileiras = nStreamBarra = nProxHome = 0;
+  homeCacheReiniciarSessao();
   memset(fileiras, 0, sizeof fileiras);
   filsAplicadas = prefsAplicadas = -1;
   memset(animFoco, 0, sizeof animFoco);
