@@ -64,8 +64,8 @@ int main(void) {
          && f->sources[1].tmdbId == 6384 && strstr(f->sources[1].filtros, "withGenres"));
   puts("ok  fontes trakt e tmdb entram com id, ordenacao e filtros");
 
-  // So os catalogos das pastas Novos Filmes/Novas Series em Descobrir
-  // recebem o sinal para limitar o TMDB a datas ja alcancadas.
+  // Novos Filmes/Novas Series recebem o limite de data mesmo se o grupo
+  // tiver outro nome (ou tiver sido renomeado no editor da conta).
   const char *descobrir =
     "{\"collections\":[{\"id\":\"d\",\"title\":\"Categorias\",\"folders\":["
     "{\"id\":\"nf\",\"title\":\"Novos Filmes\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
