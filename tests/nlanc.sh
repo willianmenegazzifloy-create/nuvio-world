@@ -19,5 +19,6 @@ if sed -n '/static int descOcultaNaoLancado/,/^}/p' "$ROOT/src/descoberta.c" | g
 fi
 grep -Fq 'nlanc_futuro(it->dataEstreia, it->meta, hoje, tmv.tm_year + 1900)' "$ROOT/src/descoberta.c"
 grep -Fq 'deMeta(p, f, tipo, &saida[n]) && !descOcultaNaoLancado(&saida[n])' "$ROOT/src/descoberta.c"
+grep -Fq 'deMeta(p, f, tipo, &saida[n]) && !descOcultaNaoLancado(&saida[n])' "$ROOT/src/descoberta.c"
 grep -Fq 'deMeta(p, f, a->tipo, it) && !descOcultaNaoLancado(it)' "$ROOT/src/descoberta.c"
 echo "unreleased titles: hidden permanently"
