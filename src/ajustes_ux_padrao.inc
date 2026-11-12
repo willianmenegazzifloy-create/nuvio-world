@@ -353,3 +353,4 @@
   0, 0, /* export/import actions */
 #endif
   0, /* copy settings from another profile */
+  1, /* normal navigation speed */
