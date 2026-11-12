@@ -67,15 +67,17 @@ int main(void) {
   // So os catalogos das pastas Novos Filmes/Novas Series em Descobrir
   // recebem o sinal para limitar o TMDB a datas ja alcancadas.
   const char *descobrir =
-    "{\"collections\":[{\"id\":\"d\",\"title\":\"Descobrir\",\"folders\":["
+    "{\"collections\":[{\"id\":\"d\",\"title\":\"Categorias\",\"folders\":["
     "{\"id\":\"nf\",\"title\":\"Novos Filmes\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
-    "{\"id\":\"ns\",\"title\":\"Novas Séries\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"TV\"}]},"
+    "{\"id\":\"ns\",\"title\":\"Novas Séries\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"SERIES\"}]},"
     "{\"id\":\"alta\",\"title\":\"Filmes em Alta\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]}]}]}";
   assert(col_definir_json(descobrir) == 3);
   assert(col_folder(0)->sources[0].somenteLancados == 1);
   assert(col_folder(1)->sources[0].somenteLancados == 1);
+  assert(col_midia_e_serie("SERIES") && col_midia_e_serie("tv") && col_midia_e_serie("show"));
+  assert(col_fonte_e_serie(&col_folder(1)->sources[0]) && !col_fonte_e_serie(&col_folder(0)->sources[0]));
   assert(col_folder(2)->sources[0].somenteLancados == 0);
-  puts("ok  filtro de lancamentos futuros ativado somente em Descobrir / Novos Filmes e Novas Series");
+  puts("ok  filtro de lancamentos futuros segue o nome da pasta, sem depender do grupo; mídia SERIES normalizada");
 
   // A capacidade real usada pela collection do usuario: 249 pastas numa
   // fileira e ate 52 fontes dentro de uma pasta (o codigo antigo parava em 32).
