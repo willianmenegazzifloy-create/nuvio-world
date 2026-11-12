@@ -23,6 +23,8 @@ grep -Fq 'deMeta(p, f, tipo, &saida[n]) && !descOcultaNaoLancado(&saida[n])' "$R
 grep -Fq 'deMeta(p, f, a->tipo, it) && !descOcultaNaoLancado(it)' "$ROOT/src/descoberta.c"
 grep -Fq 'js_texto(e, fe, "released", v, sizeof v)' "$ROOT/src/descoberta.c"
 grep -Fq 'js_texto(e, fe, "first_aired", v, sizeof v)' "$ROOT/src/descoberta.c"
+grep -Fq 'js_texto(ini, fim, "released", released, sizeof released)' "$ROOT/src/descoberta.c"
+grep -Fq 'nlanc_data_escolher(d->dataEstreia' "$ROOT/src/descoberta.c"
 echo "unreleased titles: hidden permanently"
 
 grep -Fq 'descOcultaNaoLancadoFonte(&item, prov)' "$ROOT/src/descoberta.c"
