@@ -4,6 +4,12 @@
 #include "perfis.h"
 #include "js.h"
 #include "jsw.h"
+#ifdef NV_ANDROID
+#include "android.h"
+#endif
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -170,4 +176,92 @@ int configtransfer_copiar_perfil(int origem, int destino) {
   if (!copiar(a, b)) return 0;
   printf("[config] preferencias do perfil %d copiadas para %d; reinicie o app para aplicar\n", origem, destino);
   return 1;
+}
+
+#ifdef __EMSCRIPTEN__
+EM_JS(void, ct_browser_exportar, (const char *caminho), {
+  try {
+    var bytes = FS.readFile(UTF8ToString(caminho));
+    var blob = new Blob([bytes], {type: "application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "Nuvio-Configuracoes.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  } catch (e) { alert("Não foi possível exportar as configurações."); }
+});
+EM_JS(void, ct_browser_importar, (), {
+  var input = document.createElement("input");
+  input.type = "file"; input.accept = ".json,application/json";
+  input.onchange = function () {
+    if (!input.files || !input.files.length) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        FS.writeFile("/tmp/nuvio-config-import.json", new Uint8Array(reader.result));
+        Module.ccall("configtransfer_importar_callback", "void", [], []);
+      } catch (e) { alert("Não foi possível ler o arquivo de configurações."); }
+    };
+    reader.onerror = function () { alert("Não foi possível ler o arquivo de configurações."); };
+    reader.readAsArrayBuffer(input.files[0]);
+  };
+  input.click();
+});
+EM_JS(void, ct_browser_notificar, (int ok, int tipo), {
+  var msg = !ok ? "Não foi possível aplicar as configurações. Verifique o arquivo e tente novamente."
+    : (tipo === 1 ? "Configurações importadas. Reinicie o Nuvio para aplicar."
+       : "Configurações copiadas. Reinicie o Nuvio para aplicar.");
+  alert(msg);
+});
+EMSCRIPTEN_KEEPALIVE void configtransfer_importar_callback(void) {
+  int ok = configtransfer_importar("/tmp/nuvio-config-import.json");
+  remove("/tmp/nuvio-config-import.json");
+  configtransfer_notificar(ok, 1);
+}
+#endif
+
+void configtransfer_notificar(int sucesso, int tipo) {
+#ifdef NV_ANDROID
+  android_config_resultado(sucesso, tipo);
+#elif defined(__EMSCRIPTEN__)
+  ct_browser_notificar(sucesso, tipo);
+#else
+  printf("[config] %s (tipo %d)\n", sucesso ? "operacao concluida" : "operacao falhou", tipo);
+#endif
+}
+
+void configtransfer_pedir_exportacao(void) {
+  char caminho[600];
+  if (!configtransfer_exportar(caminho, sizeof caminho)) {
+    configtransfer_notificar(0, 1);
+    return;
+  }
+#ifdef NV_ANDROID
+  android_config_exportar(caminho);
+#elif defined(__EMSCRIPTEN__)
+  ct_browser_exportar(caminho);
+#else
+  configtransfer_notificar(0, 1);
+#endif
+}
+
+void configtransfer_pedir_importacao(void) {
+#ifdef NV_ANDROID
+  android_config_importar();
+#elif defined(__EMSCRIPTEN__)
+  ct_browser_importar();
+#else
+  configtransfer_notificar(0, 1);
+#endif
+}
+
+void configtransfer_processar_eventos(void) {
+#ifdef NV_ANDROID
+  char caminho[600];
+  if (android_config_evento(caminho, sizeof caminho)) {
+    int ok = configtransfer_importar(caminho);
+    remove(caminho);
+    android_config_resultado(ok, 1);
+  }
+#endif
 }
