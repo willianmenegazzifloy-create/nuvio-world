@@ -731,7 +731,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
           snprintf(a->title, sizeof a->title, "%s", a->tmdbTipo[0] ? a->tmdbTipo : "TMDB");
         a->somenteLancados = somenteLancados;
         if (converterFonteTmdbParaAddon(a, group)) {
-          printf("[colecoes] fonte TMDB '%s' convertida para catalogo addon %s/%s\\n",
+          printf("[colecoes] fonte TMDB '%s' convertida para catalogo addon %s/%s\n",
                  a->title, a->type, a->catId);
           v->nSources++; continue;
         }
