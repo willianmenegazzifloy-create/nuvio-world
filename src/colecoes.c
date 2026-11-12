@@ -621,18 +621,24 @@ static void tirarManifest(char *base) {
 static int fPulProvedor, fPulSemFonte, fPulSemTitulo, fPulCheio, fGifCortado;
 static char fPrimeiraPulada[128];
 
-// Os dois catalogos de descoberta precisam mostrar somente titulos cuja
-// data de lancamento/primeira exibicao ja chegou. O sinal e colocado em cada
-// fonte TMDB da pasta, sem alterar outras consultas DISCOVER da collection.
+// Os catalogos de descoberta das familias "Novos Filmes" e "Novas Series"
+// devem chegar ao TMDB com a data maxima de hoje. Prefixo inclui subdivisoes
+// configuradas pelo usuario, como "Novos Filmes de Ação" e "New Series - Drama".
+static int pastaComecaCom(const char *texto, const char *prefixo) {
+  return texto && prefixo && !strncasecmp(texto, prefixo, strlen(prefixo));
+}
 static int pastaDescobertaSomenteLancados(const char *pasta) {
-  // A pasta pode estar em outro grupo, ou o grupo ter sido renomeado no web.
-  // A semântica pertence ao nome da categoria, não ao rótulo do agrupamento.
-  int novosFilmes = pasta && (!strcasecmp(pasta, "Novos Filmes") ||
-                              !strcasecmp(pasta, "New Movies"));
-  int novasSeries = pasta && (!strcasecmp(pasta, "Novas Séries") ||
-                              !strcasecmp(pasta, "Novas Series") ||
-                              !strcasecmp(pasta, "New Series"));
-  return novosFilmes || novasSeries;
+  static const char *const filmes[] = {
+    "Novos Filmes", "New Movies", "New Films"
+  };
+  static const char *const series[] = {
+    "Novas Séries", "Novas Series", "New Series"
+  };
+  for (size_t i = 0; i < sizeof filmes / sizeof filmes[0]; i++)
+    if (pastaComecaCom(pasta, filmes[i])) return 1;
+  for (size_t i = 0; i < sizeof series / sizeof series[0]; i++)
+    if (pastaComecaCom(pasta, series[i])) return 1;
+  return 0;
 }
 
 // Devolve 0 quando a colecao NAO COUBE (teto de pastas, de fontes ou falta de
