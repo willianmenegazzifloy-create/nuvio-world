@@ -284,6 +284,8 @@ int  addons_alternar(int i);          // devolve o estado NOVO
 // 0 = lista cheia, ja instalado ou URL que nao cabe (addonurl.h). #360 mao
 // unica: o acrescimo vale so nesta TV; o proximo pull traz a conta por cima.
 int  addons_adicionar(const char *nome, const char *urlManifest);
+// Ativa um addon ja instalado pela URL (normalizada). 1 se encontrado.
+int  addons_ativar_url(const char *url);
 // O addon fornece este recurso? Ate a sonda responder e uma suposicao
 // otimista; addons_sondado() diz qual dos dois casos e.
 int  addons_fornece(int i, int oque);
