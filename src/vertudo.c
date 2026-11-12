@@ -1637,6 +1637,17 @@ static void vitCarregar(Uint32 agora) {
   // Reencontrar pela chave antes de ler fontes; os pedidos guardam copias.
   unsigned revisao = col_revisao();
   int nomesNovos = revisao != vitColecoesRev;
+  /* A conta pode reordenar/inserir fontes com a pasta aberta. A linha em foco
+     acompanha a identidade da fonte, nao o indice que ela tinha no array. */
+  ColSource fonteFocoAntes;
+  VtChave itemFocoAntes;
+  int guardarFoco = nomesNovos && vitFR >= 0 && vitFR < vitN;
+  int focoEraTudo = guardarFoco && vitTemVerTudo(vitFR) && vitFC == vitLin[vitFR].n;
+  int linhaFocoAntes = vitFR, colunaFocoAntes = vitFC;
+  if (guardarFoco) {
+    fonteFocoAntes = vitFontes[vitFR];
+    guardarChave(&itemFocoAntes, vitItem(vitFR, vitFC));
+  }
   if (revisao != vitColecoesRev) {
     const ColFolder *atual = NULL;
     for (int i = 0; i < col_n(); i++) {
@@ -1724,6 +1735,29 @@ static void vitCarregar(Uint32 agora) {
     l->semFonte = 0;
     if (vitManualPendente[r]) { vitManualLargar(r, agora); continue; }
     if (vitPedidoLargar(r) < 0) vitRetentarEm[r] = agora + 1500u;
+  }
+  if (guardarFoco) {
+    int novaLinha = -1;
+    for (int r = 0; r < vitN; r++)
+      if (!memcmp(&vitFontes[r], &fonteFocoAntes, sizeof fonteFocoAntes)) {
+        novaLinha = r; break;
+      }
+    if (novaLinha < 0 && vitN)
+      novaLinha = linhaFocoAntes < vitN ? linhaFocoAntes : vitN - 1;
+    if (novaLinha >= 0) {
+      vitFR = novaLinha;
+      vitFC = focoEraTudo && vitTemVerTudo(novaLinha)
+            ? vitLin[novaLinha].n : colunaFocoAntes;
+      if (itemFocoAntes.id[0] || itemFocoAntes.tmdb > 0) {
+        for (int c = 0; c < vitLin[novaLinha].n; c++) {
+          const CatItem *it = vitItem(novaLinha, c);
+          if (it && mesmaChave(&itemFocoAntes, it)) { vitFC = c; break; }
+        }
+      }
+      if (vitFC >= vitColunas(novaLinha))
+        vitFC = vitLin[novaLinha].n ? vitLin[novaLinha].n - 1 : 0;
+      vitColLemb[novaLinha] = vitFC;
+    } else vitFR = vitFC = 0;
   }
   // As paginas pedidas pelo botao preservam o prefixo canonico da fileira;
   // os outros pedidos iniciais continuam publicando independentemente.
