@@ -2529,7 +2529,7 @@ static void abaRotulos(char rot[][180], int nAbas) {
   }
   for(int i=0;i<nAbas;i++) {
     const ColSource *s=&collection->sources[i];
-    const char *tipo=i18n(!strcmp(s->type,"series")?"Séries":"Filmes");
+    const char *tipo=i18n(abaSerie(i)?"Séries":"Filmes");
     int repete=0;
     for(int j=0;j<nAbas&&nomeAba[i][0];j++) if(j!=i&&!strcmp(nomeAba[i],nomeAba[j]))repete=1;
     if(!nomeAba[i][0])snprintf(rot[i],180,"%s",tipo);
