@@ -131,6 +131,8 @@ const ColFolder *col_folder(int i);
 // Aceita TV/SERIES/SHOW e variantes em minúsculas; fonte addon usa `type`.
 int col_midia_e_serie(const char *midia);
 int col_fonte_e_serie(const ColSource *fonte);
+const char *col_tmdb_tipo_padrao(const ColSource *fonte);
+int col_tmdb_fonte_aceita_tipo(const ColSource *fonte, const char *tipo);
 // IMPRESSAO DA ESTRUTURA das colecoes para o snapshot da Home (homeestado.c):
 // grupo, id e fontes de cada pasta, SEM arte (URL de arte muda sem criar
 // fileira nova). Calculada inteira sob a trava das colecoes (#203): pode ser
