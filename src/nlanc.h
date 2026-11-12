@@ -4,9 +4,10 @@
 #ifndef NV_NLANC_H
 #define NV_NLANC_H
 #include <stddef.h>
+#include <string.h>
 
 static inline int nlanc_iso_valida(const char *s) {
-  if (!s || s[0] < '0' || s[0] > '9' ||
+  if (!s || strlen(s) < 10 || s[0] < '0' || s[0] > '9' ||
       s[1] < '0' || s[1] > '9' || s[2] < '0' || s[2] > '9' ||
       s[3] < '0' || s[3] > '9' || s[4] != '-' ||
       s[5] < '0' || s[5] > '9' || s[6] < '0' || s[6] > '9' ||
@@ -14,7 +15,12 @@ static inline int nlanc_iso_valida(const char *s) {
       s[9] < '0' || s[9] > '9') return 0;
   int mes = (s[5]-'0')*10 + s[6]-'0';
   int dia = (s[8]-'0')*10 + s[9]-'0';
-  return mes >= 1 && mes <= 12 && dia >= 1 && dia <= 31;
+  static const int dias[] = { 31,28,31,30,31,30,31,31,30,31,30,31 };
+  int ano = (s[0]-'0')*1000 + (s[1]-'0')*100 + (s[2]-'0')*10 + s[3]-'0';
+  int maxDia;
+  if (mes < 1 || mes > 12) return 0;
+  maxDia = dias[mes-1] + (mes == 2 && (ano % 400 == 0 || (ano % 4 == 0 && ano % 100 != 0)));
+  return dia >= 1 && dia <= maxDia;
 }
 
 // 1 quando a data completa e posterior a hoje. Datas ISO YYYY-MM-DD podem
@@ -24,7 +30,7 @@ static inline int nlanc_data_futura(const char *data, const char *hoje) {
   if (!nlanc_iso_valida(data) || !nlanc_iso_valida(hoje)) return 0;
   for (int i = 0; i < 10; i++) { a[i] = data[i]; b[i] = hoje[i]; }
   a[10] = b[10] = 0;
-  return a[0] && b[0] && __builtin_strcmp(a, b) > 0;
+  return a[0] && b[0] && strcmp(a, b) > 0;
 }
 
 // Fallback para fontes que so enviam o ano (por exemplo, listas do Trakt).
