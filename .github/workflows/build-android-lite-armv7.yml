@@ -84,6 +84,12 @@ jobs:
           python3 tools/android/extract-config-from-apk.py \
             "$RUNNER_TEMP/nuvio-original.apk" --output local.properties
 
+      - name: Run collection, release-date and media-type regressions
+        run: |
+          bash tests/colecoes.sh
+          bash tests/vertudo_streamtabs.sh
+          bash tests/nlanc.sh
+
       - name: Build curl, JPEG and WebP libraries for Android
         run: bash tools/android/deps.sh arm64-v8a armeabi-v7a
 
