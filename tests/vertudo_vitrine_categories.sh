@@ -13,6 +13,8 @@ grep -q 'strcmp(it->tipo, tipoFonte ? "series" : "movie")' src/vertudo.c
 grep -q 'static int vitMesmoItem(const CatItem \*a, const CatItem \*b)' src/vertudo.c
 grep -q 'vitMesmoItem(ja, it)' src/vertudo.c
 grep -q 'if (!noTudo && vitFR >= 0 && vitFR < vitN)' src/vertudo.c
+grep -q 'ColSource fonteFocoAntes;' src/vertudo.c
+grep -q 'memcmp(&vitFontes\[r\], &fonteFocoAntes, sizeof fonteFocoAntes)' src/vertudo.c
 grep -q 'int r = i / vitCap, c = i % vitCap;' src/vertudo.c
 grep -q 'r \* vitCap + c, vitPonteiroGeracao' src/vertudo.c
 if grep -q 'vitAgrupar' src/vertudo.c; then
