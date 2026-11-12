@@ -20,4 +20,6 @@ fi
 grep -Fq 'nlanc_futuro(it->dataEstreia, it->meta, hoje, tmv.tm_year + 1900)' "$ROOT/src/descoberta.c"
 grep -Fq 'deMeta(p, f, tipo, &saida[n]) && !descOcultaNaoLancado(&saida[n])' "$ROOT/src/descoberta.c"
 grep -Fq 'deMeta(p, f, a->tipo, it) && !descOcultaNaoLancado(it)' "$ROOT/src/descoberta.c"
+grep -Fq 'js_texto(e, fe, "released", v, sizeof v)' "$ROOT/src/descoberta.c"
+grep -Fq 'js_texto(e, fe, "first_aired", v, sizeof v)' "$ROOT/src/descoberta.c"
 echo "unreleased titles: hidden permanently"
