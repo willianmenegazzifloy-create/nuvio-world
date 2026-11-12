@@ -7,11 +7,14 @@ grep -q '#define VIT_LIN_MAX COL_SOURCE_MAX' src/vertudo.c
 grep -q 'vitMulti = 1;' src/vertudo.c
 grep -q 'vitN = collection->nSources < VIT_LIN_MAX ? collection->nSources : VIT_LIN_MAX;' src/vertudo.c
 grep -q 'vitFontes\[r\] = collection->sources\[r\];' src/vertudo.c
-grep -q 'static int vitTipoFonte(const ColSource \*fonte)' src/vertudo.c
-grep -q 'vitTipoFonte(&vitFontes\[r\])' src/vertudo.c
-grep -q 'strcmp(it->tipo, tipoFonte ? "series" : "movie")' src/vertudo.c
-grep -q 'static int vitMesmoItem(const CatItem \*a, const CatItem \*b)' src/vertudo.c
-grep -q 'vitMesmoItem(ja, it)' src/vertudo.c
+grep -Fq 'col_tmdb_tipo_padrao(&f)' src/descoberta.c
+grep -Fq 'col_tmdb_fonte_aceita_tipo(&f, item.tipo)' src/descoberta.c
+grep -Fq 'col_tmdb_tipo_padrao(&fonte)' src/descoberta.c
+grep -Fq 'col_tmdb_fonte_aceita_tipo(&fonte, lote[nl].tipo)' src/descoberta.c
+if grep -Eq 'vitTipoFonte|vitMesmoItem|vitAgrupar' src/vertudo.c; then
+  echo "Vitrine ainda corrige categoria no desenho em vez de usar o CatalogRow da fonte" >&2
+  exit 1
+fi
 grep -q 'if (!noTudo && vitFR >= 0 && vitFR < vitN)' src/vertudo.c
 grep -q 'ColSource fonteFocoAntes;' src/vertudo.c
 grep -q 'memcmp(&vitFontes\[r\], &fonteFocoAntes, sizeof fonteFocoAntes)' src/vertudo.c
