@@ -223,17 +223,24 @@ EM_JS(void, ct_browser_exportar, (const char *caminho), {
 EM_JS(void, ct_browser_importar, (), {
   var input = document.createElement("input");
   input.type = "file"; input.accept = ".json,application/json";
+  input.style.position = "fixed"; input.style.left = "-10000px";
+  input.style.width = "1px"; input.style.height = "1px"; input.style.opacity = "0";
   document.body.appendChild(input);
   input.onchange = function () {
-    if (!input.files || !input.files.length) return;
+    if (!input.files || !input.files.length) { input.parentNode && input.parentNode.removeChild(input); return; }
     var reader = new FileReader();
     reader.onload = function () {
       try {
         FS.writeFile("/nuvio-config-import.json", new Uint8Array(reader.result));
         Module._configtransfer_importar_callback();
       } catch (e) { alert("Não foi possível ler o arquivo de configurações."); }
+      if (input.parentNode) input.parentNode.removeChild(input);
     };
-    reader.onerror = function () { alert("Não foi possível ler o arquivo de configurações."); };
+    reader.onerror = function () {
+      alert("Não foi possível ler o arquivo de configurações.");
+      if (input.parentNode) input.parentNode.removeChild(input);
+    };
+    input.addEventListener("cancel", function () { if (input.parentNode) input.parentNode.removeChild(input); });
     reader.readAsArrayBuffer(input.files[0]);
   };
   input.click();
