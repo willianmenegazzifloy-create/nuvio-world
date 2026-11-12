@@ -1117,9 +1117,9 @@ static void ddEvento(SDL_Keycode k) {
 // Pedido de um usuario (Reddit): "can the collection view be like a home screen
 // with a hero poster? Tabs are not the best view". A Vitrine e a Home em
 // miniatura: o destaque do titulo em foco no alto (a mesma arte, logo, meta e
-// sinopse do destaque da Home) e, abaixo, UMA FILEIRA POR ABA da colecao, com
-// os cartazes das fileiras da Home. Sem abas, as fileiras saem do proprio
-// catalogo: por tipo (filmes e series misturados) ou por decada.
+// sinopse do destaque da Home) e, abaixo, uma linha por fonte da pasta, com
+// seus cartazes e sua paginacao independente. Tambem vale quando ha apenas
+// uma fonte: nao dividimos a lista em decadas ou tipos artificiais.
 //
 // DADOS. Ate tres fontes leem suas primeiras paginas em paralelo; cada uma
 // publica na propria fileira assim que responde. A grade conserva seu leitor
@@ -1468,12 +1468,12 @@ static void vitProjetar(void) {
   }
   vitFR = linha < vitN ? linha : (vitN ? vitN - 1 : 0);
   vitFC = coluna;
-  // Procura primeiro na mesma fileira: catalogos distintos podem repetir a obra.
-  int achou = 0;
-  for (int passo = 0; !noTudo && passo < vitN && !achou; passo++) {
-    int r = (vitFR + passo) % vitN;
-    for (int c = 0; c < vitLin[r].n; c++)
-      if (mesmaChave(&vitFocoChave, vitItem(r, c))) { vitFR = r; vitFC = c; achou = 1; break; }
+  // Cada linha representa um catalogo independente (FOLLOW_LAYOUT). Se a
+  // mesma obra existir em outra fonte, ela nao pode roubar o foco desta linha:
+  // isso mudava vitFR no meio da navegacao e fazia a tela "pular" de categoria.
+  if (!noTudo && vitFR >= 0 && vitFR < vitN) {
+    for (int c = 0; c < vitLin[vitFR].n; c++)
+      if (mesmaChave(&vitFocoChave, vitItem(vitFR, c))) { vitFC = c; break; }
   }
   if (vitN && !vitLin[vitFR].n && !vitLin[vitFR].mais) {
     int r = vitLinhaVizinha(vitFR, 1);
@@ -1626,8 +1626,8 @@ static void vitGuardarInicial(int r, const VitPedido *p) {
          r + 1, n, vitLin[r].extraN, p->resultado.erro ? " (falha)" : "");
 }
 
-// Um passo da carga, por quadro: as fontes paralelas, as paginas do catalogo
-// unico e a releitura das fontes cujo addon ainda nao tinha endereco.
+// Um passo da carga, por quadro: cada fonte tem seu CatalogRow e seu pedido
+// independente; a paginacao manual continua vinculada a mesma fonte/linha.
 static void vitCarregar(Uint32 agora) {
   if (!vitBuf || !vitMulti) return;
   if (!nv_perfil_sessao_atual(vitSessao)) {
@@ -1763,8 +1763,8 @@ static void abrirItem(const CatItem *src) {
   }
 }
 
-// A fonte inteira conserva genero/provedor/filtros. Nas fileiras sinteticas,
-// o mesmo grupo da Vitrine e projetado localmente sobre as paginas recebidas.
+// Cada linha reabre a fonte original com genero/provedor/filtros intactos.
+// Nao ha agrupamento local por ano/tipo: "Ver tudo" abre o proprio catalogo.
 static int vitAbrirTudo(int r) {
   if (!aberta || lay != VT_LAY_VITRINE || !vitTemVerTudo(r) || !collection ||
       !nv_perfil_sessao_atual(vitSessao) || col_revisao() != vitColecoesRev) return 0;
