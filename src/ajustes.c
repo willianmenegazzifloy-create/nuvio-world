@@ -9905,8 +9905,10 @@ void ajustes_atualizar(float dt, Uint32 agora) {
           const ContaPerfil *perfil = perfis_item(i);
           if (perfil && !perfil->temPin && perfil->indice == origem && origem != ativo) { valido = 1; break; }
         }
-        if (valido) configtransfer_notificar(configtransfer_copiar_perfil(origem, ativo), 2);
-        else uxNotificar("Perfil inválido ou protegido por PIN.");
+        if (valido) {
+          int ok = configtransfer_copiar_perfil(origem, ativo);
+          uxNotificar(ok ? "Configurações copiadas. Reinicie o Nuvio para aplicar." : "Não foi possível copiar as configurações.");
+        } else uxNotificar("Perfil inválido ou protegido por PIN.");
       }
     }
     if (r == TECLADO_PRONTO && stCampo) {
