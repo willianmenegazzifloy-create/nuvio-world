@@ -7,12 +7,13 @@ trap 'rm -f "$TMP"' EXIT HUP INT TERM
 "$CC" -std=c11 -Wall -Wextra -Werror -I"$ROOT/src" "$ROOT/tests/nlanc.c" -o "$TMP"
 "$TMP"
 
-# The preference was removed from the UI and is now a permanent product rule.
-if grep -Fq 'ESC("Ocultar não lançados"' "$ROOT/src/ajustes.c"; then
+# A regra e permanente: a chave antiga fica apenas para compatibilidade.
+if grep -Fq 'OPC(AJ_OCULTAR_NLANC)' "$ROOT/src/ajustes_ux_tela.inc"; then
   echo "Ocultar não lançados ainda aparece nos ajustes" >&2
   exit 1
 fi
 grep -Fq 'int ajustes_ocultar_nao_lancados(void) { return 1; }' "$ROOT/src/ajustes.c"
+grep -Fq 'if (op == AJ_OCULTAR_NLANC) return 1;' "$ROOT/src/ajustes.c"
 if sed -n '/static int descOcultaNaoLancado/,/^}/p' "$ROOT/src/descoberta.c" | grep -q 'ajustes_ocultar_nao_lancados'; then
   echo "Filtro de estreias ainda depende de preferência" >&2
   exit 1
@@ -23,3 +24,6 @@ grep -Fq 'deMeta(p, f, a->tipo, it) && !descOcultaNaoLancado(it)' "$ROOT/src/des
 grep -Fq 'js_texto(e, fe, "released", v, sizeof v)' "$ROOT/src/descoberta.c"
 grep -Fq 'js_texto(e, fe, "first_aired", v, sizeof v)' "$ROOT/src/descoberta.c"
 echo "unreleased titles: hidden permanently"
+
+grep -Fq 'descOcultaNaoLancadoFonte(&item, prov)' "$ROOT/src/descoberta.c"
+grep -Fq 'descOcultaNaoLancadoFonte(&lote[nl], prov)' "$ROOT/src/descoberta.c"
