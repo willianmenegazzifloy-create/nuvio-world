@@ -8824,7 +8824,7 @@ static int deMetaTmdb(const char *p, const char *f, const char *tipoPadrao,
   { char mt[12] = "";
     js_texto(p, f, "media_type", mt, sizeof mt);
     snprintf(d->tipo, sizeof d->tipo, "%s",
-             !strcmp(mt, "tv") ? "series" : mt[0] ? "movie" : tipoPadrao); }
+             !strcasecmp(mt, "tv") ? "series" : mt[0] ? "movie" : tipoPadrao); }
   snprintf(d->imdb, sizeof d->imdb, "tmdb:%ld", id);
   d->tmdb = id;
   { char dt[16] = "";
@@ -8852,7 +8852,7 @@ static int deMetaTrakt(const char *p, const char *f, const char *midia,
   // O objeto do titulo fica sob "movie" ou "show"; a midia da fonte diz qual,
   // mas aceita os dois porque listas mistas existem. js_bruto devolve o
   // objeto cru, com as chaves — o parse acontece sobre essa copia.
-  serie = !strcasecmp(midia, "TV");
+  serie = col_midia_e_serie(midia);
   if (!js_bruto(p, f, serie ? "show" : "movie", bruto, sizeof bruto)) {
     serie = !serie;
     if (!js_bruto(p, f, serie ? "show" : "movie", bruto, sizeof bruto))
@@ -8920,7 +8920,7 @@ static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv,
     }
     if (js_texto(filtros, fim, "releaseDateGte", v, sizeof v) && v[0])
       snprintf(q + strlen(q), n - strlen(q), "&%s.gte=%s",
-               isTv ? "first_air_date" : "release_date", v);
+               isTv ? "first_air_date" : "primary_release_date", v);
   }
   if (somenteLancados) {
     char hoje[12], limite[128];
@@ -8936,7 +8936,7 @@ static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv,
   } else if (filtros && *filtros == '{' &&
              js_texto(filtros, fim, "releaseDateLte", v, sizeof v) && v[0]) {
     snprintf(q + strlen(q), n - strlen(q), "&%s.lte=%s",
-             isTv ? "first_air_date" : "release_date", v);
+             isTv ? "first_air_date" : "primary_release_date", v);
   }
   if (filtros && *filtros == '{') {
     long ano = (long)js_num(filtros, fim, "year", 0.0);
@@ -8958,7 +8958,7 @@ static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv,
 // ou "parts") e 0 quando falta a chave da API.
 static const char *tmdbMontarUrl(const ColSource *f, int pagina,
                                  char *url, size_t n) {
-  int isTv = !strcasecmp(f->midia, "TV") || !strcasecmp(f->tmdbTipo, "NETWORK");
+  int isTv = col_midia_e_serie(f->midia) || !strcasecmp(f->tmdbTipo, "NETWORK");
   const char *mt = isTv ? "tv" : "movie";
   const char *chave = desc_chave_tmdb();
   if (!chave[0]) return NULL;
@@ -9139,7 +9139,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       pronta = cli[0] && w >= 0 && (size_t)w < sizeof cabChave;
       w = snprintf(url, sizeof url,
         "https://api.trakt.tv/lists/%ld/items/%s?page=%d&limit=40&sort_by=%s&sort_how=%s",
-        f.traktLista, !strcasecmp(f.midia, "TV") ? "show" : "movie", pagina,
+        f.traktLista, col_midia_e_serie(f.midia) ? "show" : "movie", pagina,
         f.ordenar[0] ? f.ordenar : "rank", f.ordem[0] ? f.ordem : "asc");
       pronta = pronta && w >= 0 && (size_t)w < sizeof url;
     } else {
@@ -9191,7 +9191,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
         js_texto(p, fimItem, "job", trabalho, sizeof trabalho);
         if (strcasecmp(trabalho, "director")) { nv_perfil_sessao_destravar(); continue; }
       }
-      ok = prov == 1 ? deMetaTmdb(p, fimItem, !strcasecmp(f.midia, "TV") ? "series" : "movie", &item) :
+      ok = prov == 1 ? deMetaTmdb(p, fimItem, col_midia_e_serie(f.midia) ? "series" : "movie", &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia, &item) : deMeta(p, fimItem, f.type, &item);
       if (!ok) { nv_perfil_sessao_destravar(); continue; }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
