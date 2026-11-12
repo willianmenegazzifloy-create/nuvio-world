@@ -223,12 +223,13 @@ EM_JS(void, ct_browser_exportar, (const char *caminho), {
 EM_JS(void, ct_browser_importar, (), {
   var input = document.createElement("input");
   input.type = "file"; input.accept = ".json,application/json";
+  document.body.appendChild(input);
   input.onchange = function () {
     if (!input.files || !input.files.length) return;
     var reader = new FileReader();
     reader.onload = function () {
       try {
-        FS.writeFile("/tmp/nuvio-config-import.json", new Uint8Array(reader.result));
+        FS.writeFile("/nuvio-config-import.json", new Uint8Array(reader.result));
         Module._configtransfer_importar_callback();
       } catch (e) { alert("Não foi possível ler o arquivo de configurações."); }
     };
@@ -244,8 +245,8 @@ EM_JS(void, ct_browser_notificar, (int ok, int tipo), {
   alert(msg);
 });
 EMSCRIPTEN_KEEPALIVE void configtransfer_importar_callback(void) {
-  int ok = configtransfer_importar("/tmp/nuvio-config-import.json");
-  remove("/tmp/nuvio-config-import.json");
+  int ok = configtransfer_importar("/nuvio-config-import.json");
+  remove("/nuvio-config-import.json");
   configtransfer_notificar(ok, 1);
 }
 #endif
