@@ -64,6 +64,34 @@ int main(void) {
          && f->sources[1].tmdbId == 6384 && strstr(f->sources[1].filtros, "withGenres"));
   puts("ok  fontes trakt e tmdb entram com id, ordenacao e filtros");
 
+  // Semantica por tipo de fonte igual ao resolver Kotlin do NuvioTV 1.1.0.
+  {
+    ColSource s;
+    memset(&s, 0, sizeof s);
+    strcpy(s.prov, "tmdb");
+    strcpy(s.tmdbTipo, "LIST");
+    strcpy(s.midia, "MOVIE");
+    assert(!strcmp(col_tmdb_tipo_padrao(&s), "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&s, "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&s, "series")); // lista pode ser mista
+    strcpy(s.tmdbTipo, "COLLECTION");
+    strcpy(s.midia, "SERIES");
+    assert(!strcmp(col_tmdb_tipo_padrao(&s), "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&s, "movie"));
+    assert(!col_tmdb_fonte_aceita_tipo(&s, "series"));
+    strcpy(s.tmdbTipo, "NETWORK");
+    strcpy(s.midia, "MOVIE");
+    assert(!strcmp(col_tmdb_tipo_padrao(&s), "series"));
+    assert(!col_tmdb_fonte_aceita_tipo(&s, "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&s, "series"));
+    strcpy(s.tmdbTipo, "DISCOVER");
+    strcpy(s.midia, "SERIES");
+    assert(!strcmp(col_tmdb_tipo_padrao(&s), "series"));
+    assert(!col_tmdb_fonte_aceita_tipo(&s, "movie"));
+    assert(col_tmdb_fonte_aceita_tipo(&s, "series"));
+  }
+  puts("ok  TMDB LIST mista, COLLECTION filme, NETWORK serie e DISCOVER por mediaType");
+
   // Novos Filmes/Novas Series recebem o limite de data mesmo se o grupo
   // tiver outro nome (ou tiver sido renomeado no editor da conta).
   const char *descobrir =
