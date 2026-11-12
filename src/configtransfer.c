@@ -153,7 +153,7 @@ int configtransfer_importar(const char *caminho) {
   for (int k = 0; k < n; k++) {
     int gravou = itens[k].conteudo[0]
       ? dados_gravar(itens[k].nome, itens[k].conteudo)
-      : dados_apagar(itens[k].nome);
+      : apagarSeExiste(itens[k].nome);
     if (!gravou) goto fim;
   }
   // Recarrega valores e caches em memoria para que uma gravacao posterior
@@ -171,10 +171,17 @@ fim:
   return ok;
 }
 
+static int apagarSeExiste(const char *nome) {
+  char *s = dados_ler(nome);
+  if (!s) return 1;
+  free(s);
+  return dados_apagar(nome);
+}
+
 static int copiar(const char *origem, const char *destino) {
   char *s = dados_ler(origem);
   int ok;
-  if (!s) return dados_apagar(destino);
+  if (!s) return apagarSeExiste(destino);
   ok = dados_gravar(destino, s);
   free(s);
   return ok;
