@@ -1472,8 +1472,17 @@ static int deMeta(const char *ini, const char *fim, const char *tipo, CatItem *d
   }
   v[0] = 0;
   js_texto(ini, fim, "releaseInfo", v, sizeof v);
-  // Preserva a data ISO antes de reduzir a linha visual para apenas o ano.
-  if (nlanc_iso_valida(v)) snprintf(d->dataEstreia, sizeof d->dataEstreia, "%.10s", v);
+  // O NuvioTV 1.1.0 recebe duas informacoes diferentes: releaseInfo (ano que
+  // aparece na tela) e released (data real usada para decidir se ja estreou).
+  // Antes o parser nativo lia apenas releaseInfo; quando ela vinha como "2026"
+  // e released era "2026-11-20", o dia exato se perdia e o futuro entrava.
+  { char released[64] = "", firstAired[64] = "";
+    js_texto(ini, fim, "released", released, sizeof released);
+    if (!nlanc_iso_valida(released)) js_texto(ini, fim, "release_date", released, sizeof released);
+    js_texto(ini, fim, "first_aired", firstAired, sizeof firstAired);
+    if (!nlanc_iso_valida(firstAired)) js_texto(ini, fim, "first_air_date", firstAired, sizeof firstAired);
+    nlanc_data_escolher(d->dataEstreia, sizeof d->dataEstreia,
+                        released, firstAired, v); }
   { char dur[24] = "";
     js_texto(ini, fim, "runtime", dur, sizeof dur);
     metaprov_duracao(dur, sizeof dur);   // "148m" do catalogo do Nuvio -> "148 min"
