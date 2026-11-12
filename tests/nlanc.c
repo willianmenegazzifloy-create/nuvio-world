@@ -25,6 +25,17 @@ int main(void) {
   assert(nlanc_tem_info("2026-11-12", ""));
   assert(nlanc_tem_info("", "2026"));
   assert(!nlanc_tem_info("", ""));
+  { char data[16];
+    assert(nlanc_data_escolher(data, sizeof data,
+                               "2026-11-20T00:00:00Z", "", "2026"));
+    assert(!strcmp(data, "2026-11-20"));
+    assert(nlanc_data_escolher(data, sizeof data, "", "2026-11-21", "2026"));
+    assert(!strcmp(data, "2026-11-21"));
+    assert(nlanc_data_escolher(data, sizeof data, "", "", "2026-11-22"));
+    assert(!strcmp(data, "2026-11-22"));
+    assert(!nlanc_data_escolher(data, sizeof data, "", "", "2026"));
+    assert(!data[0]);
+  }
   puts("nlanc: exact premiere-date filtering PASS");
   return 0;
 }
