@@ -731,10 +731,13 @@ static int deMeta(const char *ini, const char *fim, const char *tipo, CatItem *d
 static int descOcultaNaoLancado(const CatItem *it) {
   time_t t;
   struct tm tmv;
+  char hoje[11];
   if (!ajustes_ocultar_nao_lancados()) return 0;
   t = time(NULL);
-  if (!gmtime_r(&t, &tmv)) return 0;
-  return nlanc_meta_futuro(it->meta, tmv.tm_year + 1900);
+  if (!localtime_r(&t, &tmv)) return 0;
+  snprintf(hoje, sizeof hoje, "%04d-%02d-%02d",
+           tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday);
+  return nlanc_futuro(it->dataEstreia, it->meta, hoje, tmv.tm_year + 1900);
 }
 
 // O meta da rede nao tem a posicao local de playback. Reusar so a evidencia
@@ -1458,6 +1461,8 @@ static int deMeta(const char *ini, const char *fim, const char *tipo, CatItem *d
   }
   v[0] = 0;
   js_texto(ini, fim, "releaseInfo", v, sizeof v);
+  // Preserva a data ISO antes de reduzir a linha visual para apenas o ano.
+  if (nlanc_iso_valida(v)) snprintf(d->dataEstreia, sizeof d->dataEstreia, "%.10s", v);
   { char dur[24] = "";
     js_texto(ini, fim, "runtime", dur, sizeof dur);
     metaprov_duracao(dur, sizeof dur);   // "148m" do catalogo do Nuvio -> "148 min"
@@ -8825,6 +8830,7 @@ static int deMetaTmdb(const char *p, const char *f, const char *tipoPadrao,
   { char dt[16] = "";
     if (!js_texto(p, f, "release_date", dt, sizeof dt))
       js_texto(p, f, "first_air_date", dt, sizeof dt);
+    if (nlanc_iso_valida(dt)) snprintf(d->dataEstreia, sizeof d->dataEstreia, "%.10s", dt);
     snprintf(d->meta, sizeof d->meta, "%.4s", dt); }
   snprintf(d->genero, sizeof d->genero, "%s", i18n(rotuloTipoSing(d->tipo)));
   d->nota = (int)(js_num(p, f, "vote_average", 0.0) * 10.0 + 0.5);
