@@ -1131,7 +1131,7 @@ static void ddEvento(SDL_Keycode k) {
 // (a do destaque, na camada GFX_HERO_CHEIO) e os cartazes; nenhuma passada de
 // blur. Durante os 250 ms da troca de destaque a arte anterior fica por baixo
 // (duas camadas, so ali, como a Home faz).
-#define VIT_LIN_MAX 12
+#define VIT_LIN_MAX COL_SOURCE_MAX
 #define VIT_ITENS   20   // teto por fileira (o espaco que o buffer reserva)
 #define VIT_ITENS_FRACA 12   // TV com pouca RAM ou GPU fraca: buffer ~40% menor
 // Itens por fileira EM VIGOR, fixado quando o buffer nasce (vitIniciar).
@@ -1148,7 +1148,7 @@ static short vitVis[VIT_LIN_MAX][VIT_ITENS];
 static unsigned vitRevisao;
 static int vitOcultar = -1, vitProjetoSujo;
 static VtChave vitFocoChave;
-static int vitN, vitMulti, vitCarga, vitFR, vitFC, vitMexeu, vitUnicoN = -1;
+static int vitN, vitMulti, vitCarga, vitFR, vitFC, vitMexeu;
 static int vitColLemb[VIT_LIN_MAX];
 static Uint32 vitNomeEm, vitReleEm;
 static float vitScroll, vitScrollV, vitSx[VIT_LIN_MAX], vitSv[VIT_LIN_MAX];
@@ -1407,12 +1407,16 @@ static int vitTipoFonte(const ColSource *fonte) {
   if (!fonte) return -1;
   m = fonte->midia;
   t = fonte->type;
-  if (col_midia_e_serie(m) || !strcasecmp(t, "series") ||
-      !strcasecmp(t, "serie") || !strcasecmp(t, "show") ||
-      !strcasecmp(t, "tv")) return 1;
-  if (!strcasecmp(m, "MOVIE") || !strcasecmp(m, "MOVIES") ||
-      !strcasecmp(m, "FILM") || !strcasecmp(m, "FILMS") ||
-      !strcasecmp(t, "movie") || !strcasecmp(t, "film")) return 0;
+  /* mediaType e canonico. O type legado so entra quando mediaType nao veio. */
+  if (m[0]) {
+    if (col_midia_e_serie(m)) return 1;
+    if (!strcasecmp(m, "MOVIE") || !strcasecmp(m, "MOVIES") ||
+        !strcasecmp(m, "FILM") || !strcasecmp(m, "FILMS")) return 0;
+    return -1;
+  }
+  if (!strcasecmp(t, "series") || !strcasecmp(t, "serie") ||
+      !strcasecmp(t, "show") || !strcasecmp(t, "tv")) return 1;
+  if (!strcasecmp(t, "movie") || !strcasecmp(t, "film")) return 0;
   return -1;
 }
 /* Identidade do titulo dentro da mesma fonte. Nao compara apenas o poster:
@@ -1439,7 +1443,7 @@ static void vitProjetar(void) {
     for (int i = 0; i < l->brutoN + (ocultar ? l->extraN : 0) && l->n < vitCap; i++) {
       int bruto = i < l->brutoN ? i : vitCap + i - l->brutoN;
       CatItem *it = bruto < vitCap ? &vitBuf[r * vitCap + bruto] : &vitExtra[r][bruto - vitCap];
-      int tipoFonte = vitMulti ? vitTipoFonte(&vitFontes[r]) : -1;
+      int tipoFonte = vitTipoFonte(&vitFontes[r]);
       int repetido = 0;
       if (tipoFonte >= 0 && strcmp(it->tipo, tipoFonte ? "series" : "movie")) continue;
       if (ocultar && desc_filme_visto(it)) continue;
@@ -1511,7 +1515,7 @@ static void rotulosAbas(char (*rot)[180]) {
 }
 static void vitNomes(void) {
   static char rot[COL_SOURCE_MAX][180];
-  if (!vitMulti || !collection) return;
+  if (!collection) return;
   rotulosAbas(rot);
   for (int r = 0; r < vitN; r++) snprintf(vitLin[r].nome, sizeof vitLin[r].nome, "%s", rot[r]);
 }
@@ -1543,25 +1547,27 @@ static void vitIniciar(void) {
   vitOcultar = -1; vitProjetoSujo = 1;
   memset(vitColLemb, 0, sizeof vitColLemb);
   memset(vitSx, 0, sizeof vitSx); memset(vitSv, 0, sizeof vitSv);
-  vitN = 0; vitCarga = 0; vitFR = vitFC = 0; vitMexeu = 0; vitUnicoN = -1;
+  vitN = 0; vitCarga = 0; vitFR = vitFC = 0; vitMexeu = 0;
   vitScroll = vitScrollV = 0.0f;
   vitHeroAtual = vitHeroAnt = vitHeroDes = -1; vitHeroEntra = 1.0f;
   vitNomeEm = vitReleEm = 0;
-  if (!vitBuf || !collection) { lay = VT_LAY_GRADE; celLay = -1; carregarFonte(); return; }
-  vitMulti = collection->nSources > 1;
-  if (vitMulti) {
-    vitN = collection->nSources < VIT_LIN_MAX ? collection->nSources : VIT_LIN_MAX;
-    for (int r = 0; r < vitN; r++) {
-      vitFontes[r] = collection->sources[r];
-      snprintf(vitBases[r], sizeof vitBases[r], "%s", baseDaFonte(&vitFontes[r]));
-    }
-    vitNomes();
-    for (int r = 0; r < vitN; r++) vitLin[r].pagina = collection->sources[r].prov[0] ? 1 : 0;
-  } else {
-    vitFontes[0] = collection->sources[source];
-    snprintf(vitBases[0], sizeof vitBases[0], "%s", baseDaFonte(&vitFontes[0]));
-    carregarFonte();
+  if (!vitBuf || !collection) {
+    vitMulti = 0;
+    lay = VT_LAY_GRADE; celLay = -1; carregarFonte(); return;
   }
+  /* Port fiel de FolderViewMode.FOLLOW_LAYOUT do Nuvio 1.1.0:
+     cada CollectionSource vira uma linha CatalogRow independente, inclusive
+     quando a pasta tem uma unica fonte. Nunca dividir o mesmo catalogo por
+     decada/tipo: isso muda a ordem das linhas durante a navegacao e cria
+     categorias artificiais que nao existem na pasta original. */
+  vitMulti = 1;
+  vitN = collection->nSources < VIT_LIN_MAX ? collection->nSources : VIT_LIN_MAX;
+  for (int r = 0; r < vitN; r++) {
+    vitFontes[r] = collection->sources[r];
+    snprintf(vitBases[r], sizeof vitBases[r], "%s", baseDaFonte(&vitFontes[r]));
+    vitLin[r].pagina = collection->sources[r].prov[0] ? 1 : 0;
+  }
+  vitNomes();
 }
 
 // Guarda a primeira pagina do catalogo aberto na fileira `r`.
@@ -1620,136 +1626,10 @@ static void vitGuardarInicial(int r, const VitPedido *p) {
          r + 1, n, vitLin[r].extraN, p->resultado.erro ? " (falha)" : "");
 }
 
-// SEM ABAS: as fileiras saem dos titulos lidos. Tipos misturados = uma fileira
-// por tipo; senao uma por decada (a mais nova primeiro, "sem data" por ultimo).
-static void vitAgrupar(int n) {
-  static short chave[VT_MAX];
-  static CatItem tmp;
-  int chaves[VIT_LIN_MAX + 1], nc = 0, filmes = 0, series = 0;
-  int focoTudo = vitTemVerTudo(vitFR) && vitFC == vitLin[vitFR].n;
-  char focoNome[96] = "";
-  if (focoTudo) snprintf(focoNome, sizeof focoNome, "%s", vitLin[vitFR].nome);
-#ifdef NV_TOUCH_UI
-  // Later pages can insert a new decade before existing rows. Touch positions
-  // belong to those groups, not to the array slots they happened to occupy.
-  struct { char nome[96]; float x, v; int coluna, livre, n; VtChave itens[VIT_ITENS]; } antes[VIT_LIN_MAX];
-  int antesN = vtTelefone() ? vitN : 0, ancora = -1, gesto = vitToqueLinha;
-  VtChave focoAntes; guardarChave(&focoAntes, vitItem(vitFR, vitFC));
-  for (int r = 0; r < antesN; r++) {
-    snprintf(antes[r].nome, sizeof antes[r].nome, "%s", vitLin[r].nome);
-    antes[r].x = vitSx[r]; antes[r].v = vitSv[r];
-    antes[r].coluna = vitColLemb[r]; antes[r].livre = vitToqueX[r].livre;
-    antes[r].n = vitLin[r].n;
-    for (int c = 0; c < antes[r].n; c++) guardarChave(&antes[r].itens[c], vitItem(r, c));
-  }
-  if (antesN && vitToqueY.livre) {
-    ancora = (int)(vitScroll / vitPasso());
-    if (ancora < 0) ancora = 0;
-    if (ancora >= antesN) ancora = antesN - 1;
-  }
-#endif
-  if (n > VT_MAX) n = VT_MAX;
-  for (int i = 0; i < n; i++)
-    if (desc_vertudo_item_bruto(i, &tmp)) { if (!strcmp(tmp.tipo, "series")) series = 1; else filmes = 1; }
-  for (int i = 0; i < n; i++) {
-    int k;
-    chave[i] = -1;
-    if (!desc_vertudo_item_bruto(i, &tmp)) continue;
-    if (filmes && series) k = !strcmp(tmp.tipo, "series") ? 1 : 0;
-    else { int a = nv_ano_meta(tmp.meta); k = a ? a / 10 * 10 : 0; }
-    chave[i] = (short)k;
-    { int j; for (j = 0; j < nc && chaves[j] != k; j++) {}
-      if (j == nc && nc < VIT_LIN_MAX) chaves[nc++] = k; }
-  }
-  // Ordem das fileiras: tipos filmes, series; decadas da mais nova a mais velha.
-  for (int i = 1; i < nc; i++) {
-    int v = chaves[i], j = i;
-    int mistos = filmes && series;
-    for (; j > 0; j--) {
-      int a = chaves[j - 1], antes = mistos ? a > v : (v == 0 ? 0 : (a == 0 ? 1 : a < v));
-      if (!antes) break;
-      chaves[j] = chaves[j - 1];
-    }
-    chaves[j] = v;
-  }
-  memset(vitLin, 0, sizeof vitLin);
-  vitN = nc;
-  for (int r = 0; r < nc; r++) {
-    VitLin *l = &vitLin[r];
-    l->grupo = chaves[r]; l->porTipo = filmes && series;
-    if (filmes && series) snprintf(l->nome, sizeof l->nome, "%s", i18n(chaves[r] ? "Séries" : "Filmes"));
-    else if (chaves[r]) snprintf(l->nome, sizeof l->nome, i18n("Anos %d"), chaves[r]);
-    else snprintf(l->nome, sizeof l->nome, "%s", i18n("Sem data"));
-    int vistos = 0;
-    for (int i = 0; i < n; i++) {
-      if (chave[i] != chaves[r] || !desc_vertudo_item_bruto(i, &tmp)) continue;
-      if (l->brutoN < vitCap) {
-        vistos += desc_filme_visto(&tmp);
-        vitBuf[r * vitCap + l->brutoN++] = tmp;
-      } else if (vistos && l->extraN < vitCap && !desc_filme_visto(&tmp)) {
-        if (!vitExtra[r]) vitExtra[r] = calloc((size_t)vitCap, sizeof(CatItem));
-        if (vitExtra[r]) vitExtra[r][l->extraN++] = tmp;
-      }
-    }
-    l->estado = VIT_PRONTA;
-  }
-  vitProjetoSujo = 1;
-  vitProjetar();
-  if (vitFR >= vitN) vitFR = vitN ? vitN - 1 : 0;
-  if (vitN && vitFC >= vitColunas(vitFR)) vitFC = vitLin[vitFR].n ? vitLin[vitFR].n - 1 : 0;
-#ifdef NV_TOUCH_UI
-  if (antesN) {
-    vitToqueLinha = -1;
-    memset(vitToqueX, 0, sizeof vitToqueX);
-    for (int r = 0; r < vitN; r++) {
-      vitSx[r] = vitSv[r] = 0.0f; vitColLemb[r] = 0;
-      for (int i = 0; i < antesN; i++) if (!strcmp(vitLin[r].nome, antes[i].nome)) {
-        int manter = antes[i].n <= vitLin[r].n;
-        for (int c = 0; manter && c < antes[i].n; c++)
-          if (!mesmaChave(&antes[i].itens[c], vitItem(r, c))) manter = 0;
-        vitColLemb[r] = antes[i].n > 0 && antes[i].coluna == antes[i].n ? vitLin[r].n :
-                        antes[i].coluna < vitLin[r].n ? antes[i].coluna :
-                        (vitLin[r].n ? vitLin[r].n - 1 : 0);
-        if (manter) {
-          vitSx[r] = antes[i].x; vitSv[r] = antes[i].v;
-          vitToqueX[r].livre = antes[i].livre;
-          if (i == gesto) vitToqueLinha = r;
-        }
-        if (i == ancora) { vitScroll += (r - i) * vitPasso(); vitScrollV = 0.0f; }
-        break;
-      }
-    }
-    if (gesto >= 0 && vitToqueLinha < 0) vitToqueGeracao = 0;
-    for (int r = 0; r < vitN; r++)
-      for (int c = 0; c < vitLin[r].n; c++)
-        if (mesmaChave(&focoAntes, vitItem(r, c))) { vitFR = r; vitFC = c; r = vitN; break; }
-    // The highlight's encoded row/column belongs to the previous grouping.
-    vitHeroAtual = vitHeroAnt = vitHeroDes = -1; vitHeroEntra = 1.0f;
-  }
-  vitPonteiroInvalidar(0);
-#endif
-  if (focoTudo) for (int r = 0; r < vitN; r++)
-    if (!strcmp(vitLin[r].nome, focoNome)) {
-      vitFR = r; vitFC = vitColLemb[r] = vitLin[r].n; break;
-    }
-}
-
 // Um passo da carga, por quadro: as fontes paralelas, as paginas do catalogo
 // unico e a releitura das fontes cujo addon ainda nao tinha endereco.
 static void vitCarregar(Uint32 agora) {
-  if (!vitBuf) return;
-  if (!vitMulti) {
-    int n = desc_vertudo_n_bruto();
-    if (n != vitUnicoN) { vitUnicoN = n; if (n > 0) vitAgrupar(n); }
-    for (int r = 0; r < vitN; r++)
-      vitLin[r].mais = !semFonte && !desc_vertudo_carregando() &&
-                       !desc_vertudo_fim() && !desc_vertudo_erro();
-    // O catalogo traz 100 por pagina: pede mais ate haver o que agrupar.
-    if (n > 0 && n < 300 && !desc_vertudo_carregando() && !desc_vertudo_fim() &&
-        !desc_vertudo_erro()) desc_vertudo_mais();
-    if (semFonte && baseDaFonte(&collection->sources[source])[0]) vitIniciar();
-    return;
-  }
+  if (!vitBuf || !vitMulti) return;
   if (!nv_perfil_sessao_atual(vitSessao)) {
     vitCancelar(); aberta = 0; return;
   }
@@ -2125,7 +2005,8 @@ static int vitToqueDono(void) {
 static int vitPonteiroFocar(int i, int geracao) {
   if (!vitToqueDono()) return 0;
   vitProjetar();
-  int r = i / VIT_ITENS, c = i % VIT_ITENS;
+  if (vitCap < 1) return 0;
+  int r = i / vitCap, c = i % vitCap;
   if (!vitPonteiroPronto || geracao != vitPonteiroGeracao ||
       r < 0 || r >= vitN || c < 0 || c >= vitLin[r].n ||
       !vitPonteiroVisivel[r][c] || !mesmaChave(&vitPonteiroChave[r][c], vitItem(r, c))) return 0;
@@ -3614,7 +3495,7 @@ static void vitDesenhar(float a, float x0) {
             vitPonteiroVisivel[r][c] = 1;
             ponteiro_alvo_faixa(left, base.y, right - left, base.h,
               NV_SHELF_TOP - 8.0f, NV_TELA_H, ponteiroVitrine, abrirVitrine,
-              r * VIT_ITENS + c, vitPonteiroGeracao);
+              r * vitCap + c, vitPonteiroGeracao);
           }
         }
 #endif
