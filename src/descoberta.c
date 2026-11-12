@@ -9271,7 +9271,7 @@ static void *fioVerTudo(void *u) {
       const char *vetor=tmdbMontarUrl(&fonte,skip,url,sizeof url);
       if (vetor) corpo=rede_baixar(url,12);
       if (corpo) {
-        const char *padrao=!strcasecmp(fonte.midia,"TV")?"series":"movie";
+        const char *padrao=col_fonte_e_serie(&fonte)?"series":"movie";
         const char *p=js_array(corpo,NULL,vetor);
         for(;p&&nl<48;p=js_prox(js_fim(p))) {
           const char *f=js_fim(p);raw++;
@@ -9307,7 +9307,7 @@ static void *fioVerTudo(void *u) {
         cab[1]=chave;
         snprintf(url,sizeof url,
           "https://api.trakt.tv/lists/%ld/items/%s?page=%d&limit=40&sort_by=%s&sort_how=%s",
-          fonte.traktLista,!strcasecmp(fonte.midia,"TV")?"show":"movie",
+          fonte.traktLista,col_fonte_e_serie(&fonte)?"show":"movie",
           skip,fonte.ordenar[0]?fonte.ordenar:"rank",
           fonte.ordem[0]?fonte.ordem:"asc");
         corpo=rede_baixar_com(url,12,cab);
@@ -9315,7 +9315,7 @@ static void *fioVerTudo(void *u) {
           const char *p=*corpo=='['?js_raiz_array(corpo):NULL;
           for(;p&&nl<48;p=js_prox(js_fim(p))) {
             const char *f=js_fim(p);raw++;
-            if (deMetaTrakt(p,f,fonte.midia,&lote[nl])) {
+            if (deMetaTrakt(p,f,fonte.midia[0]?fonte.midia:fonte.type,&lote[nl])) {
               if (descOcultaNaoLancado(&lote[nl])) ocultos++; else nl++;
             }
           }
