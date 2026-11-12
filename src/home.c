@@ -2454,6 +2454,94 @@ static void homeAtualizarReferenciasArte(void) {
   cachearte_estatisticas_pedir();
 }
 
+// A Home fica montada por trás do seletor de perfil, mas antes desta etapa os
+// URLs eram apenas marcados como importantes: nenhum pedido de arquivo começava
+// até o primeiro desenho. Aquece o cache de disco ANTES de a Home aparecer,
+// sem decodificar a biblioteca inteira nem ocupar VRAM com centenas de texturas.
+#define HOME_CACHE_AQUECER_MAX 24
+#define HOME_CACHE_AQUECER_POR_FILEIRA 8
+#define HOME_CACHE_AQUECER_INTERVALO_MS 110
+static unsigned long homeCacheHashes[HOME_CACHE_AQUECER_MAX];
+static int homeCacheHashN, homeCacheLinha, homeCacheColuna, homeCacheN;
+static int homeCacheHeroTentado;
+static Uint32 homeCacheProximo;
+
+static unsigned long homeCacheHash(const char *s) {
+  unsigned long h = 2166136261UL;
+  if (!s) return 0;
+  while (*s) { h ^= (unsigned char)*s++; h *= 16777619UL; }
+  return h ? h : 1;
+}
+static int homeCacheJaPediu(const char *url) {
+  unsigned long h;
+  if (!url || !*url) return 1;
+  h = homeCacheHash(url);
+  for (int i = 0; i < homeCacheHashN; i++)
+    if (homeCacheHashes[i] == h) return 1;
+  if (homeCacheHashN < HOME_CACHE_AQUECER_MAX)
+    homeCacheHashes[homeCacheHashN++] = h;
+  return 0;
+}
+static int homeCachePedirURL(const char *url, Uint32 agora) {
+  if (!url || !*url || homeCacheN >= HOME_CACHE_AQUECER_MAX ||
+      homeCacheJaPediu(url)) return 0;
+  // tex_arquivo baixa o arquivo para o cache sem pedir uma textura de tela.
+  // O desenho, quando chegar, promove a mesma URL para o tamanho/prioridade real.
+  (void)tex_arquivo(url);
+  homeCacheN++;
+  homeCacheProximo = agora + HOME_CACHE_AQUECER_INTERVALO_MS;
+  if (homeCacheN == HOME_CACHE_AQUECER_MAX) {
+    printf("[home-cache] aquecimento do perfil: %d artes solicitadas\n", homeCacheN);
+    fflush(stdout);
+  }
+  return 1;
+}
+static void homeCacheRecomecarVarredura(void) {
+  if (homeCacheN >= HOME_CACHE_AQUECER_MAX) return;
+  homeCacheLinha = homeCacheColuna = 0;
+  homeCacheHeroTentado = 0;
+}
+static void homeCacheReiniciarSessao(void) {
+  memset(homeCacheHashes, 0, sizeof homeCacheHashes);
+  homeCacheHashN = homeCacheLinha = homeCacheColuna = homeCacheN = 0;
+  homeCacheHeroTentado = 0;
+  homeCacheProximo = 0;
+}
+static void homePrecarregarPasso(Uint32 agora) {
+  if (homeCacheN >= HOME_CACHE_AQUECER_MAX || nFileiras < 1) return;
+  if (homeCacheProximo && (Sint32)(agora - homeCacheProximo) < 0) return;
+
+  // A arte principal vem primeiro; depois, a primeira janela de cada fileira
+  // de títulos. A fileira de atalhos de coleções e a social não são cartazes.
+  if (!homeCacheHeroTentado) {
+    const char *hero = NULL;
+    homeCacheHeroTentado = 1;
+    heroSetGarantir();
+    if (heroSetN > 0) hero = arte_por_identidade(heroSet[0], 2);
+    if (homeCachePedirURL(hero, agora)) return;
+  }
+
+  // No máximo 48 verificações leves por quadro. Um único download é iniciado
+  // por intervalo; novos lotes de catálogo reiniciam a varredura sem repetir
+  // URLs que já foram solicitadas nesta sessão.
+  for (int tentativas = 0; tentativas < 48 && homeCacheLinha < nFileiras; tentativas++) {
+    const Fileira *f = &fileiras[homeCacheLinha];
+    if (f->tipo == FILEIRA_CATALOGOS || f->tipo == FILEIRA_SOCIAL) {
+      homeCacheLinha++; homeCacheColuna = 0; continue;
+    }
+    if (homeCacheColuna >= f->n || homeCacheColuna >= HOME_CACHE_AQUECER_POR_FILEIRA) {
+      homeCacheLinha++; homeCacheColuna = 0; continue;
+    }
+    int idx = fileiraItemIndice(f, homeCacheColuna++);
+    const CatItem *it = cat_item(idx);
+    if (!it) continue;
+    const char *poster = posterprov_card_addon(it->origem, it->imdb, it->tmdb,
+                                                it->tipo, it->poster);
+    if (homeCachePedirURL(poster, agora)) return;
+    if (homeCacheN >= HOME_CACHE_AQUECER_MAX) return;
+  }
+}
+
 int home_iniciar(const char *dirArte) {
   extras_carregar(dirArte);
   col_carregar(dirArte);
