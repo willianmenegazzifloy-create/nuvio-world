@@ -213,8 +213,8 @@ static void resolverBases(ColFolder *v) {
     // ficado obsoleta depois de trocar/reinstalar/configurar o addon; nunca
     // deve vencer a base atual resolvida pelo manifesto.
     const char *atual = addons_base_por_id(fonte->addonId);
-    if (atual && atual[0]) baseCabe(fonte, atual);
-    else fonte->base[0] = 0; // nao ressuscitar URL salva de addon ausente
+    if (atual && atual[0] && addons_catalogo_base_ativo(atual)) baseCabe(fonte, atual);
+    else fonte->base[0] = 0; // addon ausente/desligado nao autoriza a fonte
   }
 }
 const ColFolder *col_folder(int i) {
@@ -354,7 +354,8 @@ int col_fontes_sem_base(void) {
   for (i = 0; i < count; i++) {
     for (s = 0; s < PASTA(i).nSources; s++)
       if (!PASTA(i).sources[s].prov[0] && PASTA(i).sources[s].addonId[0] &&
-          !addons_base_por_id(PASTA(i).sources[s].addonId)[0]) n++;
+          (!addons_base_por_id(PASTA(i).sources[s].addonId)[0] ||
+           !addons_catalogo_base_ativo(addons_base_por_id(PASTA(i).sources[s].addonId)))) n++;
   }
   pthread_mutex_unlock(&colTrava);
   return n;
