@@ -1,7 +1,10 @@
-name: Publish Nuvio World Android Release
+name: Publish Nuvio World Android TV ARMv7 Release
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - nuvio-world-2.0.14-catalogos-addon-only
 
 permissions:
   contents: write
@@ -12,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build and publish signed Android APKs
+    name: Build and publish signed Android TV ARMv7 APK
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
@@ -112,7 +115,10 @@ jobs:
             echo "NUVIO_KEY_PASS=$ANDROID_KEY_PASSWORD"
           } >> "$GITHUB_ENV"
 
-      - name: Build signed Nuvio World APKs
+      - name: Run collection parser regression tests
+        run: bash tests/colecoes.sh
+
+      - name: Build signed Nuvio World Android TV APK
         run: |
           bash tools/android/deps.sh arm64-v8a armeabi-v7a
           bash tools/android.sh --release-only
@@ -122,8 +128,7 @@ jobs:
           set -euo pipefail
           BT="$ANDROID_HOME/build-tools/35.0.0"
           for APK in \
-            "build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-armv7.apk" \
-            "build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-arm64.apk"; do
+            "build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-armv7.apk"; do
             test -f "$APK"
             "$BT/apksigner" verify "$APK"
             PACKAGE=$("$BT/aapt" dump badging "$APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p")
@@ -141,4 +146,3 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-armv7.apk
-            build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-arm64.apk
