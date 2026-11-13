@@ -74,7 +74,8 @@ typedef struct {
   // Nota da critica em porcentagem e o logo do servico onde o titulo esta. Sao
   // as duas coisas que a linha tecnica do app da Apple mostra alem do ano e da
   // duracao — sem elas a linha fica com metade da informacao.
-  int  nota;              // 0 = desconhecida
+  int  nota;              // nota TMDB x10; 0 = desconhecida
+  int  votosTmdb;         // vote_count TMDB para a ordenacao das listas
   // Pais de producao, para a ultima linha de meta do detalhe (o web mostra
   // 'United States of America' ali). Vem do /meta, nao do catalogo.
   char pais[64];
