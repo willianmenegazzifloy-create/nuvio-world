@@ -17,19 +17,16 @@
 #define COL_FONTES_MAX 4096
 typedef struct {
   char title[128], base[600], type[8], catId[96], genre[96]; char addonId[96];
-  // PROVEDOR NAO-ADDON (issue #44). Vazio = catalogo de addon, identificado por
-  // base/type/catId como sempre foi. O editor de colecoes do site tambem grava
-  // fontes "tmdb" e "trakt", que nao tem catalogo de addon equivalente: quem
-  // resolve e o vertudo, perguntando direto ao TMDB ou ao Trakt — ver
-  // desc_vertudo_fonte em descoberta.c.
+  // Campo legado: o World descarta fontes diretas de TMDB/Trakt. As fontes
+  // validas de Collection sao sempre catalogos de addons instalados e ativos.
   char prov[8];
-  char tmdbTipo[16];   // LIST|COLLECTION|PERSON|DIRECTOR|COMPANY|NETWORK; vazio = discover
-  long tmdbId;         // id da lista/colecao/pessoa/empresa/rede; 0 = discover puro
-  char midia[8];       // "MOVIE" | "TV" — escolhe o endpoint e o tipo do item
-  char ordenar[48];    // sort_by do TMDB / sort_by da lista Trakt
-  char ordem[8];       // sort_how do Trakt: "asc" | "desc"
-  long traktLista;     // id da lista no Trakt
-  char filtros[384];   // objeto "filters" cru; o montador da URL traduz
+  char tmdbTipo[16];   // campos preservados apenas para compatibilidade com JSON antigo
+  long tmdbId;
+  char midia[8];
+  char ordenar[48];
+  char ordem[8];
+  long traktLista;
+  char filtros[384];
   /* 1 nas fontes TMDB das pastas Descobrir / Novos Filmes e Novas Séries:
      limita a consulta ao dia atual para nao mostrar titulos futuros. */
   int somenteLancados;
@@ -115,7 +112,7 @@ int col_extra_definir(const ColFolder *v, int n);
 // callers use col_revisao(), including deletions and unchanged nonempty pulls.
 int col_definir_json(const char *json);
 // Retira referencias de addon comprovadamente desinstalado; pasta sem fonte
-// sai. Fontes TMDB/Trakt e as demais de uma pasta mista permanecem.
+// sai. Fontes validas de Collection sao exclusivamente fontes de addons.
 int col_podar_fontes_addon(int (*ausente)(const char *id, const char *base));
 // Pure validation, safe on the sync worker before caching an account reply.
 int col_resposta_valida(const char *json);
