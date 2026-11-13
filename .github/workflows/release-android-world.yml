@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
+      NUVIO_APK_LITE: "1"
       NUVIO_REQUIRE_CORE: "1"
       NUVIO_BUILD_JOBS: "2"
       NUVIO_ANDROID_JOBS: "2"
@@ -121,7 +122,6 @@ jobs:
           set -euo pipefail
           BT="$ANDROID_HOME/build-tools/35.0.0"
           for APK in \
-            "build/android/Nuvio-${{ steps.version.outputs.value }}-android.apk" \
             "build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-armv7.apk" \
             "build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-arm64.apk"; do
             test -f "$APK"
@@ -140,6 +140,5 @@ jobs:
           make_latest: true
           fail_on_unmatched_files: true
           files: |
-            build/android/Nuvio-${{ steps.version.outputs.value }}-android.apk
             build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-armv7.apk
             build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-arm64.apk
