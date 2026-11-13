@@ -2011,10 +2011,21 @@ static float vitPasso(void) {
 }
 // Topo da primeira fileira: o do layout da Home (home_vitrine_topo).
 static float vitTopo(void) { return home_vitrine_topo(vitPasso()); }
+// A Collection em Vitrine tem uma janela vertical fixa: uma fileira inteira e
+// aproximadamente um terco da proxima. O restante da tela nao vira uma grade
+// longa; o D-pad desloca essa janela para manter a fileira focada no topo.
+static float vitAlturaViewport(void) {
+  float w, h, passo, rot;
+  home_vitrine_medida(&w, &h, &passo, &rot);
+  float conteudo = VIT_TITULO_H + h + rot;
+  float desejada = vitPasso() + conteudo / 3.0f;
+  float disponivel = NV_TELA_H - vitTopo() + 8.0f;
+  return fmaxf(0.0f, fminf(desejada, disponivel));
+}
 
 #ifdef NV_TOUCH_UI
 static float vitToqueMaxY(void) {
-  return fmaxf(0.0f, NV_SHELF_TOP + vitN * vitPasso() - NV_TELA_H + 48.0f);
+  return fmaxf(0.0f, (vitN - 1) * vitPasso());
 }
 static float vitToqueMaxX(int r) {
   float w, h, passo, rot;
@@ -3477,6 +3488,7 @@ static void botaoMaisVistos(float a, float x0, float y, int linha) {
 static void vitDesenhar(float a, float x0) {
   vitProjetar();
   float w, h, passo, rot, pas = vitPasso(), topo = vitTopo();
+  float viewportBottom = topo - 8.0f + vitAlturaViewport();
   CatItem *hero = vitChave(vitHeroAtual), *ant = vitChave(vitHeroAnt);
   int arte = 0;
   home_vitrine_medida(&w, &h, &passo, &rot);
@@ -3486,8 +3498,8 @@ static void vitDesenhar(float a, float x0) {
     memset(vitPonteiroVisivel, 0, sizeof vitPonteiroVisivel);
     memset(vitPonteiroTudoVisivel, 0, sizeof vitPonteiroTudoVisivel);
     for (int r = 0; r < VIT_LIN_MAX; r++) vitToqueX[r].offset = NULL;
-    toquerol_vincular(&vitToqueY, (GfxRect){x0, NV_SHELF_TOP - 8.0f,
-      NV_TELA_W - x0, NV_TELA_H - NV_SHELF_TOP + 8.0f}, vtEscala(), 0.0f, vitToqueMaxY(), 1, &vitScroll);
+    toquerol_vincular(&vitToqueY, (GfxRect){x0, topo - 8.0f,
+      NV_TELA_W - x0, fmaxf(0.0f, viewportBottom - (topo - 8.0f))}, vtEscala(), 0.0f, vitToqueMaxY(), 1, &vitScroll);
     ponteiro_rolagem(toqueVitrineRolar);
   }
 #endif
@@ -3507,13 +3519,13 @@ static void vitDesenhar(float a, float x0) {
   if (hero) vitHeroTopo = home_vitrine_texto(hero, topo, cabCy + 34.0f + VIT_CAB_FOLGA, a);
 
   // As fileiras, recortadas abaixo do texto do destaque.
-  gfx_recorte(0.0f, topo - 8.0f, NV_TELA_W, NV_TELA_H - topo + 8.0f);
+  gfx_recorte(0.0f, topo - 8.0f, NV_TELA_W, vitAlturaViewport());
   for (int r = 0; r < vitN; r++) {
     float y = topo + r * pas - vitScroll, cy = y + VIT_TITULO_H;
     float ac = a * (r == vitFR ? 1.0f : 0.78f);
     VitLin *l = &vitLin[r];
     TxtLinha tt;
-    if (y > NV_TELA_H) break;
+    if (y > viewportBottom) break;
     if (y + pas < topo - 8.0f) continue;
     tt = txt_linha_corta(TXT_ROW_TITULO, l->nome[0] ? l->nome : "—", 245, 246, 249, 255, 900);
     txt_desenhar_alpha(tt, x0, y, ac);
@@ -3549,18 +3561,18 @@ static void vitDesenhar(float a, float x0) {
 #ifdef NV_TOUCH_UI
         if (vtTelefone()) {
           float left = fmaxf(base.x, x0), right = fminf(base.x + base.w, NV_TELA_W);
-          if (right > left && base.y + base.h > NV_SHELF_TOP - 8.0f && base.y < NV_TELA_H) {
+          if (right > left && base.y + base.h > topo - 8.0f && base.y < viewportBottom) {
             if (c == l->n) {
               vitPonteiroTudoVisivel[r] = 1;
               ponteiro_alvo_faixa(left, base.y, right - left, base.h,
-                NV_SHELF_TOP - 8.0f, NV_TELA_H, ponteiroVitrineTudo, abrirVitrineTudo,
+                topo - 8.0f, viewportBottom, ponteiroVitrineTudo, abrirVitrineTudo,
                 r, vitPonteiroGeracao);
               continue;
             }
             guardarChave(&vitPonteiroChave[r][c], vitItem(r, c));
             vitPonteiroVisivel[r][c] = 1;
             ponteiro_alvo_faixa(left, base.y, right - left, base.h,
-              NV_SHELF_TOP - 8.0f, NV_TELA_H, ponteiroVitrine, abrirVitrine,
+              topo - 8.0f, viewportBottom, ponteiroVitrine, abrirVitrine,
               r * VIT_ITENS + c, vitPonteiroGeracao);
           }
         }
