@@ -136,8 +136,8 @@ static void shot_prepare(int r) {
 }
 int shot_collection(const ColSource *source, const char *base, NvPerfilSessao epoch,
                     CatItem *out, int limit, DescColecaoResultado *result) {
-  assert(source && base && *base && limit > 0 && out && result);
-  int r = !strcmp(source->catId, "source1");
+  assert(source && (source->prov[0] || (base && *base)) && limit > 0 && out && result);
+  int r = source->prov[0] || !strcmp(source->catId, "source1");
   pthread_mutex_lock(&shotMutex);
   shotSources[r].iniciou = 1; initialSources++;
   pthread_cond_broadcast(&shotCond);
@@ -212,6 +212,7 @@ static void verTudoPreparar(int limite, int provedor) {
   vitBuf = calloc((size_t)VIT_LIN_MAX * VIT_ITENS, sizeof *vitBuf);
   assert(vitBuf);
   vitCap = limite;
+  vitBufRows = VIT_LIN_MAX;
   memset(&pasta, 0, sizeof pasta); memset(fontes, 0, sizeof fontes);
   snprintf(pasta.id, sizeof pasta.id, "showcase549");
   snprintf(pasta.title, sizeof pasta.title, "Showcase");
@@ -534,6 +535,65 @@ int main(int argc, char **argv) {
   snprintf(semente[1].tipo, sizeof semente[1].tipo, "series");
   vitAgrupar(nSemente); vitProjetar();
   assert(vitN == 2 && !strcmp(vitLin[0].nome, i18n("Filmes")) && !strcmp(vitLin[1].nome, i18n("Séries")));
+
+  // FOLLOW_LAYOUT continua sendo fileiras mesmo quando uma pasta tem so uma fonte.
+  pasta.viewMode = COL_VIEW_FOLLOW_LAYOUT;
+  pasta.nSources = 1;
+  vitIniciar();
+  assert(vitMulti && vitN == 1 && vitBufRows == 1);
+  pasta.viewMode = COL_VIEW_UNSPECIFIED;
+
+  // O perfil enviado contem pastas com ate 52 fontes; nenhuma subcategoria pode sumir.
+  {
+    static ColSource muitas[52];
+    memset(muitas, 0, sizeof muitas);
+    for (i = 0; i < 52; i++) {
+      snprintf(muitas[i].title, sizeof muitas[i].title, "Fonte %02d", i + 1);
+      snprintf(muitas[i].type, sizeof muitas[i].type, "%s", i & 1 ? "series" : "movie");
+      snprintf(muitas[i].base, sizeof muitas[i].base, "https://many.invalid/%d", i);
+      snprintf(muitas[i].catId, sizeof muitas[i].catId, "source%d", i);
+    }
+    pasta.sources = muitas;
+    pasta.nSources = 52;
+    pasta.viewMode = COL_VIEW_FOLLOW_LAYOUT;
+    vitIniciar();
+    assert(vitMulti && vitN == 52 && vitBufRows == 52);
+    assert(vitCap >= 2 && vitCap <= VIT_ITENS);
+    assert(strstr(vitLin[0].nome, "Fonte 01"));
+    assert(strstr(vitLin[51].nome, "Fonte 52"));
+    pasta.sources = fontes;
+    pasta.nSources = 2;
+    pasta.viewMode = COL_VIEW_UNSPECIFIED;
+    vitIniciar();
+  }
+
+  // As fontes TMDB e Trakt devem gerar fileiras e pedidos, nao ficar marcadas vazias.
+  {
+    memset(fontes, 0, sizeof fontes);
+    snprintf(fontes[0].title, sizeof fontes[0].title, "Addon Filmes");
+    snprintf(fontes[0].base, sizeof fontes[0].base, "https://addon.invalid");
+    snprintf(fontes[0].type, sizeof fontes[0].type, "movie");
+    snprintf(fontes[0].catId, sizeof fontes[0].catId, "source0");
+    snprintf(fontes[1].title, sizeof fontes[1].title, "TMDB Séries");
+    snprintf(fontes[1].prov, sizeof fontes[1].prov, "tmdb");
+    snprintf(fontes[1].tmdbTipo, sizeof fontes[1].tmdbTipo, "DISCOVER");
+    snprintf(fontes[1].midia, sizeof fontes[1].midia, "TV");
+    snprintf(fontes[1].type, sizeof fontes[1].type, "series");
+    pasta.sources = fontes;
+    pasta.nSources = 2;
+    pasta.viewMode = COL_VIEW_FOLLOW_LAYOUT;
+    semear();
+    shot_prepare(0); shot_prepare(1);
+    openedSources = initialSources = 0;
+    vitIniciar();
+    shot_pump(3, 1);
+    shot_release(0); shot_release(1);
+    shot_pump(3, 0);
+    assert(vitLin[0].estado == VIT_PRONTA && vitLin[0].n > 0);
+    assert(vitLin[1].estado == VIT_PRONTA && vitLin[1].n > 0);
+    assert(strstr(vitLin[1].nome, "Séries"));
+    pasta.viewMode = COL_VIEW_UNSPECIFIED;
+  }
 
   // Completed rows filtered to zero must draw the empty message.
   pasta.nSources = 2; vitIniciar();
