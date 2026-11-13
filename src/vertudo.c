@@ -527,16 +527,17 @@ static void gravarEscolha(const ColFolder *pasta, int v) {
 // AUTOMATICO, pelo conteudo da pasta. Ver o cabecalho de VtLayout.
 static int layAuto(void) {
   if (!collection) return VT_LAY_GRADE;
-  // An explicit collection choice is resolved first. A single-catalog
-  // See all must stay on its own list, even if it belongs to a collection.
+  // A Collection do Original escolhe entre fileiras e grade. FOLLOW_LAYOUT
+  // acompanha o layout da Home; ROWS tambem usa a representacao por fileiras.
   if (!semVitrineAuto) {
+    if (collection->viewMode == COL_VIEW_FOLLOW_LAYOUT ||
+        collection->viewMode == COL_VIEW_ROWS) return VT_LAY_VITRINE;
+    if (collection->viewMode == COL_VIEW_TABBED_GRID) return VT_LAY_GRADE;
     int padrao = ajustes_colecao_exibicao();
     if (padrao > VT_LAY_AUTO && padrao < VT_LAY_N) return padrao;
   }
   if (grupo("Directors")) return VT_LAY_LINHA;
-  // O PADRAO E O DA 2.0.3: Grade para toda pasta (com ou sem abas); so o
-  // Diretor vai para a Linha do tempo, como ja ia. Ranking, Saga, Decadas, Mural
-  // e Vitrine entram pela escolha global ou pelo botao "Exibição".
+  // Pastas antigas sem viewMode conservam o padrao que o World ja usava.
   return VT_LAY_GRADE;
 }
 static void resolverLayout(void) {
@@ -1130,7 +1131,8 @@ static void ddEvento(SDL_Keycode k) {
 // (a do destaque, na camada GFX_HERO_CHEIO) e os cartazes; nenhuma passada de
 // blur. Durante os 250 ms da troca de destaque a arte anterior fica por baixo
 // (duas camadas, so ali, como a Home faz).
-#define VIT_LIN_MAX 12
+#define VIT_LIN_MAX COL_SOURCE_MAX
+#define VIT_LIN_SINTETICA_MAX 12
 #define VIT_ITENS   20   // teto por fileira (o espaco que o buffer reserva)
 #define VIT_ITENS_FRACA 12   // TV com pouca RAM ou GPU fraca: buffer ~40% menor
 // Itens por fileira EM VIGOR, fixado quando o buffer nasce (vitIniciar).
@@ -1139,6 +1141,7 @@ enum { VIT_PEND = 0, VIT_CARREGANDO, VIT_PRONTA, VIT_VAZIA };
 typedef struct { char nome[96]; int n, brutoN, extraN, estado, semFonte, mais, pagina, grupo, porTipo; } VitLin;
 static VitLin vitLin[VIT_LIN_MAX];
 static CatItem *vitBuf;
+static int vitBufRows;
 // Preserva a primeira fileira original. Se ela tem filmes vistos, guarda ate
 // outra fileira de candidatos ja recebidos para preencher as vagas visiveis.
 // A reserva extra so e alocada onde ha vagas; jamais dispara um pedido novo.
@@ -1424,13 +1427,35 @@ static void vitIniciar(void) {
   vitPonteiroInvalidar(1);
   vitPonteiroSessao = perfis_sessao_geracao();
 #endif
-  if (!vitBuf) {
-    // RAM <= 1,5 GB (MemTotal/deviceMemory) ou GPU fraca: 12 itens por fileira.
-    long memMb = 0; int mb = 0, fixo = 0, slots = 0;
-    tex_orcamento_info(&mb, &memMb, &fixo, &slots);
-    vitCap = (memMb > 0 && memMb <= 1536) || ptv_gpu_fraca_atual() ? VIT_ITENS_FRACA : VIT_ITENS;
-    vitBuf = calloc((size_t)VIT_LIN_MAX * vitCap, sizeof(CatItem));
+  // FOLLOW_LAYOUT com uma fonte continua sendo uma fileira, nao um catalogo
+  // agrupado por decada. Uma pasta com varias fontes sempre e multi-fileira.
+  vitMulti = collection && (collection->nSources > 1 ||
+      collection->viewMode == COL_VIEW_FOLLOW_LAYOUT ||
+      collection->viewMode == COL_VIEW_ROWS);
+  vitN = vitMulti && collection->nSources > 0
+      ? (collection->nSources < VIT_LIN_MAX ? collection->nSources : VIT_LIN_MAX) : 0;
+
+  // Ate 64 fontes, sem reservar 20 CatItems por linha. O teto total fica
+  // proximo do buffer anterior; pastas grandes mostram menos cartazes por
+  // fonte e mantem "Ver tudo" para acessar a lista completa.
+  long memMb = 0; int mb = 0, fixo = 0, slots = 0;
+  tex_orcamento_info(&mb, &memMb, &fixo, &slots);
+  int fraca = (memMb > 0 && memMb <= 1536) || ptv_gpu_fraca_atual();
+  int linhasBuffer = vitMulti ? (vitN > 0 ? vitN : 1) : VIT_LIN_SINTETICA_MAX;
+  int orcamentoItens = fraca ? 256 : 320;
+  int capMax = fraca ? VIT_ITENS_FRACA : VIT_ITENS;
+  int novoCap = orcamentoItens / linhasBuffer;
+  if (novoCap > capMax) novoCap = capMax;
+  if (novoCap < 2) novoCap = 2;
+  if (!vitBuf || vitCap != novoCap || vitBufRows != linhasBuffer) {
+    free(vitBuf);
+    vitBuf = calloc((size_t)linhasBuffer * (size_t)novoCap, sizeof(CatItem));
+    vitCap = novoCap;
+    vitBufRows = vitBuf ? linhasBuffer : 0;
+  } else {
+    memset(vitBuf, 0, sizeof(CatItem) * (size_t)vitBufRows * (size_t)vitCap);
   }
+
   memset(vitLin, 0, sizeof vitLin);
   memset(vitRetentarEm, 0, sizeof vitRetentarEm);
   memset(vitDesligada, 0, sizeof vitDesligada);
@@ -1440,14 +1465,12 @@ static void vitIniciar(void) {
   vitOcultar = -1; vitProjetoSujo = 1;
   memset(vitColLemb, 0, sizeof vitColLemb);
   memset(vitSx, 0, sizeof vitSx); memset(vitSv, 0, sizeof vitSv);
-  vitN = 0; vitCarga = 0; vitFR = vitFC = 0; vitMexeu = 0; vitUnicoN = -1;
+  vitCarga = 0; vitFR = vitFC = 0; vitMexeu = 0; vitUnicoN = -1;
   vitScroll = vitScrollV = 0.0f;
   vitHeroAtual = vitHeroAnt = vitHeroDes = -1; vitHeroEntra = 1.0f;
   vitNomeEm = vitReleEm = 0;
   if (!vitBuf || !collection) { lay = VT_LAY_GRADE; celLay = -1; carregarFonte(); return; }
-  vitMulti = collection->nSources > 1;
   if (vitMulti) {
-    vitN = collection->nSources < VIT_LIN_MAX ? collection->nSources : VIT_LIN_MAX;
     for (int r = 0; r < vitN; r++) {
       vitFontes[r] = collection->sources[r];
       snprintf(vitBases[r], sizeof vitBases[r], "%s", baseDaFonte(&vitFontes[r]));
@@ -1522,7 +1545,7 @@ static void vitGuardarInicial(int r, const VitPedido *p) {
 static void vitAgrupar(int n) {
   static short chave[VT_MAX];
   static CatItem tmp;
-  int chaves[VIT_LIN_MAX + 1], nc = 0, filmes = 0, series = 0;
+  int chaves[VIT_LIN_SINTETICA_MAX + 1], nc = 0, filmes = 0, series = 0;
   int focoTudo = vitTemVerTudo(vitFR) && vitFC == vitLin[vitFR].n;
   char focoNome[96] = "";
   if (focoTudo) snprintf(focoNome, sizeof focoNome, "%s", vitLin[vitFR].nome);
@@ -1556,7 +1579,7 @@ static void vitAgrupar(int n) {
     else { int a = nv_ano_meta(tmp.meta); k = a ? a / 10 * 10 : 0; }
     chave[i] = (short)k;
     { int j; for (j = 0; j < nc && chaves[j] != k; j++) {}
-      if (j == nc && nc < VIT_LIN_MAX) chaves[nc++] = k; }
+      if (j == nc && nc < VIT_LIN_SINTETICA_MAX) chaves[nc++] = k; }
   }
   // Ordem das fileiras: tipos filmes, series; decadas da mais nova a mais velha.
   for (int i = 1; i < nc; i++) {
@@ -1664,7 +1687,11 @@ static void vitCarregar(Uint32 agora) {
       if (!strcmp(chave, vitColecaoChave)) { atual = f; break; }
     }
     if (!atual) { vitCancelar(); aberta = 0; return; }
-    collection = atual; vitColecoesRev = revisao;
+    collection = atual;
+    // A quantidade de fontes pode mudar durante o sync. Recalcula o buffer e
+    // invalida os pedidos antigos antes de voltar a carregar as fileiras.
+    vitIniciar();
+    return;
   }
   int novas = collection->nSources < VIT_LIN_MAX ? collection->nSources : VIT_LIN_MAX;
   for (int r = novas; r < vitN; r++) {
@@ -1698,25 +1725,10 @@ static void vitCarregar(Uint32 agora) {
       snprintf(vitBases[r], sizeof vitBases[r], "%s", base);
       vitProjetoSujo = 1;
     }
-    // Fontes nao-addon ficam visiveis, mas vazias e sem requisicoes.
-    if (s->prov[0]) {
-      if (vitManualFonte == r) vitManualFonte = -1;
-      vitManualPendente[r] = 0;
-      vitPedidoSoltar(vitPedidos[r]); vitPedidos[r] = NULL;
-      free(vitExtra[r]); vitExtra[r] = NULL;
-      if (vitLin[r].estado != VIT_VAZIA || !vitLin[r].semFonte ||
-          vitLin[r].n || vitLin[r].brutoN || vitLin[r].extraN || vitLin[r].mais) {
-        vitLin[r].n = vitLin[r].brutoN = vitLin[r].extraN = 0;
-        vitLin[r].mais = 0;
-        vitLin[r].estado = VIT_VAZIA;
-        vitLin[r].semFonte = 1;
-        vitProjetoSujo = 1;
-      }
-      vitRetentarEm[r] = 0;
-      vitDesligada[r] = 0;
-      continue;
-    }
-    int desligada = base[0] && addons_base_desligada(base);
+    // TMDB e Trakt sao fontes reais da Collection, nao addons ausentes.
+    // A disponibilidade do servico e verificada abaixo; se estiver configurado,
+    // a mesma fila limitada carrega a fonte sem transforma-la em uma linha vazia.
+    int desligada = s->prov[0] ? 0 : (base[0] && addons_base_desligada(base));
     if (vitDesligada[r] != desligada) {
       if (vitManualFonte == r) vitManualFonte = -1;
       vitManualPendente[r] = 0;
