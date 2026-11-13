@@ -126,7 +126,7 @@ int main(void) {
 '''
 with tempfile.TemporaryDirectory() as d:
     p = Path(d) / 'test.c'; p.write_text(code)
-    subprocess.run(['cc', '-fsanitize=address', str(p), '-I.', '-o', d + '/test'], check=True)
+    subprocess.run(['cc', '-fsanitize=address', str(p), '-I.', '-o', d + '/test', '-lm'], check=True)
     subprocess.run([d + '/test'], check=True)
 
 # Anchors of the fixes that the helpers alone cannot see.
