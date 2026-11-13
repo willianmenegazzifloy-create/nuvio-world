@@ -530,8 +530,9 @@ static int layAuto(void) {
   // A Collection do Original escolhe entre fileiras e grade. FOLLOW_LAYOUT
   // acompanha o layout da Home; ROWS tambem usa a representacao por fileiras.
   if (!semVitrineAuto) {
-    if (collection->viewMode == COL_VIEW_FOLLOW_LAYOUT ||
-        collection->viewMode == COL_VIEW_ROWS) return VT_LAY_VITRINE;
+    // FOLLOW_LAYOUT segue a preferencia de exibicao do proprio Nuvio.
+    // ROWS força uma fileira por subcolecao; TABBED_GRID usa a grade com abas.
+    if (collection->viewMode == COL_VIEW_ROWS) return VT_LAY_VITRINE;
     if (collection->viewMode == COL_VIEW_TABBED_GRID) return VT_LAY_GRADE;
     int padrao = ajustes_colecao_exibicao();
     if (padrao > VT_LAY_AUTO && padrao < VT_LAY_N) return padrao;
