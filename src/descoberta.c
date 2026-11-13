@@ -9229,8 +9229,12 @@ static int colecaoTipoVod(const char *tipo) {
 static int colecaoTipoCompativel(const char *fonte, const char *item) {
   if (!colecaoTipoVod(item)) return 0;
   if (colecaoTipoVod(fonte)) return !strcasecmp(fonte, item);
-  // Tipo privado de catalogo (ex.: anime) so e aceito quando cada meta
-  // identifica explicitamente se e filme ou serie.
+  // Catalogos privados como anime podem fornecer VOD se a meta declarar
+  // explicitamente movie/series. Catalogos de TV ao vivo/canais nunca podem
+  // entrar numa Collection de filmes ou series, mesmo com type inconsistente.
+  if (fonte && (!strcasecmp(fonte, "tv") || !strcasecmp(fonte, "channel") ||
+                !strcasecmp(fonte, "live") || !strcasecmp(fonte, "radio")))
+    return 0;
   return 1;
 }
 static int colecaoMetaTipoCompativel(const char *ini, const char *fim,
