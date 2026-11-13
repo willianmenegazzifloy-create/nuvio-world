@@ -1748,7 +1748,7 @@ static void vitCarregar(Uint32 agora) {
     // TMDB e Trakt sao fontes reais da Collection, nao addons ausentes.
     // A disponibilidade do servico e verificada abaixo; se estiver configurado,
     // a mesma fila limitada carrega a fonte sem transforma-la em uma linha vazia.
-    int desligada = s->prov[0] ? 0 : !addons_catalogo_base_ativo(base);
+    int desligada = s->prov[0] ? 0 : !desc_catalogo_resolver(base, s->type, s->catId, NULL);
     if (vitDesligada[r] != desligada) {
       if (vitManualFonte == r) vitManualFonte = -1;
       vitManualPendente[r] = 0;
@@ -1768,7 +1768,7 @@ static void vitCarregar(Uint32 agora) {
     if (p && __atomic_load_n(&p->pronto, __ATOMIC_ACQUIRE)) {
       vitPedidos[r] = NULL;
       if (p->geracao == vitGeracao && p->sessao == vitSessao && p->atual &&
-          (p->fonte.prov[0] || addons_catalogo_base_ativo(p->base)))
+          (p->fonte.prov[0] || desc_catalogo_resolver(p->base, p->fonte.type, p->fonte.catId, NULL)))
         vitGuardarInicial(r, p);
       else {
         vitLin[r].estado = VIT_PEND;
@@ -1784,7 +1784,7 @@ static void vitCarregar(Uint32 agora) {
     vitRetentarEm[r] = 0;
     int disponivel = s->prov[0]
         ? (!strcmp(s->prov, "tmdb") ? desc_chave_tmdb()[0] != 0 : nuvem_trakt_cliente()[0] != 0)
-        : addons_catalogo_base_ativo(base);
+        : desc_catalogo_resolver(base, s->type, s->catId, NULL);
     if (!disponivel) {
       l->estado = VIT_VAZIA; l->semFonte = 1; continue;
     }
