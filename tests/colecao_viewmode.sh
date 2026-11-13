@@ -15,12 +15,34 @@ start = match.start()
 brace = source.index("{", match.start())
 depth = 1
 end = brace + 1
-while depth:
-    if source[end] == "{":
+while depth and end < len(source):
+    ch = source[end]
+    if source.startswith("//", end):
+        newline = source.find("\n", end)
+        end = len(source) if newline < 0 else newline + 1
+        continue
+    if source.startswith("/*", end):
+        close = source.find("*/", end + 2)
+        end = len(source) if close < 0 else close + 2
+        continue
+    if ch in ('"', "'"):
+        quote = ch
+        end += 1
+        while end < len(source):
+            if source[end] == "\\":
+                end += 2
+                continue
+            if source[end] == quote:
+                end += 1
+                break
+            end += 1
+        continue
+    if ch == "{":
         depth += 1
-    elif source[end] == "}":
+    elif ch == "}":
         depth -= 1
     end += 1
+assert depth == 0, "unbalanced function body"
 function = source[start:end]
 
 # Guard the production capacity and provider path as part of this regression.
@@ -129,12 +151,34 @@ start = match.start()
 brace = source.index("{", match.start())
 depth = 1
 end = brace + 1
-while depth:
-    if source[end] == "{":
+while depth and end < len(source):
+    ch = source[end]
+    if source.startswith("//", end):
+        newline = source.find("\n", end)
+        end = len(source) if newline < 0 else newline + 1
+        continue
+    if source.startswith("/*", end):
+        close = source.find("*/", end + 2)
+        end = len(source) if close < 0 else close + 2
+        continue
+    if ch in ('"', "'"):
+        quote = ch
+        end += 1
+        while end < len(source):
+            if source[end] == "\\":
+                end += 2
+                continue
+            if source[end] == quote:
+                end += 1
+                break
+            end += 1
+        continue
+    if ch == "{":
         depth += 1
-    elif source[end] == "}":
+    elif ch == "}":
         depth -= 1
     end += 1
+assert depth == 0, "unbalanced function body"
 function = source[start:end]
 
 prefix = r"""
@@ -213,12 +257,34 @@ start = match.start()
 brace = source.index("{", match.start())
 depth = 1
 end = brace + 1
-while depth:
-    if source[end] == "{":
+while depth and end < len(source):
+    ch = source[end]
+    if source.startswith("//", end):
+        newline = source.find("\n", end)
+        end = len(source) if newline < 0 else newline + 1
+        continue
+    if source.startswith("/*", end):
+        close = source.find("*/", end + 2)
+        end = len(source) if close < 0 else close + 2
+        continue
+    if ch in ('"', "'"):
+        quote = ch
+        end += 1
+        while end < len(source):
+            if source[end] == "\\":
+                end += 2
+                continue
+            if source[end] == quote:
+                end += 1
+                break
+            end += 1
+        continue
+    if ch == "{":
         depth += 1
-    elif source[end] == "}":
+    elif ch == "}":
         depth -= 1
     end += 1
+assert depth == 0, "unbalanced function body"
 function = source[start:end]
 
 prefix = r"""
@@ -278,12 +344,34 @@ start = match.start()
 brace = source.index("{", match.start())
 depth = 1
 end = brace + 1
-while depth:
-    if source[end] == "{":
+while depth and end < len(source):
+    ch = source[end]
+    if source.startswith("//", end):
+        newline = source.find("\n", end)
+        end = len(source) if newline < 0 else newline + 1
+        continue
+    if source.startswith("/*", end):
+        close = source.find("*/", end + 2)
+        end = len(source) if close < 0 else close + 2
+        continue
+    if ch in ('"', "'"):
+        quote = ch
+        end += 1
+        while end < len(source):
+            if source[end] == "\\":
+                end += 2
+                continue
+            if source[end] == quote:
+                end += 1
+                break
+            end += 1
+        continue
+    if ch == "{":
         depth += 1
-    elif source[end] == "}":
+    elif ch == "}":
         depth -= 1
     end += 1
+assert depth == 0, "unbalanced function body"
 function = source[start:end]
 
 prefix = r"""
@@ -345,12 +433,34 @@ def extract(name, signature):
     brace = source.index("{", match.start())
     depth = 1
     end = brace + 1
-    while depth:
-        if source[end] == "{":
+    while depth and end < len(source):
+        ch = source[end]
+        if source.startswith("//", end):
+            newline = source.find("\n", end)
+            end = len(source) if newline < 0 else newline + 1
+            continue
+        if source.startswith("/*", end):
+            close = source.find("*/", end + 2)
+            end = len(source) if close < 0 else close + 2
+            continue
+        if ch in ('"', "'"):
+            quote = ch
+            end += 1
+            while end < len(source):
+                if source[end] == "\\":
+                    end += 2
+                    continue
+                if source[end] == quote:
+                    end += 1
+                    break
+                end += 1
+            continue
+        if ch == "{":
             depth += 1
-        elif source[end] == "}":
+        elif ch == "}":
             depth -= 1
         end += 1
+    assert depth == 0, "unbalanced function body"
     return source[start:end]
 
 functions = "\n\n".join([
