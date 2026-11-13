@@ -1,0 +1,36 @@
+name: Nuvio World Collections Regression Tests
+
+on:
+  push:
+    branches:
+      - nuvio-world-collections-follow-layout-fix
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  collections:
+    name: Collections, catalog identity and stale-result regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Nuvio World
+        uses: actions/checkout@v4
+
+      - name: Install native test dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends build-essential python3
+
+      - name: Run Collection parser and paged-data regressions
+        run: bash tests/collections.sh
+
+      - name: Run Collection view-mode and addon identity regressions
+        run: bash tests/colecao_viewmode.sh
+
+      - name: Run Collection source-label and tab regressions
+        run: bash tests/vertudo_streamtabs.sh
+
+      - name: Run Collection data-model regressions
+        run: bash tests/colecoes.sh
