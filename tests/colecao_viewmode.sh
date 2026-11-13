@@ -120,7 +120,7 @@ import tempfile
 
 source = Path("src/descoberta.c").read_text(encoding="utf-8")
 match = re.search(
-    r"void desc_vertudo_filtro_desde\\s*\\([^;]*?\\)\\s*\\{",
+    r"void desc_vertudo_filtro_desde\s*\([^;]*?\)\s*\{",
     source,
     re.S,
 )
