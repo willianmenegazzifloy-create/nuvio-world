@@ -9422,7 +9422,7 @@ static void *fioVerTudo(void *u) {
   int paginas = 0;
   for (;;) {
   char url[NV_ADDON_PEDIDO_MAX], base[NV_ADDON_URL_MAX], type[8], id[96], genre[96], encoded[290], *corpo;
-  int raw=0, ocultos=0, skip, cap, prov, antes, status=0;unsigned generation;
+  int raw=0, ocultos=0, skip, cap, prov, antes, status=0, paginavel=0;unsigned generation;
   ColSource fonte;
   pthread_mutex_lock(&vtTrava);
   skip=vtPagina;generation=vtGeracao;prov=vtProvedor;
