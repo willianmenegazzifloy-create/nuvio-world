@@ -31,6 +31,29 @@ int main(void) {
   // nunca aparecia na TV.
   assert(!strcmp(f->sources[1].prov, "tmdb") && !strcmp(f->sources[1].tmdbTipo, "DISCOVER"));
   assert(!strcmp(f->sources[2].title, "Series") && !strcmp(f->sources[2].type, "series"));
+
+  // O Original considera sources[] a lista completa. catalogSources[] e
+  // somente a projecao dos addons; nao pode apagar as abas TMDB/Trakt.
+  const char *fontesComProjecao =
+    "{\"collections\":[{\"id\":\"mix\",\"title\":\"Mix\",\"folders\":[{\"id\":\"f\",\"title\":\"Todas\","
+    "\"sources\":["
+      "{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"title\":\"Filmes Populares\"},"
+      "{\"provider\":\"trakt\",\"traktListId\":123,\"title\":\"Lista Trakt\"},"
+      "{\"provider\":\"addon\",\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"popular\"}],"
+    "\"catalogSources\":[{\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"popular\"}]}]}]}";
+  assert(col_definir_json(fontesComProjecao) == 1);
+  f = col_folder(0);
+  assert(f->nSources == 3);
+  assert(!strcmp(f->sources[0].prov, "tmdb"));
+  assert(!strcmp(f->sources[1].prov, "trakt"));
+  assert(!strcmp(f->sources[2].addonId, "org.x"));
+  puts("ok  sources completo prevalece sobre catalogSources derivado");
+
+  // Importacao antiga: quando sources esta ausente/vazio, usa catalogSources.
+  assert(col_definir_json("{\"collections\":[{\"id\":\"old\",\"title\":\"Old\",\"folders\":[{\"id\":\"f\",\"title\":\"F\",\"sources\":[],\"catalogSources\":[{\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"old\"}]}]}]}") == 1);
+  assert(col_folder(0)->nSources == 1 && !strcmp(col_folder(0)->sources[0].catId, "old"));
+  puts("ok  catalogSources usado como compatibilidade quando sources esta vazio");
+
   // Cadeia de arte da pasta, na ordem do web, ate o ultimo campo.
   assert(col_definir_json("{\"collections\":[{\"id\":\"cc\",\"title\":\"C\",\"backdropImageUrl\":\"https://img/grupo.jpg\",\"folders\":["
     "{\"id\":\"a\",\"title\":\"So grupo\",\"sources\":[{\"addonId\":\"a\",\"type\":\"movie\",\"catalogId\":\"k\"}]},"
