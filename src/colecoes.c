@@ -206,9 +206,16 @@ static int lerBase(const char *s, const char *se, const char *chave, ColSource *
   return 1;
 }
 static void resolverBases(ColFolder *v) {
-  for (int s = 0; s < v->nSources; s++)
-    if (!v->sources[s].prov[0] && !v->sources[s].base[0] && v->sources[s].addonId[0])
-      baseCabe(&v->sources[s], addons_base_por_id(v->sources[s].addonId));
+  for (int s = 0; s < v->nSources; s++) {
+    ColSource *fonte = &v->sources[s];
+    if (fonte->prov[0] || !fonte->addonId[0]) continue;
+    // addonId e a identidade canonica do Original. addonBaseUrl pode ter
+    // ficado obsoleta depois de trocar/reinstalar/configurar o addon; nunca
+    // deve vencer a base atual resolvida pelo manifesto.
+    const char *atual = addons_base_por_id(fonte->addonId);
+    if (atual && atual[0]) baseCabe(fonte, atual);
+    else fonte->base[0] = 0; // nao ressuscitar URL salva de addon ausente
+  }
 }
 const ColFolder *col_folder(int i) {
   pthread_mutex_lock(&colTrava);
@@ -346,7 +353,7 @@ int col_fontes_sem_base(void) {
   pthread_mutex_lock(&colTrava);
   for (i = 0; i < count; i++) {
     for (s = 0; s < PASTA(i).nSources; s++)
-      if (!PASTA(i).sources[s].prov[0] && !PASTA(i).sources[s].base[0] &&
+      if (!PASTA(i).sources[s].prov[0] && PASTA(i).sources[s].addonId[0] &&
           !addons_base_por_id(PASTA(i).sources[s].addonId)[0]) n++;
   }
   pthread_mutex_unlock(&colTrava);
@@ -419,8 +426,9 @@ int col_diagnostico(const char *base, const char *type, const char *id,
       const ColSource *v = &PASTA(i).sources[s];
       int nivel;
       if (v->prov[0]) continue;   // fonte tmdb/trakt nao casa com catalogo de addon
-      const char *b = v->base[0] ? v->base : addons_base_por_id(v->addonId);
-      if (strcmp(b, base)) continue;
+      // addonId e a identidade principal; URL salva so vale para fonte legada.
+      const char *b = v->addonId[0] ? addons_base_por_id(v->addonId) : v->base;
+      if (!b || !b[0] || strcmp(b, base)) continue;
       nivel = 1;
       if (!strcmp(v->type, type)) {
         nivel = 2;
@@ -474,8 +482,9 @@ const ColFolder *col_por_catalogo(const char *base,const char *type,const char *
   for(int i=0;i<count;i++) {
     for(int s=0;s<PASTA(i).nSources;s++) {
       const ColSource *v=&PASTA(i).sources[s];
-      const char *b = v->base[0] ? v->base : addons_base_por_id(v->addonId);
-      if(!strcmp(b,base)&&!strcmp(v->type,type)&&!strcmp(v->catId,id)) {
+      // addonId e a identidade principal; URL salva so vale para fonte legada.
+      const char *b = v->addonId[0] ? addons_base_por_id(v->addonId) : v->base;
+      if(b && b[0] && !strcmp(b,base)&&!strcmp(v->type,type)&&!strcmp(v->catId,id)) {
         int ns = fontesValidas(&PASTA(i));
         copia.f = PASTA(i);
         memcpy(copia.s, PASTA(i).sources, sizeof(ColSource) * (size_t)ns);
