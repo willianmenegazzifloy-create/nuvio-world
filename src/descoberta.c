@@ -9333,6 +9333,14 @@ static void *fioVerTudo(void *u) {
   if (!descSessaoVincular(sessao)) {
     pthread_mutex_lock(&vtTrava); vtFioVivo = 0; pthread_mutex_unlock(&vtTrava); return NULL;
   }
+  // A URL guardada pode continuar preenchida depois que o addon saiu da lista.
+  // Revalidar em cada pagina impede que o fio retome uma fonte obsoleta.
+  if (!prov && !addons_catalogo_base_ativo(base)) {
+    pthread_mutex_lock(&vtTrava);
+    if (generation == vtGeracao) { vtN = 0; vtFim = 1; vtErro = 0; vtFioVivo = 0; }
+    pthread_mutex_unlock(&vtTrava);
+    return NULL;
+  }
 
   // FONTE NAO-ADDON (issue #44): pasta de colecao do site cujo conteudo vem
   // do TMDB ou do Trakt, nao de um catalogo de addon. vtPagina aqui e o
