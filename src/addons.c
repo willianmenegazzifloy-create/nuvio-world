@@ -1670,6 +1670,28 @@ int addons_base_desligada(const char *base) {
   }
   return 0;
 }
+
+// COLLECTIONS NAO PODEM USAR A URL SALVA COMO SE FOSSE UM ADDON PRESENTE.
+// O Original resolve a fonte a partir dos addons instalados e ativos. A URL
+// persistida na Collection e apenas uma identidade auxiliar: se o addon foi
+// removido, desligado ou nao declara o resource "catalog", a fonte fica vazia.
+// Isto tambem evita consultar uma URL antiga que ja nao pertence a lista atual.
+int addons_catalogo_base_ativo(const char *base) {
+  char alvo[NV_ADDON_URL_MAX], mine[NV_ADDON_URL_MAX];
+  int disponivel = 0;
+  if (!base || !*base) return 0;
+  baseNormalizada(base, alvo, sizeof alvo);
+  pthread_mutex_lock(&addonTrava);
+  for (int i = 0; i < nAddon; i++) {
+    baseNormalizada(addon[i].base, mine, sizeof mine);
+    if (!strcmp(mine, alvo)) {
+      disponivel = addon[i].ativo && addon[i].catalogo;
+      break;
+    }
+  }
+  pthread_mutex_unlock(&addonTrava);
+  return disponivel;
+}
 int addons_sondado(int i) { return (i >= 0 && i < nAddon) ? addon[i].sondado : 0; }
 int addons_catalogos_canal(int i, AddCatCanal *saida, int max) {
   int k;
