@@ -9218,7 +9218,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       if (encoded[0]) snprintf(extra, sizeof extra, "genre=%s&skip=%d", encoded, skip);
       else if (skip) snprintf(extra, sizeof extra, "skip=%d", skip);
       w = catalogoUrl(url, sizeof url, origem, f.type, f.catId, extra);
-      pronta = !addons_base_desligada(origem) && descPedidoCoube(origem, w, sizeof url);
+      pronta = addons_catalogo_base_ativo(origem) && descPedidoCoube(origem, w, sizeof url);
     }
     nv_perfil_sessao_destravar();
     if (!pronta) {
@@ -9435,7 +9435,14 @@ static void *fioVerTudo(void *u) {
   if(genre[0])snprintf(extra,sizeof extra,"genre=%s&skip=%d",encoded,skip);
   else if(skip)snprintf(extra,sizeof extra,"skip=%d",skip);
   w=catalogoUrl(url,sizeof url,base,type,id,extra);
-  corpo=(!addons_base_desligada(base)&&descPedidoCoube(base,w,sizeof url))?colecaoBaixar(url,&status):NULL; }
+  corpo=(addons_catalogo_base_ativo(base)&&descPedidoCoube(base,w,sizeof url))?colecaoBaixar(url,&status):NULL; }
+  if (!addons_catalogo_base_ativo(base)) {
+    free(corpo);
+    pthread_mutex_lock(&vtTrava);
+    if (generation == vtGeracao) { vtN = 0; vtFim = 1; vtErro = 0; vtFioVivo = 0; }
+    pthread_mutex_unlock(&vtTrava);
+    return NULL;
+  }
   cap=strstr(id,"top100")?100:strstr(id,"top250")?250:VT_MAX;
   pthread_mutex_lock(&vtTrava);
   if(generation!=vtGeracao || !descSessaoAtual()){pthread_mutex_unlock(&vtTrava);free(corpo);continue;}
@@ -9502,10 +9509,20 @@ void desc_vertudo_filtro(const char *base, const char *tipo, const char *catId,c
   desc_vertudo_filtro_desde(base, tipo, catId, genre, 0);
 }
 void desc_vertudo_filtro_desde(const char *base, const char *tipo, const char *catId, const char *genre, int pagina) {
-  if (!base || !tipo || !catId) return;
-  // Addon desligado nao pode reaproveitar itens que ficaram no cache da
+  if (!tipo || !catId) return;
+  if (!base || !*base) {
+    pthread_mutex_lock(&vtTrava);
+    vtBase[0] = 0;
+    snprintf(vtTipo, sizeof vtTipo, "%s", tipo);
+    snprintf(vtCat, sizeof vtCat, "%s", catId);
+    snprintf(vtGenre, sizeof vtGenre, "%s", genre ? genre : "");
+    vtProvedor = 0; vtN = 0; vtPagina = pagina; vtFim = 1; vtErro = 0; vtGeracao++;
+    pthread_mutex_unlock(&vtTrava);
+    return;
+  }
+  // Addon desligado/ausente ou sem resource catalog nao pode reaproveitar itens que ficaram no cache da
   // Collection. Invalida tambem qualquer leitura em andamento dessa fonte.
-  if (addons_base_desligada(base)) {
+  if (!addons_catalogo_base_ativo(base)) {
     pthread_mutex_lock(&vtTrava);
     snprintf(vtBase, sizeof vtBase, "%s", base);
     snprintf(vtTipo, sizeof vtTipo, "%s", tipo);
