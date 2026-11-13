@@ -683,13 +683,11 @@ static int lerColecaoWeb(const char *c, const char *ce) {
       v->forma = col_forma_texto(forma); }
     { char b[8];
       if (js_bruto(p, pe, "focusGifEnabled", b, sizeof b) && strstr(b, "false")) v->focusGif[0] = 0; }
-    // O Original usa sources como lista completa de fontes da pasta.
-    // catalogSources e apenas a lista derivada das fontes de addon; se for
-    // escolhida primeiro, TMDB/Trakt e outras abas da mesma pasta desaparecem.
-    // O campo legado catalogSources so entra quando sources nao existe ou
-    // esta vazio.
-    const char *src = js_array(p, pe, "sources");
-    if (!src || *src == ']') src = js_array(p, pe, "catalogSources");
+    // No World, Collection usa somente catalogos de addons. catalogSources
+    // e a projecao especifica dessas fontes e tem prioridade; sources e o
+    // fallback para exports antigos que nao trazem essa projecao.
+    const char *src = js_array(p, pe, "catalogSources");
+    if (!src || *src == ']') src = js_array(p, pe, "sources");
     for (const char *s = src, *se = NULL; s && v->nSources < COL_SOURCE_MAX; s = js_prox(se)) {
       se = js_fim(s); ColSource *a = &v->sources[v->nSources]; char prov[16] = "";
       memset(a, 0, sizeof *a);
