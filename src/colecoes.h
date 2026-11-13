@@ -59,6 +59,10 @@ typedef struct {
   /* FORMA DO CARTAO da pasta (COL_FORMA_*): o `tileShape` que o editor de
      colecoes do app web grava por pasta. Ver col_forma_texto. */
   int forma;
+  /* viewMode e showAllTab pertencem a Collection no Original; sao copiados
+     para cada pasta porque o World abre uma pasta por vez. */
+  int viewMode;   /* COL_VIEW_* */
+  int showAllTab; /* 1 por padrao; usado pelo Original no modo TABBED_GRID */
   /* AS FONTES NAO MORAM MAIS NA PASTA (#255): antes eram 32 x 1512 bytes embutidos
      em cada uma, para uma media de 2 fontes por pasta. `sources` aponta para o
      bloco de fontes do conjunto (colecoes.c) e e valido para ler ate
@@ -67,6 +71,14 @@ typedef struct {
      aponta para um vetor seu; col_extra_definir copia as fontes. */
   ColSource *sources;
 } ColFolder;
+/* Modos definidos na Collection do app web. Zero preserva o comportamento
+   antigo de pastas locais/de pacote que nao trazem viewMode. */
+enum {
+  COL_VIEW_UNSPECIFIED = 0,
+  COL_VIEW_FOLLOW_LAYOUT,
+  COL_VIEW_ROWS,
+  COL_VIEW_TABBED_GRID
+};
 /* As tres formas do app web (collectionsStore.js, normalizePosterShape:
    POSTER, LANDSCAPE/WIDE, SQUARE). PAISAGEM e o zero de proposito: e como o
    nativo sempre desenhou, e o que fica para a pasta do pacote (collections.json
