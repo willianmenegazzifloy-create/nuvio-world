@@ -68,6 +68,7 @@ char *rede_baixar(const char *url,int timeout) {
     const char *path = url + strlen("https://collection.invalid");
     const char *paths[] = {
       "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=New%20%26%20fresh%2FTV&skip=0.json?config=fixture",
+      "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=Comedy&skip=0.json?config=fixture",
       "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=New%20%26%20fresh%2FTV&skip=1.json?config=fixture",
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25.json?config=fixture",
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/skip=1.json?config=fixture",
