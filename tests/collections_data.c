@@ -73,7 +73,8 @@ char *rede_baixar(const char *url,int timeout) {
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/skip=1.json?config=fixture",
       "/addon/catalog/tv/new%2Fseries%20%231%3Ffresh%25.json?config=fixture",
       "/other/catalog/movie/new%2Fmovies%20%231%3Ffresh%25.json?config=fixture",
-      "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/search=new%20%26%20fresh.json?config=fixture"
+      "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/search=new%20%26%20fresh.json?config=fixture",
+      "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25.json?config=fixture"
     };
     for (unsigned i = 0; i < sizeof paths / sizeof *paths; i++) {
       if (strcmp(path, paths[i])) continue;
