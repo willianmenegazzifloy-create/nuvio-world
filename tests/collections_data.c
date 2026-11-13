@@ -252,6 +252,7 @@ int main(void) {
   assert(!strcmp(fixtureUrl, "https://collection.invalid/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/search=new%20%26%20fresh.json?config=fixture"));
   // O "Ver tudo" da Collection usa o mesmo filtro estrito de VOD da Vitrine.
   assert(col_definir_json("{\"collections\":[{\"id\":\"mixed-group\",\"title\":\"Mixed\",\"folders\":[{\"id\":\"mixed-folder\",\"title\":\"Mixed catalog\",\"sources\":[{\"addonBaseUrl\":\"https://collection.invalid/addon?config=fixture\",\"type\":\"movie\",\"catalogId\":\"mixed\"},{\"addonBaseUrl\":\"https://collection.invalid/addon?config=fixture\",\"type\":\"series\",\"catalogId\":\"mixed\"}]}]}]}") == 1);
+  assert(col_por_catalogo("https://collection.invalid/addon?config=fixture", "movie", "mixed") != NULL);
   desc_vertudo_abrir("https://collection.invalid/addon", "movie", "mixed"); waitDone();
   assert(desc_vertudo_n() == 1 && desc_vertudo_item(0, &i) && !strcmp(i.tipo, "movie"));
   desc_vertudo_abrir("https://collection.invalid/addon", "series", "mixed"); waitDone();
