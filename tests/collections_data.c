@@ -100,8 +100,10 @@ char *rede_baixar(const char *url,int timeout) {
         fixtureDisableDuringRequest = 0;
         fixtureCatalogEnabled = 0; // simula desligar enquanto o GET responde
       }
-      if (i == 1 || i == 3) return strdup("{\"metas\":[]}");
-      if (i == 2 || i == 6)
+      if (i == 2 || i == 4) return strdup("{\"metas\":[]}");
+      if (i == 1)
+        return strdup("{\"metas\":[{\"id\":\"ttbuddy\",\"type\":\"movie\",\"name\":\"Buddy\",\"poster\":\"buddy.jpg\",\"genres\":[\"Horror\",\"Thriller\",\"Fantasy\"]}]}");
+      if (i == 7)
         return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"type\":\"series\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
       return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"type\":\"movie\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
     }
