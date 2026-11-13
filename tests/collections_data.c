@@ -42,6 +42,7 @@ void marco(const char *name) { (void)name; }
 int addons_n(void) { return 0; }
 int addons_base_desligada(const char *b) { (void)b; return 0; }   // 203-desligados
 int addons_catalogo_base_ativo(const char *b) { return b && strstr(b, ".invalid") != NULL; }
+unsigned addons_versao(void) { return 1; }
 const char *addons_base(int i) { (void)i; return ""; }
 const char *addons_id_manifesto(int i) { (void)i; return ""; }
 void cat_trocar_continuar(const CatItem *l, int q) { (void)l; (void)q; }
@@ -99,6 +100,23 @@ char *rede_baixar_st(const char *url, int timeout, const char *const *headers, i
 }
 static void waitDone(void) {for(int i=0;i<2000&&desc_vertudo_carregando();i++)usleep(1000);assert(!desc_vertudo_carregando());}
 int main(void) {
+  static const char manifesto[] = "{\"catalogs\":["
+    "{\"type\":\"movie\",\"id\":\"rank\",\"extra\":[{\"name\":\"skip\"}]},"
+    "{\"type\":\"movie\",\"id\":\"slow\",\"extra\":[{\"name\":\"skip\"}]},"
+    "{\"type\":\"series\",\"id\":\"new\",\"extra\":[{\"name\":\"skip\"}]},"
+    "{\"type\":\"movie\",\"id\":\"error\",\"extra\":[{\"name\":\"skip\"}]},"
+    "{\"type\":\"movie\",\"id\":\"empty\",\"extra\":[{\"name\":\"skip\"}]},"
+    "{\"type\":\"movie\",\"id\":\"new/movies #1?fresh%\",\"extra\":[{\"name\":\"skip\"}]},"
+    "{\"type\":\"series\",\"id\":\"new/series #1?fresh%\",\"extraSupported\":[\"skip\"]},"
+    "{\"type\":\"tv\",\"id\":\"new/series #1?fresh%\",\"extra\":[\"skip\"]}]}"
+  ;
+  desc_manifesto_cache_guardar("https://example.invalid/manifest.json", 1, manifesto);
+  desc_manifesto_cache_guardar("https://example.invalid/slow/manifest.json", 1, manifesto);
+  desc_manifesto_cache_guardar("https://example.invalid/new/manifest.json", 1, manifesto);
+  desc_manifesto_cache_guardar("https://example.invalid/error/manifest.json", 1, manifesto);
+  desc_manifesto_cache_guardar("https://example.invalid/empty/manifest.json", 1, manifesto);
+  desc_manifesto_cache_guardar("https://collection.invalid/addon/manifest.json?config=fixture", 1, manifesto);
+  desc_manifesto_cache_guardar("https://collection.invalid/other/manifest.json?config=fixture", 1, manifesto);
   desc_vertudo_abrir("https://example.invalid","movie","rank");waitDone();
   assert(desc_vertudo_n()==2&&!desc_vertudo_fim());
   desc_vertudo_mais();waitDone();assert(desc_vertudo_n()==3);
