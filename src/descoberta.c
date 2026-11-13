@@ -9442,7 +9442,7 @@ static void *fioVerTudo(void *u) {
   int paginas = 0;
   for (;;) {
   char url[NV_ADDON_PEDIDO_MAX], base[NV_ADDON_URL_MAX], type[8], id[96], genre[96], encoded[290], *corpo;
-  int raw=0, ocultos=0, skip, cap, prov, antes, status=0, paginavel=0;unsigned generation;
+  int raw=0, ocultos=0, skip, cap, prov, antes, status=0, paginavel=0, fonteColecao=0;unsigned generation;
   ColSource fonte;
   pthread_mutex_lock(&vtTrava);
   skip=vtPagina;generation=vtGeracao;prov=vtProvedor;
@@ -9457,6 +9457,10 @@ static void *fioVerTudo(void *u) {
   if (!descSessaoVincular(sessao)) {
     pthread_mutex_lock(&vtTrava); vtFioVivo = 0; pthread_mutex_unlock(&vtTrava); return NULL;
   }
+  // A mesma lista pode ser aberta tanto como catalogo geral quanto por uma
+  // Collection. Quando pertence a uma pasta, aplica os filtros estritos de VOD
+  // da Collection tambem no "Ver tudo".
+  fonteColecao = !prov && col_por_catalogo(base, type, id) != NULL;
   // A URL guardada pode continuar preenchida depois que o addon saiu da lista.
   // Revalidar em cada pagina impede que o fio retome uma fonte obsoleta.
   if (!prov && !desc_catalogo_resolver(base, type, id, NULL)) {
@@ -9586,6 +9590,7 @@ static void *fioVerTudo(void *u) {
     const char *f=js_fim(p);raw++;
     CatItem it;
     if (deMeta(p, f, type, &it)) {
+      if (fonteColecao && !colecaoTipoCompativel(type, it.tipo)) continue;
       // Escondido ainda conta como "pagina com novidade": senao uma pagina so de
       // futuros encerraria a paginacao do catalogo.
       if (descOcultaNaoLancado(&it)) { added++; continue; }
