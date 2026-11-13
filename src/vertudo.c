@@ -1391,22 +1391,34 @@ static void vitProjetar(void) {
 }
 
 // O texto de cada aba: o mesmo da barra de abas (ver a nota em themeHeader).
-static void rotulosAbas(char (*rot)[180]) {
-  static char nomeAba[COL_SOURCE_MAX][128];
-  int n = collection->nSources;
-  if (n > COL_SOURCE_MAX) n = COL_SOURCE_MAX;
+// Nome de cada fonte: titulo da conta/manisfesto e, para addon catalogos,
+// o genero que o Original acrescenta ao nome da subcategoria. TMDB/Trakt ja
+// trazem titulo proprio e nao recebem sufixo de genero.
+static void nomesFontesColecao(char nomes[][180], int n) {
   for (int i = 0; i < n; i++) {
     const ColSource *s = &collection->sources[i];
-    col_nome_fonte(s, desc_nome_catalogo(baseDaFonte(s), s->type, s->catId), nomeAba[i], sizeof nomeAba[i]);
-    if (!strcasecmp(nomeAba[i], collection->title)) nomeAba[i][0] = 0;
+    char base[128] = "";
+    const char *tipo = i18n(!strcmp(s->type, "series") ? "Séries" : "Filmes");
+    col_nome_fonte(s, desc_nome_catalogo(baseDaFonte(s), s->type, s->catId), base, sizeof base);
+    if (!base[0]) snprintf(base, sizeof base, "%s", tipo);
+    if (!s->prov[0] && s->genre[0] && strcasecmp(s->genre, "None"))
+      snprintf(nomes[i], 180, "%s · %s", base, s->genre);
+    else
+      snprintf(nomes[i], 180, "%s", base);
   }
+}
+static void rotulosAbas(char (*rot)[180]) {
+  static char nomeAba[COL_SOURCE_MAX][180];
+  int n = collection->nSources;
+  if (n > COL_SOURCE_MAX) n = COL_SOURCE_MAX;
+  nomesFontesColecao(nomeAba, n);
   for (int i = 0; i < n; i++) {
     const ColSource *s = &collection->sources[i];
     const char *tipo = i18n(!strcmp(s->type, "series") ? "Séries" : "Filmes");
     int repete = 0;
-    for (int j = 0; j < n && nomeAba[i][0]; j++) if (j != i && !strcmp(nomeAba[i], nomeAba[j])) repete = 1;
-    if (!nomeAba[i][0]) snprintf(rot[i], 180, "%s", tipo);
-    else if (repete) snprintf(rot[i], 180, "%s · %s", nomeAba[i], tipo);
+    for (int j = 0; j < n; j++)
+      if (j != i && !strcmp(nomeAba[i], nomeAba[j])) repete = 1;
+    if (repete) snprintf(rot[i], 180, "%s · %s", nomeAba[i], tipo);
     else snprintf(rot[i], 180, "%s", nomeAba[i]);
   }
 }
@@ -2549,21 +2561,17 @@ static int legendaOculta(void) {
 // tipo: "Filmes" / "Séries". O tipo so acompanha quando duas abas teriam o
 // mesmo texto.
 static void abaRotulos(char rot[][180], int nAbas) {
-  static char nomeAba[COL_SOURCE_MAX][128];
-  if(nAbas>COL_SOURCE_MAX)nAbas=COL_SOURCE_MAX;
-  for(int i=0;i<nAbas;i++) {
-    const ColSource *s=&collection->sources[i];
-    col_nome_fonte(s,desc_nome_catalogo(baseDaFonte(s),s->type,s->catId),nomeAba[i],sizeof nomeAba[i]);
-    if(!strcasecmp(nomeAba[i],collection->title))nomeAba[i][0]=0;
-  }
-  for(int i=0;i<nAbas;i++) {
-    const ColSource *s=&collection->sources[i];
-    const char *tipo=i18n(!strcmp(s->type,"series")?"Séries":"Filmes");
-    int repete=0;
-    for(int j=0;j<nAbas&&nomeAba[i][0];j++) if(j!=i&&!strcmp(nomeAba[i],nomeAba[j]))repete=1;
-    if(!nomeAba[i][0])snprintf(rot[i],180,"%s",tipo);
-    else if(repete)snprintf(rot[i],180,"%s · %s",nomeAba[i],tipo);
-    else snprintf(rot[i],180,"%s",nomeAba[i]);
+  static char nomeAba[COL_SOURCE_MAX][180];
+  if (nAbas > COL_SOURCE_MAX) nAbas = COL_SOURCE_MAX;
+  nomesFontesColecao(nomeAba, nAbas);
+  for (int i = 0; i < nAbas; i++) {
+    const ColSource *s = &collection->sources[i];
+    const char *tipo = i18n(!strcmp(s->type, "series") ? "Séries" : "Filmes");
+    int repete = 0;
+    for (int j = 0; j < nAbas; j++)
+      if (j != i && !strcmp(nomeAba[i], nomeAba[j])) repete = 1;
+    if (repete) snprintf(rot[i], 180, "%s · %s", nomeAba[i], tipo);
+    else snprintf(rot[i], 180, "%s", nomeAba[i]);
   }
 }
 // A faixa rola o minimo para a aba alvo entrar inteira, fora da zona de
