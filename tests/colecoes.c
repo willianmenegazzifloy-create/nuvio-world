@@ -6,7 +6,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-static const char *baseAddonAtual = "https://resolvido";
+const char *addons_base_por_id(const char *id) {
+  if (id && !strcmp(id, "x")) return "https://addon/abc";
+  return id && !strcmp(id, "org.x") ? baseAddonAtual : "";
+}
 const char *addons_base_por_id(const char *id) { return id && !strcmp(id, "org.x") ? baseAddonAtual : ""; }
 int main(void) {
   const char *web =
@@ -182,7 +185,7 @@ int main(void) {
   // addonId e a identidade canonica: uma URL antiga salva na fonte nao
   // pode impedir o casamento com a base atual nem ressuscitar um addon removido.
   baseAddonAtual = "https://novo-addon";
-  assert(col_definir_json("{\\"collections\\":[{\\"id\\":\\"stable\\",\\"title\\":\\"Stable\\",\\"folders\\":[{\\"id\\":\\"f\\",\\"title\\":\\"F\\",\\"sources\\":[{\\"provider\\":\\"addon\\",\\"addonId\\":\\"org.x\\",\\"addonBaseUrl\\":\\"https://addon-antigo/manifest.json\\",\\"type\\":\\"movie\\",\\"catalogId\\":\\"popular\\"}]}]}]}") == 1);
+  assert(col_definir_json("{\"collections\":[{\"id\":\"stable\",\"title\":\"Stable\",\"folders\":[{\"id\":\"f\",\"title\":\"F\",\"sources\":[{\"provider\":\"addon\",\"addonId\":\"org.x\",\"addonBaseUrl\":\"https://addon-antigo/manifest.json\",\"type\":\"movie\",\"catalogId\":\"popular\"}]}]}]}") == 1);
   assert(!strcmp(col_folder(0)->sources[0].base, "https://novo-addon"));
   assert(col_por_catalogo("https://novo-addon", "movie", "popular") != NULL);
   assert(col_por_catalogo("https://addon-antigo", "movie", "popular") == NULL);
