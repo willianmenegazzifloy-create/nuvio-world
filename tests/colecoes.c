@@ -11,12 +11,15 @@ const char *addons_base_por_id(const char *id) {
   if (id && !strcmp(id, "x")) return "https://addon/abc";
   return id && !strcmp(id, "org.x") ? baseAddonAtual : "";
 }
+int addons_catalogo_base_ativo(const char *base) {
+  return base && ((!strcmp(base, "https://addon/abc")) ||
+                  (baseAddonAtual[0] && !strcmp(base, baseAddonAtual)));
+}
 int main(void) {
   const char *web =
     "[{\"collections_json\":{\"collections\":[{\"id\":\"c1\",\"title\":\"Streaming\",\"backdropImageUrl\":\"https://img/bg.jpg\",\"viewMode\":\"FOLLOW_LAYOUT\",\"showAllTab\":true,"
     "\"folders\":[{\"id\":\"f1\",\"title\":\"Netflix\",\"coverImageUrl\":\"https://img/nf.jpg\",\"titleLogoUrl\":\"https://img/nf.png\",\"hideTitle\":true,"
     "\"sources\":[{\"provider\":\"addon\",\"addonId\":\"x\",\"addonBaseUrl\":\"https://addon/abc/manifest.json\",\"type\":\"movie\",\"catalogId\":\"nf_movies\",\"title\":\"Movies\",\"genre\":\"None\"},"
-    "{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"TV\"},"
     "{\"addonBaseUrl\":\"https://addon/abc\",\"type\":\"series\",\"catalogId\":\"nf_series\",\"catalogName\":\"Series\"}]},"
     "{\"id\":\"f2\",\"title\":\"Vazia\",\"sources\":[]}]}]}}]";
   assert(col_definir_json(web) == 1);
@@ -29,17 +32,12 @@ int main(void) {
   // backdrop da colecao e so o ultimo recurso.
   assert(!f->hero[0] && !strcmp(f->groupBackdrop, "https://img/bg.jpg"));
   assert(!strcmp(col_banner(f), "https://img/nf.jpg") && !strcmp(col_capa(f), "https://img/nf.jpg"));
-  assert(f->nSources == 3);
+  assert(f->nSources == 2);
   assert(!strcmp(f->sources[0].base, "https://addon/abc") && !strcmp(f->sources[0].catId, "nf_movies") && !f->sources[0].genre[0]);
-  // A fonte tmdb ENTRA (issue #44): antes ela era descartada e uma pasta so
-  // de fontes tmdb/trakt sumia inteira — a colecao "instalada no site" que
-  // nunca aparecia na TV.
-  assert(!strcmp(f->sources[1].prov, "tmdb") && !strcmp(f->sources[1].tmdbTipo, "DISCOVER"));
-  assert(!strcmp(f->sources[1].type, "series"));
-  assert(!strcmp(f->sources[2].title, "Series") && !strcmp(f->sources[2].type, "series"));
+  assert(!strcmp(f->sources[1].title, "Series") && !strcmp(f->sources[1].type, "series"));
 
-  // O Original considera sources[] a lista completa. catalogSources[] e
-  // somente a projecao dos addons; nao pode apagar as abas TMDB/Trakt.
+  // Mesmo quando o JSON original inclui fontes diretas TMDB/Trakt, o World
+  // conserva somente os catalogos de addons instalados e ativos.
   const char *fontesComProjecao =
     "{\"collections\":[{\"id\":\"mix\",\"title\":\"Mix\",\"viewMode\":\"TABBED_GRID\",\"showAllTab\":false,\"folders\":[{\"id\":\"f\",\"title\":\"Todas\","
     "\"sources\":["
@@ -50,11 +48,9 @@ int main(void) {
   assert(col_definir_json(fontesComProjecao) == 1);
   f = col_folder(0);
   assert(f->viewMode == COL_VIEW_TABBED_GRID && f->showAllTab == 0);
-  assert(f->nSources == 3);
-  assert(!strcmp(f->sources[0].prov, "tmdb"));
-  assert(!strcmp(f->sources[1].prov, "trakt"));
-  assert(!strcmp(f->sources[2].addonId, "org.x"));
-  puts("ok  sources completo prevalece sobre catalogSources derivado");
+  assert(f->nSources == 1);
+  assert(!strcmp(f->sources[0].addonId, "org.x"));
+  puts("ok  sources ignora TMDB/Trakt e conserva catalogo de addon");
 
   // Importacao antiga: quando sources esta ausente/vazio, usa catalogSources.
   assert(col_definir_json("{\"collections\":[{\"id\":\"old\",\"title\":\"Old\",\"folders\":[{\"id\":\"f\",\"title\":\"F\",\"sources\":[],\"catalogSources\":[{\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"old\"}]}]}]}") == 1);
@@ -74,41 +70,22 @@ int main(void) {
   assert(!col_banner(col_folder(3))[0] && !col_capa(col_folder(3))[0]);   // sem campo nenhum: nada inventado
   puts("ok  banner: heroBackdropUrl > coverImageUrl > backdropImageUrl da colecao; capa: cover > backdrop; vazio fica vazio");
   assert(col_definir_json(web) == 1);
-  puts("ok  shape do web: linha da RPC, manifest.json cortado, fonte tmdb entra, genre None vazio");
+  puts("ok  shape do web: linha da RPC, manifest.json cortado, fontes somente de addons, genre None vazio");
 
   char chave[192];
   col_chave_grupo("Streaming", chave, sizeof chave); assert(!strcmp(chave, "collection_c1"));
   col_chave_grupo("Outro", chave, sizeof chave);     assert(!strcmp(chave, "collection_Outro"));
   puts("ok  chave por id da colecao, nome quando nao ha id");
 
-  // Fonte trakt do editor do site: lista publica por id, com ordenacao.
-  assert(col_definir_json("{\"collections\":[{\"id\":\"ct\",\"title\":\"T\",\"folders\":[{\"id\":\"g\",\"title\":\"G\",\"sources\":["
-    "{\"provider\":\"trakt\",\"traktListId\":1234,\"mediaType\":\"TV\",\"sortBy\":\"rank\",\"sortHow\":\"asc\",\"title\":\"Top séries\"},"
-    "{\"provider\":\"tmdb\",\"tmdbSourceType\":\"PERSON\",\"tmdbId\":6384,\"mediaType\":\"MOVIE\",\"filters\":{\"withGenres\":\"28\"}},"
-    "{\"provider\":\"desconhecido\",\"catalogId\":\"x\"}]}]}]}") == 1);
-  f = col_folder(0);
-  assert(f->nSources == 2);   // provedor desconhecido continua fora
-  assert(!strcmp(f->sources[0].prov, "trakt") && f->sources[0].traktLista == 1234
-         && !strcmp(f->sources[0].ordenar, "rank") && !strcmp(f->sources[0].ordem, "asc")
-         && !strcmp(f->sources[0].type, "series"));
-  assert(!strcmp(f->sources[1].prov, "tmdb") && !strcmp(f->sources[1].tmdbTipo, "PERSON")
-         && f->sources[1].tmdbId == 6384 && strstr(f->sources[1].filtros, "withGenres"));
-  puts("ok  fontes trakt e tmdb entram com id, ordenacao e filtros");
-
-  // So os catalogos das pastas Novos Filmes/Novas Series em Descobrir
-  // recebem o sinal para limitar o TMDB a datas ja alcancadas.
+  // Collections compostas apenas por fontes TMDB/Trakt nao existem no World.
   const char *descobrir =
     "{\"collections\":[{\"id\":\"d\",\"title\":\"Descobrir\",\"folders\":["
     "{\"id\":\"nf\",\"title\":\"Novos Filmes\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
     "{\"id\":\"ns\",\"title\":\"Novas Séries\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"TV\"}]},"
     "{\"id\":\"alta\",\"title\":\"Filmes em Alta\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
     "{\"id\":\"rede\",\"title\":\"Rede de TV\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"NETWORK\",\"mediaType\":\"MOVIE\",\"tmdbId\":123}]}]}]}";
-  assert(col_definir_json(descobrir) == 4);
-  assert(col_folder(0)->sources[0].somenteLancados == 1);
-  assert(col_folder(1)->sources[0].somenteLancados == 1);
-  assert(col_folder(2)->sources[0].somenteLancados == 0);
-  assert(!strcmp(col_folder(3)->sources[0].type, "series"));
-  puts("ok  filtro de lancamentos futuros ativado somente em Descobrir / Novos Filmes e Novas Series");
+  assert(col_definir_json(descobrir) == 0 && col_n() == 0);
+  puts("ok  pastas sem addon ativo sao descartadas, inclusive TMDB/Trakt");
 
   // A capacidade real usada pela collection do usuario: 249 pastas numa
   // fileira e ate 52 fontes dentro de uma pasta (o codigo antigo parava em 32).
