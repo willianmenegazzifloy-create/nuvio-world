@@ -9245,6 +9245,35 @@ static int colecaoMetaTipoCompativel(const char *ini, const char *fim,
   return colecaoTipoCompativel(fonte, item);
 }
 
+/* O filtro enviado ao addon e apenas uma solicitacao: addons que ignoram
+   genre=... nao podem contaminar uma Collection com outros generos. Conferimos
+   o array completo da meta, sem depender do campo visual limitado a dois
+   generos do CatItem. */
+static int colecaoMetaGeneroCompativel(const char *ini, const char *fim,
+                                       const char *generoFonte) {
+  const char *p = js_array(ini, fim, "genres");
+  char alvo[96];
+  if (!generoFonte || !generoFonte[0]) return 1;
+  snprintf(alvo, sizeof alvo, "%s", desc_genero_pt(generoFonte));
+  while (p && *p && *p != ']') {
+    char bruto[96]; size_t n = 0;
+    while (*p == ' ' || *p == '\\t' || *p == '\\r' || *p == '\\n' || *p == ',') p++;
+    if (*p != '"') break;
+    p++;
+    while (*p && *p != '"' && n + 1 < sizeof bruto) {
+      if (*p == '\\\\' && p[1]) p++;
+      bruto[n++] = *p++;
+    }
+    bruto[n] = 0;
+    if (*p == '"') p++;
+    if (bruto[0] && !strcasecmp(desc_genero_pt(bruto), alvo)) return 1;
+    while (*p == ' ' || *p == '\\t' || *p == '\\r' || *p == '\\n') p++;
+    if (*p != ',') break;
+    p++;
+  }
+  return 0;
+}
+
 static char *colecaoBaixar(const char *url, int *status) {
   char *corpo = rede_baixar_st(url, 10, NULL, status);
   if (*status < 200 || *status >= 300) { free(corpo); return NULL; }
@@ -9268,9 +9297,10 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
   if (!fonte || !itens || !resultado || limite < 1 || limite > 20 ||
       !descSessaoVincular(sessao)) return 0;
   f = *fonte;
-  prov = !f.prov[0] ? 0 : !strcmp(f.prov, "tmdb") ? 1 :
-         !strcmp(f.prov, "trakt") ? 2 : -1;
-  r.pagina = prov ? 1 : 0;
+  // Uma Collection so aceita fontes de catalogos de addons. Provedores
+  // diretos como TMDB/Trakt nao sao addons ativos e nao podem buscar aqui.
+  prov = f.prov[0] ? -1 : 0;
+  r.pagina = 0;
   snprintf(origem, sizeof origem, "%s", base ? base : f.base);
   if (prov < 0 || (!prov && (!origem[0] || !f.type[0] || !f.catId[0] ||
                             strlen(base ? base : f.base) >= sizeof origem))) {
@@ -9380,7 +9410,8 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       if (!ok) { nv_perfil_sessao_destravar(); continue; }
       // Nao misturar series em catalogo de filmes (ou vice-versa) e descartar
       // itens nao-VOD/categorias privadas sem type de filme/serie valido.
-      if (!prov && !colecaoMetaTipoCompativel(p, fimItem, f.type, item.tipo)) {
+      if (!prov && (!colecaoMetaTipoCompativel(p, fimItem, f.type, item.tipo) ||
+                    !colecaoMetaGeneroCompativel(p, fimItem, f.genre))) {
         nv_perfil_sessao_destravar(); continue;
       }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
@@ -9601,7 +9632,9 @@ static void *fioVerTudo(void *u) {
     const char *f=js_fim(p);raw++;
     CatItem it;
     if (deMeta(p, f, type, &it)) {
-      if (fonteColecao && !colecaoMetaTipoCompativel(p, f, type, it.tipo)) continue;
+      if (fonteColecao &&
+          (!colecaoMetaTipoCompativel(p, f, type, it.tipo) ||
+           !colecaoMetaGeneroCompativel(p, f, genre))) continue;
       // Escondido ainda conta como "pagina com novidade": senao uma pagina so de
       // futuros encerraria a paginacao do catalogo.
       if (descOcultaNaoLancado(&it)) { added++; continue; }
