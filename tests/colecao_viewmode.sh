@@ -327,3 +327,100 @@ with tempfile.TemporaryDirectory(prefix="nuvio-collection-addon-capability-") as
     subprocess.run([str(binary)], check=True)
 print("collection catalog capability: active catalog required; disabled, non-catalog and removed rejected")
 PY
+
+# Validate each Collection source against the exact catalogs[] in its add-on
+# manifest, including raw/short-form skip declarations and type normalization.
+python3 - <<'PY'
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+
+source = Path("src/descoberta.c").read_text(encoding="utf-8")
+
+def extract(name, signature):
+    match = re.search(signature, source, re.S)
+    assert match, f"{name} missing"
+    start = match.start()
+    brace = source.index("{", match.start())
+    depth = 1
+    end = brace + 1
+    while depth:
+        if source[end] == "{":
+            depth += 1
+        elif source[end] == "}":
+            depth -= 1
+        end += 1
+    return source[start:end]
+
+functions = "\\n\\n".join([
+    extract("aceitaSkip", r"static int aceitaSkip\\s*\\([^;]*?\\)\\s*\\{"),
+    extract("catalogoTipoChave", r"static void catalogoTipoChave\\s*\\([^;]*?\\)\\s*\\{"),
+    extract("descCatalogoResolverId", r"static int descCatalogoResolverId\\s*\\([^;]*?\\)\\s*\\{"),
+    extract("desc_catalogo_resolver", r"int desc_catalogo_resolver\\s*\\([^;]*?\\)\\s*\\{"),
+])
+
+prefix = r"""
+#include <assert.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+#include "addonurl.h"
+#include "js.h"
+
+static const char *expectedBase = "https://catalog.example/addon?config=fixture";
+static const char *expectedManifest = "https://catalog.example/addon/manifest.json?config=fixture";
+static const char *manifestJson =
+    "{\\"catalogs\\":["
+    "{\\"type\\":\\"movie\\",\\"id\\":\\"popular\\",\\"extra\\":[{\\"name\\":\\"skip\\"}]},"
+    "{\\"type\\":\\"series\\",\\"id\\":\\"popular\\",\\"extraSupported\\":[\\"skip\\"]},"
+    "{\\"type\\":\\"movie\\",\\"id\\":\\"no-skip\\",\\"name\\":\\"No skip\\"},"
+    "{\\"type\\":\\"movie\\",\\"id\\":\\"ambiguous\\",\\"name\\":\\"One\\"},"
+    "{\\"type\\":\\"movie\\",\\"id\\":\\"ambiguous\\",\\"name\\":\\"Two\\"}]}";
+static int active = 1;
+unsigned addons_versao(void) { return 11; }
+int addons_catalogo_base_ativo(const char *base) {
+    return active && base && !strcmp(base, expectedBase);
+}
+char *desc_manifesto_cache_obter(const char *url, unsigned version) {
+    if (version != 11 || !url || strcmp(url, expectedManifest)) return NULL;
+    size_t n = strlen(manifestJson);
+    char *copy = malloc(n + 1);
+    if (copy) memcpy(copy, manifestJson, n + 1);
+    return copy;
+}
+"""
+
+main = r"""
+int main(void) {
+    int skip = -1;
+    assert(desc_catalogo_resolver(expectedBase, "movie", "popular", &skip) && skip == 1);
+    assert(desc_catalogo_resolver(expectedBase, "series", "popular", &skip) && skip == 1);
+    assert(desc_catalogo_resolver(expectedBase, "movie", "no-skip", &skip) && skip == 0);
+    assert(!desc_catalogo_resolver(expectedBase, "series", "no-skip", &skip) && skip == 0);
+
+    // The Original accepts a unique canonical type match when raw types differ.
+    assert(desc_catalogo_resolver(expectedBase, "MOVIE", "popular", &skip) && skip == 1);
+    // Catalog ids may contain comma-separated extra defaults; only then is the
+    // prefix before the comma tried, matching the Original's lookup behavior.
+    assert(desc_catalogo_resolver(expectedBase, "movie", "popular,genre=action", &skip) && skip == 1);
+    // Ambiguous canonical type matches must not pick an arbitrary catalog.
+    assert(!desc_catalogo_resolver(expectedBase, "MOVIE", "ambiguous", &skip));
+
+    assert(!desc_catalogo_resolver("https://another.example/addon?config=fixture", "movie", "popular", &skip));
+    active = 0;
+    assert(!desc_catalogo_resolver(expectedBase, "movie", "popular", &skip));
+    return 0;
+}
+"""
+
+with tempfile.TemporaryDirectory(prefix="nuvio-collection-manifest-resolver-") as folder:
+    cfile = Path(folder) / "resolver.c"
+    binary = Path(folder) / "resolver"
+    cfile.write_text(prefix + functions + main, encoding="utf-8")
+    subprocess.run(["cc", "-std=c11", "-Wall", "-Wextra", "-Isrc", str(cfile), "src/js.c", "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
+print("collection manifest resolver: exact addon/catalog/type, skip extras and ambiguity PASS")
+PY
