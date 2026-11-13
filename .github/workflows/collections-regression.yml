@@ -21,7 +21,7 @@ jobs:
       - name: Install native test dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends build-essential python3
+          sudo apt-get install -y --no-install-recommends build-essential python3 libsdl2-dev
 
       - name: Run Collection parser and paged-data regressions
         run: bash tests/collections.sh
