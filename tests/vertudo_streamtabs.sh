@@ -22,7 +22,7 @@ code = '''
 #include <strings.h>
 #include "src/anim.h"
 #define COL_SOURCE_MAX 16
-typedef struct { char title[128], type[16], catId[64]; } ColSource;
+typedef struct { char title[128], type[16], catId[64], prov[8], genre[96]; } ColSource;
 typedef struct { char title[128]; ColSource *sources; int nSources; } ColFolder;
 static ColFolder *collection;
 static int tabFocus, tabCursor;
