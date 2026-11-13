@@ -9238,7 +9238,7 @@ static int colecaoMetaTipoCompativel(const char *ini, const char *fim,
   char proprio[32] = "";
   // Um type explicito desconhecido (channel, anime, live...) nao pode herdar
   // movie/series do catalogo e virar filme por fallback.
-  if (js_texto_raiz_em(ini, fim, "type", proprio, sizeof proprio)) {
+  if (js_texto_raiz_em(ini, fim, "type", proprio, sizeof proprio) && proprio[0]) {
     if (!colecaoTipoVod(proprio)) return 0;
     return colecaoTipoCompativel(fonte, proprio);
   }
