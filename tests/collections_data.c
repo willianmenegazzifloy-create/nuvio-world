@@ -188,7 +188,14 @@ int main(void) {
     snprintf(tabUrl, sizeof tabUrl, "%s", fixtureUrl);
     CatItem initial[2]; DescColecaoResultado result;
     assert(desc_colecao_inicial(s, s->base, nv_perfil_sessao_ler(), initial, 1, &result));
-    assert(!result.erro && result.n == 1 && result.pagina == 1);
+    if (!strcmp(s->type, "tv")) {
+      // Canais/TV ao vivo podem existir como catalogo do addon, mas nao entram
+      // nas Collections de filmes e series.
+      assert(!result.erro && result.n == 0);
+      assert(initial[0].imdb[0] == 0);
+    } else {
+      assert(!result.erro && result.n == 1 && result.pagina == 1);
+    }
     assert(!strcmp(tabUrl, fixtureUrl)); // Vitrine and folder tabs use the same request.
     if (tab < 2) {
       desc_vertudo_mais(); waitDone();
