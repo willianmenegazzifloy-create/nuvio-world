@@ -196,3 +196,133 @@ with tempfile.TemporaryDirectory(prefix="nuvio-collection-addon-cache-") as fold
 
 print("collection add-on cache: disabled clears stale results; re-enable reloads")
 PY
+
+# The current addonId must override an old saved base URL; an unresolved ID
+# must not silently become the source identity.
+python3 - <<'PY'
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+
+source = Path("src/vertudo.c").read_text(encoding="utf-8")
+match = re.search(r"static const char \*baseDaFonte\s*\(\s*const ColSource \*s\s*\)\s*\{", source)
+assert match, "baseDaFonte() missing"
+start = match.start()
+brace = source.index("{", match.start())
+depth = 1
+end = brace + 1
+while depth:
+    if source[end] == "{":
+        depth += 1
+    elif source[end] == "}":
+        depth -= 1
+    end += 1
+function = source[start:end]
+
+prefix = r"""
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include "colecoes.h"
+#include "addonurl.h"
+
+static int idKnown;
+static const char *currentBase = "https://catalog.nuvio.tv/current";
+int addons_base_por_id_copiar(const char *id, char *dst, unsigned tam) {
+  if (!idKnown || !id || strcmp(id, "com.nuvio.tmdb.catalogs") || !dst || !tam)
+    return 0;
+  snprintf(dst, tam, "%s", currentBase);
+  return 1;
+}
+"""
+main = r"""
+int main(void) {
+  ColSource source = {0};
+  snprintf(source.addonId, sizeof source.addonId, "com.nuvio.tmdb.catalogs");
+  snprintf(source.base, sizeof source.base, "https://catalog.nuvio.tv/old");
+  idKnown = 1;
+  assert(!strcmp(baseDaFonte(&source), currentBase)); // id is authoritative
+
+  idKnown = 0;
+  assert(!strcmp(baseDaFonte(&source), source.base)); // fallback remains for legacy refs
+  source.addonId[0] = 0;
+  assert(!strcmp(baseDaFonte(&source), source.base));
+  source.base[0] = 0;
+  assert(!baseDaFonte(&source)[0]);
+  return 0;
+}
+"""
+with tempfile.TemporaryDirectory(prefix="nuvio-collection-source-id-") as folder:
+    cfile = Path(folder) / "source.c"
+    binary = Path(folder) / "source"
+    cfile.write_text(prefix + function + main, encoding="utf-8")
+    subprocess.run(["cc", "-std=c11", "-Wall", "-Wextra", "-Isrc", str(cfile), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
+print("collection source identity: current addonId base overrides stale persisted URL")
+PY
+
+# Test the real active-catalog predicate against enabled, disabled, non-catalog,
+# and removed add-ons.
+python3 - <<'PY'
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+
+source = Path("src/addons.c").read_text(encoding="utf-8")
+match = re.search(r"int addons_catalogo_base_ativo\s*\(\s*const char \*base\s*\)\s*\{", source)
+assert match, "addons_catalogo_base_ativo() missing"
+start = match.start()
+brace = source.index("{", match.start())
+depth = 1
+end = brace + 1
+while depth:
+    if source[end] == "{":
+        depth += 1
+    elif source[end] == "}":
+        depth -= 1
+    end += 1
+function = source[start:end]
+
+prefix = r"""
+#include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <string.h>
+#define NV_ADDON_URL_MAX 4096
+static struct { char base[NV_ADDON_URL_MAX]; int ativo, catalogo; } addon[4];
+static int nAddon;
+static pthread_mutex_t addonTrava = PTHREAD_MUTEX_INITIALIZER;
+static void baseNormalizada(const char *url, char *dst, size_t tam) {
+  snprintf(dst, tam, "%s", url ? url : "");
+}
+"""
+main = r"""
+int main(void) {
+  snprintf(addon[0].base, sizeof addon[0].base, "https://catalog.nuvio.tv");
+  addon[0].ativo = 1;
+  addon[0].catalogo = 1;
+  nAddon = 1;
+  assert(addons_catalogo_base_ativo("https://catalog.nuvio.tv"));
+
+  addon[0].ativo = 0;
+  assert(!addons_catalogo_base_ativo("https://catalog.nuvio.tv"));
+  addon[0].ativo = 1;
+  addon[0].catalogo = 0;
+  assert(!addons_catalogo_base_ativo("https://catalog.nuvio.tv"));
+  addon[0].catalogo = 1;
+  assert(!addons_catalogo_base_ativo("https://removed-addon.invalid"));
+  nAddon = 0;
+  assert(!addons_catalogo_base_ativo("https://catalog.nuvio.tv"));
+  return 0;
+}
+"""
+with tempfile.TemporaryDirectory(prefix="nuvio-collection-addon-capability-") as folder:
+    cfile = Path(folder) / "active.c"
+    binary = Path(folder) / "active"
+    cfile.write_text(prefix + function + main, encoding="utf-8")
+    subprocess.run(["cc", "-std=c11", "-Wall", "-Wextra", "-pthread", str(cfile), "-o", str(binary)], check=True)
+    subprocess.run([str(binary)], check=True)
+print("collection catalog capability: active catalog required; disabled, non-catalog and removed rejected")
+PY
