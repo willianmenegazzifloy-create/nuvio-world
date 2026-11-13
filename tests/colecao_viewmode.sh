@@ -246,9 +246,9 @@ int main(void) {
   assert(!strcmp(baseDaFonte(&source), currentBase)); // id is authoritative
 
   idKnown = 0;
-  assert(!strcmp(baseDaFonte(&source), source.base)); // fallback remains for legacy refs
+  assert(!baseDaFonte(&source)[0]); // explicit but unresolved addonId must not use stale URL
   source.addonId[0] = 0;
-  assert(!strcmp(baseDaFonte(&source), source.base));
+  assert(!strcmp(baseDaFonte(&source), source.base)); // URL fallback is legacy-only
   source.base[0] = 0;
   assert(!baseDaFonte(&source)[0]);
   return 0;
