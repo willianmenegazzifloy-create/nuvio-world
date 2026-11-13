@@ -167,6 +167,17 @@ int main(void) {
       assert(!desc_vertudo_erro() && desc_vertudo_fim() && desc_vertudo_n() == 1);
     }
   }
+  // Desligar o addon tambem invalida a lista de Ver Tudo ja aberta/cacheada.
+  {
+    int beforeDisabled = calls;
+    fixtureCatalogEnabled = 0;
+    desc_vertudo_abrir(folder->sources[0].base, "movie", folder->sources[0].catId); waitDone();
+    assert(desc_vertudo_n() == 0 && desc_vertudo_fim() && !desc_vertudo_erro());
+    assert(calls == beforeDisabled);
+    fixtureCatalogEnabled = 1;
+    desc_vertudo_abrir(folder->sources[0].base, "movie", folder->sources[0].catId); waitDone();
+    assert(desc_vertudo_n() == 1);
+  }
   fixtureReject = 1;
   desc_vertudo_abrir(folder->sources[1].base, "series", folder->sources[1].catId); waitDone();
   assert(desc_vertudo_erro() && !desc_vertudo_n() && !desc_vertudo_fim());
