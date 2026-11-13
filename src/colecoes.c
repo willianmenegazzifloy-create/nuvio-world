@@ -696,7 +696,8 @@ static int lerColecaoWeb(const char *c, const char *ce) {
         js_texto(s, se, "tmdbSourceType", a->tmdbTipo, sizeof a->tmdbTipo);
         a->tmdbId = (long)js_num(s, se, "tmdbId", 0.0);
         js_texto(s, se, "mediaType", a->midia, sizeof a->midia);
-        snprintf(a->type, sizeof a->type, "%s", !strcasecmp(a->midia, "TV") ? "series" : "movie");
+        snprintf(a->type, sizeof a->type, "%s",
+                 (!strcasecmp(a->midia, "TV") || !strcasecmp(a->tmdbTipo, "NETWORK")) ? "series" : "movie");
         js_texto(s, se, "sortBy", a->ordenar, sizeof a->ordenar);
         js_bruto(s, se, "filters", a->filtros, sizeof a->filtros);
         if (!a->title[0])
