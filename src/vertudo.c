@@ -561,8 +561,12 @@ static const char *baseDaFonte(const ColSource *s) {
 #else
   static _Thread_local char base[NV_ADDON_URL_MAX];
 #endif
+  // Como no Original, addonId e a identidade principal. A URL salva fica como
+  // compatibilidade; se o ID resolver para outra base, vale a do manifesto atual.
+  if (s->addonId[0] && addons_base_por_id_copiar(s->addonId, base, sizeof base))
+    return base;
   if (s->base[0]) return s->base;
-  addons_base_por_id_copiar(s->addonId, base, sizeof base);
+  base[0] = 0;
   return base;
 }
 static const char *mensagemSemFonte(const ColSource *s) {
@@ -630,6 +634,9 @@ static void carregarFonte(void) {
   // sem explicacao (issue #10). Agora a tela DIZ o que falta.
   semFonte = !base[0];
   if (semFonte) {
+    // Limpa a pagina global anterior: fonte sem endereco nao pode continuar
+    // exibindo os resultados da fonte que estava aberta antes.
+    desc_vertudo_filtro_desde("", s->type, s->catId, s->genre, vitPaginaFonte());
     printf("[vertudo] fonte sem endereco: addonId=\"%s\" cat=%s/%s\n",
            s->addonId, s->type, s->catId);
     fflush(stdout);
@@ -1741,7 +1748,7 @@ static void vitCarregar(Uint32 agora) {
     // TMDB e Trakt sao fontes reais da Collection, nao addons ausentes.
     // A disponibilidade do servico e verificada abaixo; se estiver configurado,
     // a mesma fila limitada carrega a fonte sem transforma-la em uma linha vazia.
-    int desligada = s->prov[0] ? 0 : (base[0] && addons_base_desligada(base));
+    int desligada = s->prov[0] ? 0 : !addons_catalogo_base_ativo(base);
     if (vitDesligada[r] != desligada) {
       if (vitManualFonte == r) vitManualFonte = -1;
       vitManualPendente[r] = 0;
@@ -1761,7 +1768,7 @@ static void vitCarregar(Uint32 agora) {
     if (p && __atomic_load_n(&p->pronto, __ATOMIC_ACQUIRE)) {
       vitPedidos[r] = NULL;
       if (p->geracao == vitGeracao && p->sessao == vitSessao && p->atual &&
-          (p->fonte.prov[0] || !addons_base_desligada(p->base)))
+          (p->fonte.prov[0] || addons_catalogo_base_ativo(p->base)))
         vitGuardarInicial(r, p);
       else {
         vitLin[r].estado = VIT_PEND;
@@ -1777,7 +1784,7 @@ static void vitCarregar(Uint32 agora) {
     vitRetentarEm[r] = 0;
     int disponivel = s->prov[0]
         ? (!strcmp(s->prov, "tmdb") ? desc_chave_tmdb()[0] != 0 : nuvem_trakt_cliente()[0] != 0)
-        : base[0] != 0;
+        : addons_catalogo_base_ativo(base);
     if (!disponivel) {
       l->estado = VIT_VAZIA; l->semFonte = 1; continue;
     }
