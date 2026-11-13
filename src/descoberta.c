@@ -9233,6 +9233,17 @@ static int colecaoTipoCompativel(const char *fonte, const char *item) {
   // identifica explicitamente se e filme ou serie.
   return 1;
 }
+static int colecaoMetaTipoCompativel(const char *ini, const char *fim,
+                                     const char *fonte, const char *item) {
+  char proprio[32] = "";
+  // Um type explicito desconhecido (channel, anime, live...) nao pode herdar
+  // movie/series do catalogo e virar filme por fallback.
+  if (js_texto_raiz_em(ini, fim, "type", proprio, sizeof proprio)) {
+    if (!colecaoTipoVod(proprio)) return 0;
+    return colecaoTipoCompativel(fonte, proprio);
+  }
+  return colecaoTipoCompativel(fonte, item);
+}
 
 static char *colecaoBaixar(const char *url, int *status) {
   char *corpo = rede_baixar_st(url, 10, NULL, status);
@@ -9369,7 +9380,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       if (!ok) { nv_perfil_sessao_destravar(); continue; }
       // Nao misturar series em catalogo de filmes (ou vice-versa) e descartar
       // itens nao-VOD/categorias privadas sem type de filme/serie valido.
-      if (!prov && !colecaoTipoCompativel(f.type, item.tipo)) {
+      if (!prov && !colecaoMetaTipoCompativel(p, fimItem, f.type, item.tipo)) {
         nv_perfil_sessao_destravar(); continue;
       }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
@@ -9590,7 +9601,7 @@ static void *fioVerTudo(void *u) {
     const char *f=js_fim(p);raw++;
     CatItem it;
     if (deMeta(p, f, type, &it)) {
-      if (fonteColecao && !colecaoTipoCompativel(type, it.tipo)) continue;
+      if (fonteColecao && !colecaoMetaTipoCompativel(p, f, type, it.tipo)) continue;
       // Escondido ainda conta como "pagina com novidade": senao uma pagina so de
       // futuros encerraria a paginacao do catalogo.
       if (descOcultaNaoLancado(&it)) { added++; continue; }
