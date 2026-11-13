@@ -9250,6 +9250,16 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
                             strlen(base ? base : f.base) >= sizeof origem))) {
     r.erro = 1; *resultado = r; return nv_perfil_sessao_atual(sessao);
   }
+  // A carga inicial da Collection precisa aplicar a mesma regra de
+  // disponibilidade usada por Ver Tudo: URL persistida nunca autoriza consulta
+  // por si só. O addon precisa continuar instalado/ativo e declarar este
+  // catalogId no manifesto atual; caso contrário, não reutiliza nem recria
+  // conteúdo da fonte desativada.
+  if (!prov && !desc_catalogo_resolver(origem, f.type, f.catId, NULL)) {
+    r.pagina = 0;
+    *resultado = r;
+    return nv_perfil_sessao_atual(sessao);
+  }
   ids = calloc(VT_MAX, sizeof *ids);
   if (!ids) { r.erro = 1; *resultado = r; return nv_perfil_sessao_atual(sessao); }
   teto = !prov && strstr(f.catId, "top100") ? 100 :
