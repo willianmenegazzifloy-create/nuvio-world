@@ -149,8 +149,9 @@ static int vtN, vtPagina, vtFim, vtErro, vtProvedor, disparos;
 static unsigned vtGeracao;
 static int catalogoAtivo;
 
-static int addons_catalogo_base_ativo(const char *base) {
-  (void)base;
+static int desc_catalogo_resolver(const char *base, const char *type, const char *id, int *supportsSkip) {
+  (void)base; (void)type; (void)id;
+  if (supportsSkip) *supportsSkip = 1;
   return catalogoAtivo;
 }
 static int ajustes_ocultar_filmes_vistos(void) { return 0; }
