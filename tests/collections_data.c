@@ -1,5 +1,6 @@
 // Exercises the real paged reader with a fake network, including stale responses.
 #include <assert.h>
+#include <string.h>
 #include <unistd.h>
 int ajustes_social(void) { return 1; }
 int ajustes_hist_conta(void) { return 1; }
