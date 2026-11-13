@@ -6,7 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-const char *addons_base_por_id(const char *id) { return id && !strcmp(id, "org.x") ? "https://resolvido" : ""; }
+static const char *baseAddonAtual = "https://resolvido";
+const char *addons_base_por_id(const char *id) { return id && !strcmp(id, "org.x") ? baseAddonAtual : ""; }
 int main(void) {
   const char *web =
     "[{\"collections_json\":{\"collections\":[{\"id\":\"c1\",\"title\":\"Streaming\",\"backdropImageUrl\":\"https://img/bg.jpg\",\"viewMode\":\"FOLLOW_LAYOUT\",\"showAllTab\":true,"
@@ -178,6 +179,18 @@ int main(void) {
   assert(col_definir_json("{\"collections\":[{\"id\":\"c\",\"title\":\"T\",\"folders\":[{\"id\":\"g\",\"title\":\"G\",\"sources\":[{\"provider\":\"addon\",\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"k\"}]}]}]}") == 1);
   assert(!strcmp(col_folder(0)->sources[0].base, "https://resolvido"));
   puts("ok  addonId sem URL resolve pela sonda");
+  // addonId e a identidade canonica: uma URL antiga salva na fonte nao
+  // pode impedir o casamento com a base atual nem ressuscitar um addon removido.
+  baseAddonAtual = "https://novo-addon";
+  assert(col_definir_json("{\\"collections\\":[{\\"id\\":\\"stable\\",\\"title\\":\\"Stable\\",\\"folders\\":[{\\"id\\":\\"f\\",\\"title\\":\\"F\\",\\"sources\\":[{\\"provider\\":\\"addon\\",\\"addonId\\":\\"org.x\\",\\"addonBaseUrl\\":\\"https://addon-antigo/manifest.json\\",\\"type\\":\\"movie\\",\\"catalogId\\":\\"popular\\"}]}]}]}") == 1);
+  assert(!strcmp(col_folder(0)->sources[0].base, "https://novo-addon"));
+  assert(col_por_catalogo("https://novo-addon", "movie", "popular") != NULL);
+  assert(col_por_catalogo("https://addon-antigo", "movie", "popular") == NULL);
+  baseAddonAtual = "";
+  assert(col_por_catalogo("https://addon-antigo", "movie", "popular") == NULL);
+  assert(col_por_catalogo("https://novo-addon", "movie", "popular") == NULL);
+  baseAddonAtual = "https://resolvido";
+  puts("ok  identidade addonId vence URL antiga; addon ausente nao e ressuscitado");
   // a RPC real: collections_json e o array direto
   assert(col_definir_json("[{\"profile_id\":1,\"collections_json\":[{\"id\":\"r\",\"title\":\"R\",\"folders\":[{\"id\":\"g\",\"title\":\"G\",\"sources\":[{\"addonId\":\"a\",\"type\":\"movie\",\"catalogId\":\"k\"}]}]}],\"updated_at\":\"x\"}]") == 1);
   assert(!strcmp(col_folder(0)->groupId, "r"));
