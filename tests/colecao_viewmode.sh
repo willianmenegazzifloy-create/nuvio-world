@@ -296,6 +296,7 @@ prefix = r"""
 #include <string.h>
 #include "colecoes.h"
 #include "addonurl.h"
+int addons_catalogo_base_ativo(const char *base);
 
 static int idKnown;
 static int catalogActive = 1;
