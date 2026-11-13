@@ -94,7 +94,7 @@ char *rede_baixar(const char *url,int timeout) {
         fixtureCatalogEnabled = 0; // simula desligar enquanto o GET responde
       }
       if (i == 1 || i == 3) return strdup("{\"metas\":[]}");
-      return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"name\":\"New release\",\"poster\":\"p.jpg\"}]}");
+      return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
     }
     return NULL;
   }
@@ -215,6 +215,18 @@ int main(void) {
     fixtureCatalogEnabled = 1;
     desc_vertudo_abrir(folder->sources[0].base, "movie", folder->sources[0].catId); waitDone();
     assert(desc_vertudo_n() == 1);
+  }
+  // Mesmo que o addon ignore o parametro genre, a Collection filtra localmente.
+  {
+    ColSource genre = {0};
+    CatItem genreItems[4]; DescColecaoResultado genreResult;
+    snprintf(genre.base, sizeof genre.base, "https://collection.invalid/addon?config=fixture");
+    snprintf(genre.type, sizeof genre.type, "movie");
+    snprintf(genre.catId, sizeof genre.catId, "new%2Fmovies%20%231%3Ffresh%25");
+    snprintf(genre.genre, sizeof genre.genre, "Comedy");
+    assert(desc_colecao_inicial(&genre, genre.base, nv_perfil_sessao_ler(),
+                                genreItems, 4, &genreResult));
+    assert(genreResult.n == 0);
   }
   // Metas de um mesmo catalogo podem vir misturadas ou com tipos privados.
   // A Collection so aceita VOD e respeita o tipo da fonte.
