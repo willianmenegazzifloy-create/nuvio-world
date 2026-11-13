@@ -115,6 +115,9 @@ jobs:
             echo "NUVIO_KEY_PASS=$ANDROID_KEY_PASSWORD"
           } >> "$GITHUB_ENV"
 
+      - name: Run Collection parser and paged-data regressions
+        run: bash tests/collections.sh
+
       - name: Run collection parser regression tests
         run: bash tests/colecoes.sh
 
