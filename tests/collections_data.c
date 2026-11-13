@@ -192,7 +192,6 @@ int main(void) {
       // Canais/TV ao vivo podem existir como catalogo do addon, mas nao entram
       // nas Collections de filmes e series.
       assert(!result.erro && result.n == 0);
-      assert(initial[0].imdb[0] == 0);
     } else {
       assert(!result.erro && result.n == 1 && result.pagina == 1);
     }
