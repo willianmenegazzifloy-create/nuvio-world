@@ -8810,17 +8810,23 @@ static int deMetaTmdb(const char *p, const char *f, const char *tipoPadrao,
   long id = (long)js_num(p, f, "id", 0.0);
   if (id <= 0) return 0;
   if (!js_texto(p, f, "title", d->titulo, sizeof d->titulo) &&
-      !js_texto(p, f, "name", d->titulo, sizeof d->titulo)) return 0;
-  if (!js_texto(p, f, "poster_path", v, sizeof v) || v[0] != '/') return 0;
-  snprintf(d->poster, sizeof d->poster, "https://image.tmdb.org/t/p/w342%s", v);
-  if (js_texto(p, f, "backdrop_path", v, sizeof v) && v[0] == '/')
-    // w1280 e nao original: ver a conta do mesmo trecho em deMeta — 33 MB
-    // decodificados por arte no nucleo fraco da TV.
+      !js_texto(p, f, "name", d->titulo, sizeof d->titulo) &&
+      !js_texto(p, f, "original_title", d->titulo, sizeof d->titulo) &&
+      !js_texto(p, f, "original_name", d->titulo, sizeof d->titulo)) return 0;
+  // O Original aceita poster_path ou backdrop_path como arte do cartaz.
+  // A resposta de listas/creditos nem sempre traz poster_path.
+  if (js_texto(p, f, "poster_path", v, sizeof v) && v[0] == '/')
+    snprintf(d->poster, sizeof d->poster, "https://image.tmdb.org/t/p/w342%s", v);
+  else if (js_texto(p, f, "backdrop_path", v, sizeof v) && v[0] == '/')
+    snprintf(d->poster, sizeof d->poster, "https://image.tmdb.org/t/p/w780%s", v);
+  if (js_texto(p, f, "backdrop_path", v, sizeof v) && v[0] == '/') {
+    // w1280 e nao original: 33 MB decodificados por arte no nucleo fraco da TV.
     snprintf(d->backdrop, sizeof d->backdrop, "https://image.tmdb.org/t/p/w1280%s", v);
-  else snprintf(d->backdrop, sizeof d->backdrop, "%s", d->poster);
-  if (js_texto(p, f, "backdrop_path", v, sizeof v) && v[0] == '/')
     snprintf(d->backdropTmdb, sizeof d->backdropTmdb,
              "https://image.tmdb.org/t/p/w1280%s", v);
+  } else {
+    snprintf(d->backdrop, sizeof d->backdrop, "%s", d->poster);
+  }
   { char mt[12] = "";
     js_texto(p, f, "media_type", mt, sizeof mt);
     snprintf(d->tipo, sizeof d->tipo, "%s",
@@ -8834,6 +8840,7 @@ static int deMetaTmdb(const char *p, const char *f, const char *tipoPadrao,
     snprintf(d->meta, sizeof d->meta, "%.4s", dt); }
   snprintf(d->genero, sizeof d->genero, "%s", i18n(rotuloTipoSing(d->tipo)));
   d->nota = (int)(js_num(p, f, "vote_average", 0.0) * 10.0 + 0.5);
+  d->votosTmdb = (int)js_num(p, f, "vote_count", 0.0);
   js_texto(p, f, "overview", d->sinopse, sizeof d->sinopse);
   return 1;
 }
@@ -8897,8 +8904,10 @@ static void tmdbDataHoje(char *dst, size_t n) {
 // pastas especiais Novos Filmes/Novas Series, a data maxima e limitada a hoje;
 // um releaseDateLte anterior configurado pelo usuario continua prevalecendo.
 static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv,
-                        int somenteLancados) {
+                        int somenteLancados, const char *tipoFonte) {
   const char *fim = filtros ? filtros + strlen(filtros) : NULL;
+  int empresaForcada = tipoFonte && !strcasecmp(tipoFonte, "COMPANY");
+  int redeForcada = tipoFonte && !strcasecmp(tipoFonte, "NETWORK");
   static const struct { const char *js, *url; int soTv; } M[] = {
     {"withGenres","with_genres",0}, {"withoutGenres","without_genres",0},
     {"voteAverageGte","vote_average.gte",0}, {"voteAverageLte","vote_average.lte",0},
@@ -8915,39 +8924,49 @@ static void tmdbFiltros(char *q, size_t n, const char *filtros, int isTv,
   if (filtros && *filtros == '{') {
     for (u = 0; u < sizeof M / sizeof *M; u++) {
       if (M[u].soTv && !isTv) continue;
+      // COMPANY/NETWORK usam o ID da fonte; nao duplicar o filtro equivalente.
+      if (empresaForcada && !strcmp(M[u].js, "withCompanies")) continue;
+      if (redeForcada && !strcmp(M[u].js, "withNetworks")) continue;
       if (js_texto(filtros, fim, M[u].js, v, sizeof v) && v[0])
         snprintf(q + strlen(q), n - strlen(q), "&%s=%s", M[u].url, v);
     }
     if (js_texto(filtros, fim, "releaseDateGte", v, sizeof v) && v[0])
       snprintf(q + strlen(q), n - strlen(q), "&%s.gte=%s",
-               isTv ? "first_air_date" : "release_date", v);
+               isTv ? "first_air_date" : "primary_release_date", v);
   }
-  if (somenteLancados) {
+  if (somenteLancados && !redeForcada) {
     char hoje[12], limite[128];
     tmdbDataHoje(hoje, sizeof hoje);
     snprintf(limite, sizeof limite, "%s", hoje);
-    // Se a collection ja pede uma data-limite mais antiga, nao a ampliamos.
+    // Se a Collection pedir uma data-limite anterior, mantemos a mais restritiva.
     if (filtros && *filtros == '{' &&
         js_texto(filtros, fim, "releaseDateLte", v, sizeof v) &&
         tmdbDataValida(v) && strcmp(v, limite) < 0)
       snprintf(limite, sizeof limite, "%s", v);
     snprintf(q + strlen(q), n - strlen(q), "&%s.lte=%s",
              isTv ? "first_air_date" : "primary_release_date", limite);
-  } else if (filtros && *filtros == '{' &&
+  } else if (!redeForcada && filtros && *filtros == '{' &&
              js_texto(filtros, fim, "releaseDateLte", v, sizeof v) && v[0]) {
     snprintf(q + strlen(q), n - strlen(q), "&%s.lte=%s",
-             isTv ? "first_air_date" : "release_date", v);
+             isTv ? "first_air_date" : "primary_release_date", v);
   }
   if (filtros && *filtros == '{') {
     long ano = (long)js_num(filtros, fim, "year", 0.0);
     if (ano > 0)
       snprintf(q + strlen(q), n - strlen(q), "&%s=%ld",
                isTv ? "first_air_date_year" : "year", ano);
-    if (js_texto(filtros, fim, "withWatchProviders", v, sizeof v) && v[0]) {
-      char reg[8] = "";
+    char withProviders[128] = "", withoutProviders[128] = "", reg[16] = "";
+    js_texto(filtros, fim, "withWatchProviders", withProviders, sizeof withProviders);
+    js_texto(filtros, fim, "withoutWatchProviders", withoutProviders, sizeof withoutProviders);
+    if (withProviders[0] || withoutProviders[0]) {
       js_texto(filtros, fim, "watchRegion", reg, sizeof reg);
-      snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s&with_watch_providers=%s",
-               reg[0] ? reg : "US", v);
+      snprintf(q + strlen(q), n - strlen(q), "&watch_region=%s", reg[0] ? reg : "US");
+      if (withProviders[0])
+        snprintf(q + strlen(q), n - strlen(q),
+                 "&with_watch_providers=%s&with_watch_monetization_types=flatrate|free|ads|rent|buy",
+                 withProviders);
+      if (withoutProviders[0])
+        snprintf(q + strlen(q), n - strlen(q), "&without_watch_providers=%s", withoutProviders);
     }
   }
 }
@@ -8979,29 +8998,70 @@ static const char *tmdbMontarUrl(const ColSource *f, int pagina,
     return !strcasecmp(f->tmdbTipo, "DIRECTOR") ? "crew" : "cast";
   }
   { char q[1400] = "";
-    snprintf(q, sizeof q, "&sort_by=%s",
-             f->ordenar[0] ? f->ordenar
-                           : isTv ? "first_air_date.desc" : "popularity.desc");
-    tmdbFiltros(q, sizeof q, f->filtros, isTv, f->somenteLancados);
+    const char *sortBy = f->ordenar[0] ? f->ordenar
+                       : isTv ? "first_air_date.desc" : "popularity.desc";
+    if (isTv && !strcmp(sortBy, "primary_release_date.desc")) sortBy = "first_air_date.desc";
+    else if (!isTv && !strcmp(sortBy, "first_air_date.desc")) sortBy = "primary_release_date.desc";
+    snprintf(q, sizeof q, "&sort_by=%s", sortBy);
+    tmdbFiltros(q, sizeof q, f->filtros, isTv, f->somenteLancados, f->tmdbTipo);
     if (!strcasecmp(f->tmdbTipo, "COMPANY") && f->tmdbId > 0)
       snprintf(q + strlen(q), sizeof q - strlen(q), "&with_companies=%ld", f->tmdbId);
     else if (!strcasecmp(f->tmdbTipo, "NETWORK") && f->tmdbId > 0) {
-      // Rede: igual ao web — so o que ja saiu, e com_status exclui pilotos
-      // cancelados e producoes sem data.
-      char hoje[12] = "";
-      { time_t t = time(NULL); struct tm tmv;
-        if (localtime_r(&t, &tmv))
-          snprintf(hoje, sizeof hoje, "%04d-%02d-%02d",
-                   tmv.tm_year + 1900, tmv.tm_mon + 1, tmv.tm_mday); }
+      // A data configurada prevalece; sem ela, limitar a hoje, como no Original.
+      char limite[128] = "";
+      const char *fimFiltros = f->filtros[0] ? f->filtros + strlen(f->filtros) : NULL;
+      if (f->filtros[0] == '{')
+        js_texto(f->filtros, fimFiltros, "releaseDateLte", limite, sizeof limite);
+      if (!tmdbDataValida(limite)) tmdbDataHoje(limite, sizeof limite);
       snprintf(q + strlen(q), sizeof q - strlen(q),
                "&with_networks=%ld&first_air_date.lte=%s&with_status=0|3|4",
-               f->tmdbId, hoje[0] ? hoje : "9999-12-31");
+               f->tmdbId, limite);
     } else if (f->tmdbId > 0)
       snprintf(q + strlen(q), sizeof q - strlen(q), "&%s=%ld",
                isTv ? "with_networks" : "with_companies", f->tmdbId);
     snprintf(url, n, "%s/discover/%s?api_key=%s&language=%s&page=%d%s",
              TMDB, mt, chave, desc_tmdb_idioma(), pagina, q);
     return "results";
+  }
+}
+
+// O Original ordena localmente listas, colecoes e creditos TMDB.
+// DISCOVER/COMPANY/NETWORK ja chegam ordenados pelo sort_by da API.
+static int tmdbAno(const CatItem *it) {
+  return it && it->meta[0] ? atoi(it->meta) : 0;
+}
+static int tmdbItemAntes(const CatItem *a, const CatItem *b, const char *ordem) {
+  if (!strcmp(ordem, "vote_average.desc")) {
+    if (a->nota != b->nota) return a->nota > b->nota;
+    return tmdbAno(a) > tmdbAno(b);
+  }
+  if (!strcmp(ordem, "vote_count.desc")) {
+    if (a->votosTmdb != b->votosTmdb) return a->votosTmdb > b->votosTmdb;
+    return a->nota > b->nota;
+  }
+  if (!strcmp(ordem, "primary_release_date.desc") ||
+      !strcmp(ordem, "first_air_date.desc") ||
+      !strcmp(ordem, "release_date.desc"))
+    return tmdbAno(a) > tmdbAno(b);
+  return 0;
+}
+static void tmdbOrdenarItens(CatItem *itens, int n, const ColSource *fonte) {
+  if (!itens || n < 2 || !fonte) return;
+  if (strcasecmp(fonte->tmdbTipo, "LIST") &&
+      strcasecmp(fonte->tmdbTipo, "COLLECTION") &&
+      strcasecmp(fonte->tmdbTipo, "PERSON") &&
+      strcasecmp(fonte->tmdbTipo, "DIRECTOR")) return;
+  if (!fonte->ordenar[0] || !strcmp(fonte->ordenar, "original") ||
+      !strcmp(fonte->ordenar, "popularity.desc")) return;
+  // Insertion sort e estavel: empates conservam a ordem entregue pelo TMDB.
+  for (int i = 1; i < n; i++) {
+    CatItem atual = itens[i];
+    int j = i;
+    while (j > 0 && tmdbItemAntes(&atual, &itens[j - 1], fonte->ordenar)) {
+      itens[j] = itens[j - 1];
+      j--;
+    }
+    itens[j] = atual;
   }
 }
 
@@ -9096,6 +9156,9 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
   DescColecaoResultado r = {0};
   ColSource f;
   ColecaoId *ids;
+  CatItem paginaItens[48];
+  unsigned char paginaVistos[48];
+  int paginaN = 0;
   CatItem item;
   char origem[NV_ADDON_URL_MAX], url[NV_ADDON_PEDIDO_MAX];
   int prov, nIds = 0, total = 0, prefixoVistos = 0, visiveis = 0;
@@ -9125,6 +9188,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
     const char *vetor = "metas", *p = NULL;
     const char *cab[] = { "trakt-api-version: 2", NULL, NULL };
     int raw = 0, aceitos = 0, novos = 0, fim = 0, pronta = 1, status = 0;
+    paginaN = 0;
     // Congelar URL/chave/idioma enquanto o perfil ainda e o dono. A trava
     // termina antes de qualquer HTTP, inclusive a consulta do Trakt.
     if (!nv_perfil_sessao_travar(sessao)) { free(ids); return 0; }
@@ -9208,10 +9272,20 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       }
       total++; novos++;
       if (!visto) visiveis++;
+      if (paginaN < 48) {
+        paginaItens[paginaN] = item;
+        paginaVistos[paginaN++] = (unsigned char)(visto != 0);
+      }
+    }
+    if (prov == 1) tmdbOrdenarItens(paginaItens, paginaN, &f);
+    for (int k = 0; k < paginaN; k++) {
+      int visto = paginaVistos[k];
       if (r.n < limite) {
-        itens[r.n++] = item;
+        itens[r.n++] = paginaItens[k];
         prefixoVistos += visto;
-      } else if (prefixoVistos && !visto && r.extraN < limite) itens[limite + r.extraN++] = item;
+      } else if (prefixoVistos && !visto && r.extraN < limite) {
+        itens[limite + r.extraN++] = paginaItens[k];
+      }
     }
     if (!prov) colecaoLog(f.title, origem, f.type, f.catId, f.genre, skip, status, aceitos,
                            !raw ? "empty_page" : !novos ? "no_new_items" : "ok");
@@ -9326,6 +9400,7 @@ static void *fioVerTudo(void *u) {
         }
       }
     }
+    if (prov == 1) tmdbOrdenarItens(lote, nl, &fonte);
     free(corpo);
     // Itens do Trakt chegam sem poster: o lote inteiro ganha arte pelo
     // Cinemeta de uma vez, como a fileira "Continuar assistindo" ja faz.
