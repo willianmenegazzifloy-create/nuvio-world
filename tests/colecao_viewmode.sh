@@ -147,11 +147,11 @@ static pthread_mutex_t vtTrava = PTHREAD_MUTEX_INITIALIZER;
 static char vtBase[128], vtTipo[16], vtCat[64], vtGenre[64];
 static int vtN, vtPagina, vtFim, vtErro, vtProvedor, disparos;
 static unsigned vtGeracao;
-static int desligado;
+static int catalogoAtivo;
 
-static int addons_base_desligada(const char *base) {
+static int addons_catalogo_base_ativo(const char *base) {
   (void)base;
-  return desligado;
+  return catalogoAtivo;
 }
 static int ajustes_ocultar_filmes_vistos(void) { return 0; }
 static int vtProjetar(void) { return 0; }
@@ -165,7 +165,7 @@ int main(void) {
   strcpy(vtCat, "popular");
   vtN = 4;
   vtGeracao = 7;
-  desligado = 1;
+  catalogoAtivo = 0;
 
   desc_vertudo_filtro_desde("https://addon.invalid", "movie", "popular", "", 0);
   assert(vtN == 0);
@@ -174,7 +174,7 @@ int main(void) {
   assert(disparos == 0);
 
   // Re-enabling the same add-on starts a fresh query instead of using cache.
-  desligado = 0;
+  catalogoAtivo = 1;
   desc_vertudo_filtro_desde("https://addon.invalid", "movie", "popular", "", 0);
   assert(vtN == 0);
   assert(vtFim == 0);
