@@ -9237,7 +9237,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
   CatItem item;
   char origem[NV_ADDON_URL_MAX], url[NV_ADDON_PEDIDO_MAX];
   int prov, nIds = 0, total = 0, prefixoVistos = 0, visiveis = 0;
-  int ocultar, pagina, skip = 0, teto;
+  int ocultar, pagina, skip = 0, teto, paginavel = 0;
   if (resultado) *resultado = r;
   if (!fonte || !itens || !resultado || limite < 1 || limite > 20 ||
       !descSessaoVincular(sessao)) return 0;
@@ -9293,7 +9293,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       if (encoded[0]) snprintf(extra, sizeof extra, "genre=%s&skip=%d", encoded, skip);
       else if (skip) snprintf(extra, sizeof extra, "skip=%d", skip);
       w = catalogoUrl(url, sizeof url, origem, f.type, f.catId, extra);
-      pronta = addons_catalogo_base_ativo(origem) && descPedidoCoube(origem, w, sizeof url);
+      pronta = desc_catalogo_resolver(origem, f.type, f.catId, &paginavel) && descPedidoCoube(origem, w, sizeof url);
     }
     nv_perfil_sessao_destravar();
     if (!pronta) {
@@ -9366,7 +9366,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
                            !raw ? "empty_page" : !novos ? "no_new_items" : "ok");
     free(corpo);
     if (prov == 2 && raw < 40) fim = 1;
-    r.mais = raw > 0 && novos > 0 && total < teto && !fim;
+    r.mais = paginavel && raw > 0 && novos > 0 && total < teto && !fim;
     r.pagina = prov ? pagina + (r.mais ? 1 : 0) : skip + raw;
     if (!raw || !novos || total >= teto || fim || !ocultar || visiveis) break;
     skip += raw;
@@ -9410,7 +9410,7 @@ static void *fioVerTudo(void *u) {
   }
   // A URL guardada pode continuar preenchida depois que o addon saiu da lista.
   // Revalidar em cada pagina impede que o fio retome uma fonte obsoleta.
-  if (!prov && !addons_catalogo_base_ativo(base)) {
+  if (!prov && !desc_catalogo_resolver(base, type, id, NULL)) {
     pthread_mutex_lock(&vtTrava);
     if (generation == vtGeracao) { vtN = 0; vtFim = 1; vtErro = 0; vtFioVivo = 0; }
     pthread_mutex_unlock(&vtTrava);
@@ -9518,8 +9518,8 @@ static void *fioVerTudo(void *u) {
   if(genre[0])snprintf(extra,sizeof extra,"genre=%s&skip=%d",encoded,skip);
   else if(skip)snprintf(extra,sizeof extra,"skip=%d",skip);
   w=catalogoUrl(url,sizeof url,base,type,id,extra);
-  corpo=(addons_catalogo_base_ativo(base)&&descPedidoCoube(base,w,sizeof url))?colecaoBaixar(url,&status):NULL; }
-  if (!addons_catalogo_base_ativo(base)) {
+  corpo=(desc_catalogo_resolver(base,type,id,&paginavel)&&descPedidoCoube(base,w,sizeof url))?colecaoBaixar(url,&status):NULL; }
+  if (!desc_catalogo_resolver(base, type, id, NULL)) {
     free(corpo);
     pthread_mutex_lock(&vtTrava);
     if (generation == vtGeracao) { vtN = 0; vtFim = 1; vtErro = 0; vtFioVivo = 0; }
@@ -9558,7 +9558,7 @@ static void *fioVerTudo(void *u) {
   vtErro=!valid;
   // Skip usa quantidade recebida, não 100 presumidos. Muitos addons entregam
   // 20/50 por página. Repetição sem novos ids também termina a paginação.
-  if(valid){vtPagina+=raw;if(!raw||!added||vtN>=cap)vtFim=1;}
+  if(valid){vtPagina+=raw;if(!paginavel||!raw||!added||vtN>=cap)vtFim=1;}
   int seguir = vtPaginaSoDeVistos(antes, added, paginas);
   if (!seguir) vtFioVivo=0;
   pthread_mutex_unlock(&vtTrava);
@@ -9605,7 +9605,7 @@ void desc_vertudo_filtro_desde(const char *base, const char *tipo, const char *c
   }
   // Addon desligado/ausente ou sem resource catalog nao pode reaproveitar itens que ficaram no cache da
   // Collection. Invalida tambem qualquer leitura em andamento dessa fonte.
-  if (!addons_catalogo_base_ativo(base)) {
+  if (!desc_catalogo_resolver(base, tipo, catId, NULL)) {
     pthread_mutex_lock(&vtTrava);
     snprintf(vtBase, sizeof vtBase, "%s", base);
     snprintf(vtTipo, sizeof vtTipo, "%s", tipo);
