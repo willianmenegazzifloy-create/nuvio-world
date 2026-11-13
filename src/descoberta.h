@@ -202,6 +202,11 @@ const char *desc_busca_alvo_addon(int alvo);    // "Cinemeta", "Xperience"
 // "" enquanto o manifesto nao passou pela descoberta. Para a aba da colecao
 // quando a conta manda a fonte sem titulo (#76).
 const char *desc_nome_catalogo(const char *base, const char *tipo, const char *id);
+// Valida uma fonte de Collection contra o manifesto do MESMO addon ativo.
+// Devolve 1 apenas se type+catalogId estiverem declarados; *supportsSkip
+// informa se o catalogo declara o extra skip. Nao faz rede.
+int desc_catalogo_resolver(const char *base, const char *tipo, const char *id,
+                           int *supportsSkip);
 int  desc_busca_alvo_n(int alvo, const char *termo);
 int  desc_busca_alvo_item(int alvo, int i, CatItem *dst);
 // Sobe a cada termo novo. Quem guarda posicao de foco entre quadros deve
