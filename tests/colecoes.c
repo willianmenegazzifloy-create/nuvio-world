@@ -52,6 +52,13 @@ int main(void) {
   assert(!strcmp(f->sources[0].addonId, "org.x"));
   puts("ok  sources ignora TMDB/Trakt e conserva catalogo de addon");
 
+  // Quando a lista completa tem apenas provedores, a projecao de catalogos
+  // ainda pode fornecer as fontes validas para o World.
+  assert(col_definir_json("{\"collections\":[{\"id\":\"projection\",\"title\":\"Projection\",\"folders\":[{\"id\":\"f\",\"title\":\"F\",\"sources\":[{\"provider\":\"tmdb\",\"title\":\"Popular\"}],\"catalogSources\":[{\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"popular\"}]}]}]}") == 1);
+  assert(col_folder(0)->nSources == 1 &&
+         !strcmp(col_folder(0)->sources[0].addonId, "org.x"));
+  puts("ok  catalogSources prevalece quando sources so tem provedores externos");
+
   // Importacao antiga: quando sources esta ausente/vazio, usa catalogSources.
   assert(col_definir_json("{\"collections\":[{\"id\":\"old\",\"title\":\"Old\",\"folders\":[{\"id\":\"f\",\"title\":\"F\",\"sources\":[],\"catalogSources\":[{\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"old\"}]}]}]}") == 1);
   assert(col_folder(0)->nSources == 1 && !strcmp(col_folder(0)->sources[0].catId, "old"));
