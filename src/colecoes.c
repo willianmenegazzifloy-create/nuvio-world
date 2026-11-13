@@ -684,6 +684,20 @@ static const char *generoAddonDaColecao(const char *grupo, int serie) {
     return "Western";
   return NULL;
 }
+static int converterFonteTmdbParaAddon(ColSource *a, const char *grupo) {
+  int serie = fonteEhSerie(a->midia);
+  const char *cat = catalogoPadraoDaFonte(a->title, a->midia);
+  if (!cat) return 0;
+  snprintf(a->addonId, sizeof a->addonId, "com.nuvio.tmdb.catalogs");
+  baseCabe(a, addons_base_por_id(a->addonId));
+  snprintf(a->type, sizeof a->type, "%s", serie ? "series" : "movie");
+  snprintf(a->catId, sizeof a->catId, "%s", cat);
+  const char *genre = generoAddonDaColecao(grupo, serie);
+  if (genre) snprintf(a->genre, sizeof a->genre, "%s", genre);
+  a->prov[0] = 0;
+  return 1;
+}
+
 // Devolve 0 quando a colecao NAO COUBE (teto de pastas, de fontes ou falta de
 // memoria). Quem chama desfaz a colecao inteira: cortar no meio deixava a
 // colecao com parte das pastas e o resto das fontes solto na Home (#255).
