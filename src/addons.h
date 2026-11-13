@@ -117,7 +117,11 @@ int addons_identidade_recebida(const char *base, unsigned versao, uint64_t sessa
 // Final capability publication keeps the same request ownership as identity.
 int addons_manifesto_recebido(const char *base, unsigned versao, uint64_t sessao,
                               const char *corpo);
-int  addons_tem_catalogo(int i);  // 1 quando o addon fornece catalogo
+int  addons_tem_catalogo(int i);
+// Resolve a Collection catalog source only against an installed, active add-on
+// whose manifest declares the catalog resource. Returns 1 and copies its live
+// base URL; returns 0 for disabled, missing, or non-catalog add-ons.
+int  addons_catalogo_base_ativo(const char *base);  // 1 quando o addon fornece catalogo
 
 // Dispara a busca das fontes de `imdb` ("tt1234567", ou "tt1234567:1:2" para
 // episodio). Volta na hora; o resultado chega por stream_definir_lista.
