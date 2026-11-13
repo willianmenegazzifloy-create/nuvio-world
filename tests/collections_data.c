@@ -55,7 +55,7 @@ int cat_copiar_por_id(const char *id, const char *type, CatItem *item) {
   (void)id; (void)type; (void)item; return 0;
 }
 static int calls;
-static int fixtureStatus, fixtureReject;
+static int fixtureStatus, fixtureReject, fixtureDisableDuringRequest;
 static char fixtureUrl[NV_ADDON_PEDIDO_MAX];
 static pthread_mutex_t fakeLock=PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t fakeCond=PTHREAD_COND_INITIALIZER;
@@ -78,6 +78,10 @@ char *rede_baixar(const char *url,int timeout) {
     for (unsigned i = 0; i < sizeof paths / sizeof *paths; i++) {
       if (strcmp(path, paths[i])) continue;
       fixtureStatus = fixtureReject ? 403 : 200;
+      if (fixtureDisableDuringRequest) {
+        fixtureDisableDuringRequest = 0;
+        fixtureCatalogEnabled = 0; // simula desligar enquanto o GET responde
+      }
       if (i == 1 || i == 3) return strdup("{\"metas\":[]}");
       return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"name\":\"New release\",\"poster\":\"p.jpg\"}]}");
     }
@@ -148,6 +152,17 @@ int main(void) {
                                nv_perfil_sessao_ler(), disabledItems, 1, &disabledResult));
     assert(disabledResult.n == 0 && !disabledResult.erro);
     assert(calls == beforeDisabled);
+    fixtureCatalogEnabled = 1;
+
+    // O addon pode ser desligado DEPOIS da validacao inicial, com o GET em
+    // andamento. A resposta antiga nao pode ser publicada na Vitrine.
+    fixtureDisableDuringRequest = 1;
+    beforeDisabled = calls;
+    assert(desc_colecao_inicial(&folder->sources[0], folder->sources[0].base,
+                               nv_perfil_sessao_ler(), disabledItems, 1, &disabledResult));
+    assert(calls == beforeDisabled + 1);
+    assert(disabledResult.n == 0 && !disabledResult.erro);
+    assert(disabledItems[0].imdb[0] == 0);
     fixtureCatalogEnabled = 1;
   }
   for (int tab = 0; tab < folder->nSources; tab++) {
