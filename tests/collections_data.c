@@ -192,8 +192,6 @@ int main(void) {
   for (int tab = 0; tab < folder->nSources; tab++) {
     const ColSource *s = &folder->sources[tab];
     desc_vertudo_filtro(s->base, s->type, s->catId, s->genre); waitDone();
-    fprintf(stderr, "DEBUG tab=%d type=%s genre=%s n=%d error=%d url=%s\\n",
-            tab, s->type, s->genre, desc_vertudo_n(), desc_vertudo_erro(), fixtureUrl);
     if (desc_vertudo_erro()) fprintf(stderr, "FAIL tab=%s: catalog path returned %d\n", s->title, fixtureStatus);
     if (!strcmp(s->type, "tv")) {
       assert(!desc_vertudo_erro() && desc_vertudo_n() == 0);
