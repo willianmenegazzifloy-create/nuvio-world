@@ -76,6 +76,16 @@ char *rede_baixar(const char *url,int timeout) {
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/search=new%20%26%20fresh.json?config=fixture",
       "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25.json?config=fixture"
     };
+    if (!strcmp(path, "/addon/catalog/movie/mixed.json?config=fixture") ||
+        !strcmp(path, "/addon/catalog/series/mixed.json?config=fixture")) {
+      fixtureStatus = fixtureReject ? 403 : 200;
+      if (fixtureStatus != 200) return NULL;
+      return strdup("{\"metas\":["
+        "{\"id\":\"ttmovie\",\"type\":\"movie\",\"name\":\"A movie\",\"poster\":\"m.jpg\"},"
+        "{\"id\":\"ttseries\",\"type\":\"series\",\"name\":\"A series\",\"poster\":\"s.jpg\"},"
+        "{\"id\":\"ttchannel\",\"type\":\"channel\",\"name\":\"A channel\",\"poster\":\"c.jpg\"},"
+        "{\"id\":\"ttanime\",\"type\":\"anime\",\"name\":\"An anime object\",\"poster\":\"a.jpg\"}]}");
+    }
     for (unsigned i = 0; i < sizeof paths / sizeof *paths; i++) {
       if (strcmp(path, paths[i])) continue;
       fixtureStatus = fixtureReject ? 403 : 200;
@@ -116,7 +126,9 @@ int main(void) {
     "{\"type\":\"movie\",\"id\":\"empty\",\"extra\":[{\"name\":\"skip\"}]},"
     "{\"type\":\"movie\",\"id\":\"new/movies #1?fresh%\",\"extra\":[{\"name\":\"skip\"}]},"
     "{\"type\":\"series\",\"id\":\"new/series #1?fresh%\",\"extraSupported\":[\"skip\"]},"
-    "{\"type\":\"tv\",\"id\":\"new/series #1?fresh%\",\"extra\":[\"skip\"]}]}"
+    "{\"type\":\"tv\",\"id\":\"new/series #1?fresh%\",\"extra\":[\"skip\"]},"
+    "{\"type\":\"movie\",\"id\":\"mixed\"},"
+    "{\"type\":\"series\",\"id\":\"mixed\"}]}"
   ;
   desc_manifesto_cache_guardar("https://example.invalid/manifest.json", 1, manifesto);
   desc_manifesto_cache_guardar("https://example.invalid/slow/manifest.json", 1, manifesto);
@@ -193,6 +205,24 @@ int main(void) {
     fixtureCatalogEnabled = 1;
     desc_vertudo_abrir(folder->sources[0].base, "movie", folder->sources[0].catId); waitDone();
     assert(desc_vertudo_n() == 1);
+  }
+  // Metas de um mesmo catalogo podem vir misturadas ou com tipos privados.
+  // A Collection so aceita VOD e respeita o tipo da fonte.
+  {
+    ColSource mixed = {0};
+    CatItem mixedItems[4]; DescColecaoResultado mixedResult;
+    snprintf(mixed.base, sizeof mixed.base, "https://collection.invalid/addon");
+    snprintf(mixed.type, sizeof mixed.type, "movie");
+    snprintf(mixed.catId, sizeof mixed.catId, "mixed");
+    assert(desc_colecao_inicial(&mixed, mixed.base, nv_perfil_sessao_ler(),
+                                mixedItems, 4, &mixedResult));
+    assert(mixedResult.n == 1 && !strcmp(mixedItems[0].tipo, "movie") &&
+           !strcmp(mixedItems[0].imdb, "ttmovie"));
+    snprintf(mixed.type, sizeof mixed.type, "series");
+    assert(desc_colecao_inicial(&mixed, mixed.base, nv_perfil_sessao_ler(),
+                                mixedItems, 4, &mixedResult));
+    assert(mixedResult.n == 1 && !strcmp(mixedItems[0].tipo, "series") &&
+           !strcmp(mixedItems[0].imdb, "ttseries"));
   }
   fixtureReject = 1;
   desc_vertudo_abrir(folder->sources[1].base, "series", folder->sources[1].catId); waitDone();
