@@ -41,7 +41,10 @@ void marco(const char *name) { (void)name; }
 // Origem do item (CatItem.origem): sem addons neste teste, a origem fica vazia.
 int addons_n(void) { return 0; }
 int addons_base_desligada(const char *b) { (void)b; return 0; }   // 203-desligados
-int addons_catalogo_base_ativo(const char *b) { return b && strstr(b, ".invalid") != NULL; }
+static int fixtureCatalogEnabled = 1;
+int addons_catalogo_base_ativo(const char *b) {
+  return fixtureCatalogEnabled && b && strstr(b, ".invalid") != NULL;
+}
 unsigned addons_versao(void) { return 1; }
 const char *addons_base(int i) { (void)i; return ""; }
 const char *addons_id_manifesto(int i) { (void)i; return ""; }
@@ -135,6 +138,18 @@ int main(void) {
   assert(folder && folder->nSources == 4);
   assert(!strcmp(folder->sources[0].title, "New movies"));
   assert(!strcmp(folder->sources[1].title, "New series"));
+  // A carga inicial da Collection nao pode consultar uma URL salva quando
+  // o addon de catalogo foi desligado, mesmo que o manifesto esteja em cache.
+  {
+    CatItem disabledItems[2]; DescColecaoResultado disabledResult;
+    int beforeDisabled = calls;
+    fixtureCatalogEnabled = 0;
+    assert(desc_colecao_inicial(&folder->sources[0], folder->sources[0].base,
+                               nv_perfil_sessao_ler(), disabledItems, 1, &disabledResult));
+    assert(disabledResult.n == 0 && !disabledResult.erro);
+    assert(calls == beforeDisabled);
+    fixtureCatalogEnabled = 1;
+  }
   for (int tab = 0; tab < folder->nSources; tab++) {
     const ColSource *s = &folder->sources[tab];
     desc_vertudo_filtro(s->base, s->type, s->catId, s->genre); waitDone();
