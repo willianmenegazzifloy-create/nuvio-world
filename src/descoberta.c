@@ -9503,6 +9503,23 @@ void desc_vertudo_filtro(const char *base, const char *tipo, const char *catId,c
 }
 void desc_vertudo_filtro_desde(const char *base, const char *tipo, const char *catId, const char *genre, int pagina) {
   if (!base || !tipo || !catId) return;
+  // Addon desligado nao pode reaproveitar itens que ficaram no cache da
+  // Collection. Invalida tambem qualquer leitura em andamento dessa fonte.
+  if (addons_base_desligada(base)) {
+    pthread_mutex_lock(&vtTrava);
+    snprintf(vtBase, sizeof vtBase, "%s", base);
+    snprintf(vtTipo, sizeof vtTipo, "%s", tipo);
+    snprintf(vtCat, sizeof vtCat, "%s", catId);
+    snprintf(vtGenre, sizeof vtGenre, "%s", genre ? genre : "");
+    vtProvedor = 0;
+    vtN = 0;
+    vtPagina = pagina;
+    vtFim = 1;
+    vtErro = 0;
+    vtGeracao++;
+    pthread_mutex_unlock(&vtTrava);
+    return;
+  }
   pthread_mutex_lock(&vtTrava);
   // Mesmo catalogo que ja esta aberto: mantem o que ja foi lido em vez de
   // recomecar do zero (o dono pode ter voltado e entrado de novo).
