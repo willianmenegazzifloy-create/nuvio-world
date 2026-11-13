@@ -240,6 +240,8 @@ unsigned col_hash_estrutura(void) {
     resolverBases(f);
     h = colHashTexto(h, f->group);
     h = colHashTexto(h, f->id);
+    h = colHashBytes(h, &f->viewMode, sizeof f->viewMode);
+    h = colHashBytes(h, &f->showAllTab, sizeof f->showAllTab);
     h = colHashBytes(h, &f->nSources, sizeof f->nSources);
     for (int s = 0; s < f->nSources; s++) {
       const ColSource *src = &f->sources[s];
@@ -620,10 +622,18 @@ static int pastaDescobertaSomenteLancados(const char *grupo, const char *pasta) 
 // memoria). Quem chama desfaz a colecao inteira: cortar no meio deixava a
 // colecao com parte das pastas e o resto das fontes solto na Home (#255).
 static int lerColecaoWeb(const char *c, const char *ce) {
-  char group[64] = "", groupId[64] = "", fundo[512] = "";   // js_texto nao zera o que nao acha
+  char group[64] = "", groupId[64] = "", fundo[512] = "";
+  char modo[32] = "", booleano[8] = "";
+  int viewMode = COL_VIEW_UNSPECIFIED, showAllTab = 1;
   js_texto_raiz_em(c, ce, "title", group, sizeof group);
   js_texto_raiz_em(c, ce, "id", groupId, sizeof groupId);
   js_texto_raiz_em(c, ce, "backdropImageUrl", fundo, sizeof fundo);
+  js_texto_raiz_em(c, ce, "viewMode", modo, sizeof modo);
+  if (!strcasecmp(modo, "FOLLOW_LAYOUT")) viewMode = COL_VIEW_FOLLOW_LAYOUT;
+  else if (!strcasecmp(modo, "ROWS")) viewMode = COL_VIEW_ROWS;
+  else if (!strcasecmp(modo, "TABBED_GRID")) viewMode = COL_VIEW_TABBED_GRID;
+  if (js_bruto(c, ce, "showAllTab", booleano, sizeof booleano))
+    showAllTab = strstr(booleano, "false") ? 0 : 1;
   if (!group[0]) return 1;
   for (const char *p = js_array(c, ce, "folders"), *pe = NULL; p; p = js_prox(pe)) {
     if (!vagaPasta(count)) return 0;
@@ -631,6 +641,8 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     if (!(v->sources = vagaFontes())) return 0;
     snprintf(v->group, sizeof v->group, "%s", group);
     snprintf(v->groupId, sizeof v->groupId, "%s", groupId);
+    v->viewMode = viewMode;
+    v->showAllTab = showAllTab;
     js_texto_raiz_em(p, pe, "id", v->id, sizeof v->id); js_texto_raiz_em(p, pe, "title", v->title, sizeof v->title);
     int somenteLancados = pastaDescobertaSomenteLancados(group, v->title);
     js_texto(p, pe, "coverImageUrl", v->cover, sizeof v->cover);
@@ -684,6 +696,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
         js_texto(s, se, "tmdbSourceType", a->tmdbTipo, sizeof a->tmdbTipo);
         a->tmdbId = (long)js_num(s, se, "tmdbId", 0.0);
         js_texto(s, se, "mediaType", a->midia, sizeof a->midia);
+        snprintf(a->type, sizeof a->type, "%s", !strcasecmp(a->midia, "TV") ? "series" : "movie");
         js_texto(s, se, "sortBy", a->ordenar, sizeof a->ordenar);
         js_bruto(s, se, "filters", a->filtros, sizeof a->filtros);
         if (!a->title[0])
@@ -697,6 +710,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
         js_texto(s, se, "title", a->title, sizeof a->title);
         a->traktLista = (long)js_num(s, se, "traktListId", 0.0);
         js_texto(s, se, "mediaType", a->midia, sizeof a->midia);
+        snprintf(a->type, sizeof a->type, "%s", !strcasecmp(a->midia, "TV") ? "series" : "movie");
         js_texto(s, se, "sortBy", a->ordenar, sizeof a->ordenar);
         js_texto(s, se, "sortHow", a->ordem, sizeof a->ordem);
         if (!a->title[0]) snprintf(a->title, sizeof a->title, "Lista Trakt");
