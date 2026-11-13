@@ -9255,7 +9255,7 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
         js_texto(p, fimItem, "job", trabalho, sizeof trabalho);
         if (strcasecmp(trabalho, "director")) { nv_perfil_sessao_destravar(); continue; }
       }
-      ok = prov == 1 ? deMetaTmdb(p, fimItem, !strcasecmp(f.midia, "TV") ? "series" : "movie", &item) :
+      ok = prov == 1 ? deMetaTmdb(p, fimItem, (!strcasecmp(f.midia, "TV") || !strcasecmp(f.tmdbTipo, "NETWORK")) ? "series" : "movie", &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia, &item) : deMeta(p, fimItem, f.type, &item);
       if (!ok) { nv_perfil_sessao_destravar(); continue; }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
@@ -9345,7 +9345,7 @@ static void *fioVerTudo(void *u) {
       const char *vetor=tmdbMontarUrl(&fonte,skip,url,sizeof url);
       if (vetor) corpo=rede_baixar(url,12);
       if (corpo) {
-        const char *padrao=!strcasecmp(fonte.midia,"TV")?"series":"movie";
+        const char *padrao=(!strcasecmp(fonte.midia, "TV") || !strcasecmp(fonte.tmdbTipo, "NETWORK")) ? "series" : "movie";
         const char *p=js_array(corpo,NULL,vetor);
         for(;p&&nl<48;p=js_prox(js_fim(p))) {
           const char *f=js_fim(p);raw++;
