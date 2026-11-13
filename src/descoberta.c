@@ -9219,6 +9219,21 @@ static void colecaoLog(const char *nome, const char *base, const char *tipo, con
          colecaoLogCampo(id), colecaoLogCampo(genre), skip, status, itens, motivo);
   fflush(stdout);
 }
+// Collections de VOD aceitam somente filmes e series. Addons podem
+// declarar tipos privados (anime, channel, live etc.) e alguns devolvem metas
+// que nao sao titulos de VOD; nesses casos o type da propria meta decide, mas
+// nunca deixamos um tipo desconhecido cair no fallback visual de "Filme".
+static int colecaoTipoVod(const char *tipo) {
+  return tipo && (!strcasecmp(tipo, "movie") || !strcasecmp(tipo, "series"));
+}
+static int colecaoTipoCompativel(const char *fonte, const char *item) {
+  if (!colecaoTipoVod(item)) return 0;
+  if (colecaoTipoVod(fonte)) return !strcasecmp(fonte, item);
+  // Tipo privado de catalogo (ex.: anime) so e aceito quando cada meta
+  // identifica explicitamente se e filme ou serie.
+  return 1;
+}
+
 static char *colecaoBaixar(const char *url, int *status) {
   char *corpo = rede_baixar_st(url, 10, NULL, status);
   if (*status < 200 || *status >= 300) { free(corpo); return NULL; }
@@ -9352,6 +9367,11 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
       ok = prov == 1 ? deMetaTmdb(p, fimItem, (!strcasecmp(f.midia, "TV") || !strcasecmp(f.tmdbTipo, "NETWORK")) ? "series" : "movie", &item) :
            prov == 2 ? deMetaTrakt(p, fimItem, f.midia, &item) : deMeta(p, fimItem, f.type, &item);
       if (!ok) { nv_perfil_sessao_destravar(); continue; }
+      // Nao misturar series em catalogo de filmes (ou vice-versa) e descartar
+      // itens nao-VOD/categorias privadas sem type de filme/serie valido.
+      if (!prov && !colecaoTipoCompativel(f.type, item.tipo)) {
+        nv_perfil_sessao_destravar(); continue;
+      }
       if (descOcultaNaoLancado(&item)) { novos++; nv_perfil_sessao_destravar(); continue; }
       if (!prov) origemDaBase(origem, item.origem, sizeof item.origem);
       visto = desc_filme_visto(&item);
