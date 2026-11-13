@@ -693,40 +693,9 @@ static int lerColecaoWeb(const char *c, const char *ce) {
       se = js_fim(s); ColSource *a = &v->sources[v->nSources]; char prov[16] = "";
       memset(a, 0, sizeof *a);
       js_texto(s, se, "provider", prov, sizeof prov);
-      // Fontes nao-addon (issue #44): o editor do site grava provider "tmdb"
-      // (listas, colecoes, pessoas/diretores, empresas, redes ou um discover
-      // com filtros) e "trakt" (listas publicas). Nao sao catalogos de addon:
-      // carregam campos proprios e quem busca os itens e o vertudo, via
-      // desc_vertudo_fonte. Antes disto a pasta ficava com nSources==0 e era
-      // descartada inteira — era a colecao "instalada no site" que nunca
-      // aparecia na TV.
-      if (!strcasecmp(prov, "tmdb")) {
-        js_texto(s, se, "title", a->title, sizeof a->title);
-        js_texto(s, se, "tmdbSourceType", a->tmdbTipo, sizeof a->tmdbTipo);
-        a->tmdbId = (long)js_num(s, se, "tmdbId", 0.0);
-        js_texto(s, se, "mediaType", a->midia, sizeof a->midia);
-        snprintf(a->type, sizeof a->type, "%s",
-                 (!strcasecmp(a->midia, "TV") || !strcasecmp(a->tmdbTipo, "NETWORK")) ? "series" : "movie");
-        js_texto(s, se, "sortBy", a->ordenar, sizeof a->ordenar);
-        js_bruto(s, se, "filters", a->filtros, sizeof a->filtros);
-        if (!a->title[0])
-          snprintf(a->title, sizeof a->title, "%s", a->tmdbTipo[0] ? a->tmdbTipo : "TMDB");
-        a->somenteLancados = somenteLancados;
-        // Preserva a fonte TMDB original: tipo, ID, mediaType, ordenacao e
-        // filtros definem uma consulta propria, nao um catalogo generico.
-        snprintf(a->prov, sizeof a->prov, "tmdb"); v->nSources++; continue;
-      }
-      if (!strcasecmp(prov, "trakt")) {
-        js_texto(s, se, "title", a->title, sizeof a->title);
-        a->traktLista = (long)js_num(s, se, "traktListId", 0.0);
-        js_texto(s, se, "mediaType", a->midia, sizeof a->midia);
-        snprintf(a->type, sizeof a->type, "%s", !strcasecmp(a->midia, "TV") ? "series" : "movie");
-        js_texto(s, se, "sortBy", a->ordenar, sizeof a->ordenar);
-        js_texto(s, se, "sortHow", a->ordem, sizeof a->ordem);
-        if (!a->title[0]) snprintf(a->title, sizeof a->title, "Lista Trakt");
-        if (a->traktLista <= 0) { fPulProvedor++; continue; }
-        snprintf(a->prov, sizeof a->prov, "trakt"); v->nSources++; continue;
-      }
+      // Collections no World usam exclusivamente catalogos de addons.
+      // Fontes diretas TMDB/Trakt nao sao addons instalados/ativos e portanto
+      // nao podem alimentar uma pasta, mesmo que o JSON da conta as contenha.
       if (prov[0] && strcasecmp(prov, "addon")) { fPulProvedor++; continue; }
       if (!lerBase(s, se, "addonBaseUrl", a, v->title)) lerBase(s, se, "addon_base_url", a, v->title);
       tirarManifest(a->base);
