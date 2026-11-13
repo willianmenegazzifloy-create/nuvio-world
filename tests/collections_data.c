@@ -243,6 +243,7 @@ int main(void) {
     assert(col_definir_json("{\"collections\":[{\"id\":\"genre\",\"title\":\"Genre\",\"folders\":[{\"id\":\"g\",\"title\":\"Comedy\",\"sources\":[{\"provider\":\"addon\",\"addonBaseUrl\":\"https://collection.invalid/addon?config=fixture\",\"type\":\"movie\",\"catalogId\":\"new/movies #1?fresh%\",\"genre\":\"Comedy\"}]}]}]}") == 1);
     desc_vertudo_filtro(genre.base, genre.type, genre.catId, genre.genre); waitDone();
     assert(desc_vertudo_n() == 0 && desc_vertudo_fim());
+    assert(col_definir_json("{\"collections\":[]}")==0);
     assert(col_carregar("tests/fixtures/collections/new-tabs") == 1);
   }
   // Metas de um mesmo catalogo podem vir misturadas ou com tipos privados.
