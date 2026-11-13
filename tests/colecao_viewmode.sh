@@ -295,7 +295,12 @@ prefix = r"""
 #include "addonurl.h"
 
 static int idKnown;
+static int catalogActive = 1;
 static const char *currentBase = "https://catalog.nuvio.tv/current";
+int addons_catalogo_base_ativo(const char *base) {
+  return catalogActive && base &&
+         (!strcmp(base, currentBase) || !strcmp(base, "https://catalog.nuvio.tv/old"));
+}
 int addons_base_por_id_copiar(const char *id, char *dst, unsigned tam) {
   if (!idKnown || !id || strcmp(id, "com.nuvio.tmdb.catalogs") || !dst || !tam)
     return 0;
@@ -311,6 +316,9 @@ int main(void) {
   idKnown = 1;
   assert(!strcmp(baseDaFonte(&source), currentBase)); // id is authoritative
 
+  catalogActive = 0;
+  assert(!baseDaFonte(&source)[0]); // installed but disabled is not a Collection source
+  catalogActive = 1;
   idKnown = 0;
   assert(!baseDaFonte(&source)[0]); // explicit but unresolved addonId must not use stale URL
   source.addonId[0] = 0;
