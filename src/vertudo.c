@@ -564,13 +564,17 @@ static const char *baseDaFonte(const ColSource *s) {
   // Como no Original, addonId e a identidade principal. A URL salva fica como
   // compatibilidade; se o ID resolver para outra base, vale a do manifesto atual.
   if (s->addonId[0]) {
-    if (addons_base_por_id_copiar(s->addonId, base, sizeof base)) return base;
-    // addonId explicito sem correspondencia significa addon removido/nao
-    // instalado. Nao ressuscitar a URL antiga da conta como fallback.
-    base[0] = 0;
+    if (!addons_base_por_id_copiar(s->addonId, base, sizeof base)) {
+      // addonId explicito sem correspondencia: nao usar URL antiga.
+      base[0] = 0;
+      return base;
+    }
+    // Identidade instalada nao basta: Collection exige addon ativo com
+    // capacidade de catalogo. A mesma regra vale para a fonte legada abaixo.
+    if (!addons_catalogo_base_ativo(base)) base[0] = 0;
     return base;
   }
-  if (s->base[0]) return s->base;  // compatibilidade somente com fonte legada sem addonId
+  if (s->base[0] && addons_catalogo_base_ativo(s->base)) return s->base;
   base[0] = 0;
   return base;
 }
