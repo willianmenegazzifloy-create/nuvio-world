@@ -81,12 +81,12 @@ int main(void) {
   diretores = 1;
   assert(layAuto() == VT_LAY_LINHA);
 
-  // "See all" must ignore the parent collection's automatic view mode.
+  // "See all" ignores the parent collection view and falls back to Grade.
   diretores = 0;
   semVitrineAuto = 1;
   pasta.viewMode = COL_VIEW_FOLLOW_LAYOUT;
   padrao = VT_LAY_MURAL;
-  assert(layAuto() == VT_LAY_MURAL);
+  assert(layAuto() == VT_LAY_GRADE);
 
   collection = NULL;
   assert(layAuto() == VT_LAY_GRADE);
