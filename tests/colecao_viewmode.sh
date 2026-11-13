@@ -49,6 +49,9 @@ function = source[start:end]
 assert "#define VIT_LIN_MAX COL_SOURCE_MAX" in source
 assert "collection->viewMode == COL_VIEW_FOLLOW_LAYOUT" in source
 assert "collection->viewMode == COL_VIEW_ROWS" in source
+assert "static float vitAlturaViewport(void)" in source
+assert "conteudo / 3.0f" in source
+assert "gfx_recorte(0.0f, topo - 8.0f, NV_TELA_W, vitAlturaViewport())" in source
 assert "Fontes nao-addon ficam visiveis, mas vazias" not in source
 
 prefix = r"""
