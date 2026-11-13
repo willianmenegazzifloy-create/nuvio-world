@@ -40,7 +40,7 @@ static void col_nome_fonte(const ColSource *s, const char *m, char *dst, unsigne
 static const char *desc_nome_catalogo(const char *b, const char *t, const char *c)
   { (void)b; (void)t; (void)c; return ""; }
 static const char *baseDaFonte(const ColSource *s) { (void)s; return ""; }
-''' + function('abaRotulos') + function('abaRolRecentrar') + function('abaFade') + \
+''' + function('nomesFontesColecao') + function('abaRotulos') + function('abaRolRecentrar') + function('abaFade') + \
     function('abasCapsulaAtualizar') + '''
 int main(void) {
   ColSource fs[4]; ColFolder pasta;
