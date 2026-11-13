@@ -619,8 +619,14 @@ static int pastaDescobertaSomenteLancados(const char *grupo, const char *pasta) 
 // Traduz as fontes TMDB padrao do editor para os catalogos equivalentes do
 // Nuvio Catalog Addon. TMDB/Trakt continuam disponiveis para metadados; aqui
 // apenas trocamos a origem dos itens da colecao por um catalogo Stremio real.
+static int fonteEhSerie(const char *midia) {
+  return midia && (!strcasecmp(midia, "TV") ||
+                   !strcasecmp(midia, "tv") ||
+                   !strcasecmp(midia, "series") ||
+                   !strcasecmp(midia, "show"));
+}
 static const char *catalogoPadraoDaFonte(const char *titulo, const char *midia) {
-  int serie = midia && (!strcasecmp(midia, "TV") || !strcasecmp(midia, "series"));
+  int serie = fonteEhSerie(midia);
   if (!titulo) return NULL;
   if (!strcasecmp(titulo, "Novos Filmes") || !strcasecmp(titulo, "New Movies"))
     return serie ? NULL : "new-and-upcoming-movies";
@@ -639,6 +645,57 @@ static const char *catalogoPadraoDaFonte(const char *titulo, const char *midia) 
       !strcasecmp(titulo, "Critically Acclaimed Series"))
     return serie ? "critically-acclaimed-series" : NULL;
   return NULL;
+}
+static const char *generoAddonDaColecao(const char *grupo, int serie) {
+  if (!grupo) return NULL;
+  if (!strcasecmp(grupo, "ACTION") || !strcasecmp(grupo, "Ação") ||
+      !strcasecmp(grupo, "Acao")) return serie ? "Action & Adventure" : "Action";
+  if (!strcasecmp(grupo, "ADVENTURE") || !strcasecmp(grupo, "Aventura"))
+    return "Adventure";
+  if (!strcasecmp(grupo, "ANIMATION") || !strcasecmp(grupo, "ANIME") ||
+      !strcasecmp(grupo, "Animação") || !strcasecmp(grupo, "Animacao"))
+    return "Animation";
+  if (!strcasecmp(grupo, "COMEDY") || !strcasecmp(grupo, "Comédia") ||
+      !strcasecmp(grupo, "Comedia")) return "Comedy";
+  if (!strcasecmp(grupo, "CRIME")) return "Crime";
+  if (!strcasecmp(grupo, "DOCUMENTARY") || !strcasecmp(grupo, "Documentário") ||
+      !strcasecmp(grupo, "Documentario")) return "Documentary";
+  if (!strcasecmp(grupo, "DRAMA")) return "Drama";
+  if (!strcasecmp(grupo, "FAMILY") || !strcasecmp(grupo, "Família") ||
+      !strcasecmp(grupo, "Familia")) return "Family";
+  if (!strcasecmp(grupo, "FANTASY") || !strcasecmp(grupo, "Fantasia"))
+    return serie ? "Sci-Fi & Fantasy" : "Fantasy";
+  if (!strcasecmp(grupo, "HISTORY") || !strcasecmp(grupo, "História") ||
+      !strcasecmp(grupo, "Historia")) return "History";
+  if (!strcasecmp(grupo, "HORROR") || !strcasecmp(grupo, "Terror"))
+    return "Horror";
+  if (!strcasecmp(grupo, "MYSTERY") || !strcasecmp(grupo, "Mistério") ||
+      !strcasecmp(grupo, "Misterio")) return "Mystery";
+  if (!strcasecmp(grupo, "ROMANCE")) return "Romance";
+  if (!strcasecmp(grupo, "SCI-FI") || !strcasecmp(grupo, "SCIENCE FICTION") ||
+      !strcasecmp(grupo, "FICÇÃO CIENTÍFICA") ||
+      !strcasecmp(grupo, "Ficcao Cientifica"))
+    return serie ? "Sci-Fi & Fantasy" : "Science Fiction";
+  if (!strcasecmp(grupo, "THRILLER") || !strcasecmp(grupo, "Suspense"))
+    return "Thriller";
+  if (!strcasecmp(grupo, "WAR") || !strcasecmp(grupo, "Guerra"))
+    return serie ? "War & Politics" : "War";
+  if (!strcasecmp(grupo, "WESTERN") || !strcasecmp(grupo, "Faroeste"))
+    return "Western";
+  return NULL;
+}
+static int converterFonteTmdbParaAddon(ColSource *a, const char *grupo) {
+  int serie = fonteEhSerie(a->midia);
+  const char *cat = catalogoPadraoDaFonte(a->title, a->midia);
+  if (!cat) return 0;
+  snprintf(a->addonId, sizeof a->addonId, "com.nuvio.tmdb.catalogs");
+  baseCabe(a, addons_base_por_id(a->addonId));
+  snprintf(a->type, sizeof a->type, "%s", serie ? "series" : "movie");
+  snprintf(a->catId, sizeof a->catId, "%s", cat);
+  const char *genre = generoAddonDaColecao(grupo, serie);
+  if (genre) snprintf(a->genre, sizeof a->genre, "%s", genre);
+  a->prov[0] = 0;
+  return 1;
 }
 static int converterFonteTmdbParaAddon(ColSource *a, const char *grupo) {
   const char *cat = catalogoPadraoDaFonte(a->title, a->midia);
