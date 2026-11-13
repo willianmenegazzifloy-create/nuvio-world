@@ -353,11 +353,11 @@ def extract(name, signature):
         end += 1
     return source[start:end]
 
-functions = "\\n\\n".join([
-    extract("aceitaSkip", r"static int aceitaSkip\\s*\\([^;]*?\\)\\s*\\{"),
-    extract("catalogoTipoChave", r"static void catalogoTipoChave\\s*\\([^;]*?\\)\\s*\\{"),
-    extract("descCatalogoResolverId", r"static int descCatalogoResolverId\\s*\\([^;]*?\\)\\s*\\{"),
-    extract("desc_catalogo_resolver", r"int desc_catalogo_resolver\\s*\\([^;]*?\\)\\s*\\{"),
+functions = "\n\n".join([
+    extract("aceitaSkip", r"static int aceitaSkip\s*\([^;]*?\)\s*\{"),
+    extract("catalogoTipoChave", r"static void catalogoTipoChave\s*\([^;]*?\)\s*\{"),
+    extract("descCatalogoResolverId", r"static int descCatalogoResolverId\s*\([^;]*?\)\s*\{"),
+    extract("desc_catalogo_resolver", r"int desc_catalogo_resolver\s*\([^;]*?\)\s*\{"),
 ])
 
 prefix = r"""
@@ -373,12 +373,12 @@ prefix = r"""
 static const char *expectedBase = "https://catalog.example/addon?config=fixture";
 static const char *expectedManifest = "https://catalog.example/addon/manifest.json?config=fixture";
 static const char *manifestJson =
-    "{\\"catalogs\\":["
-    "{\\"type\\":\\"movie\\",\\"id\\":\\"popular\\",\\"extra\\":[{\\"name\\":\\"skip\\"}]},"
-    "{\\"type\\":\\"series\\",\\"id\\":\\"popular\\",\\"extraSupported\\":[\\"skip\\"]},"
-    "{\\"type\\":\\"movie\\",\\"id\\":\\"no-skip\\",\\"name\\":\\"No skip\\"},"
-    "{\\"type\\":\\"movie\\",\\"id\\":\\"ambiguous\\",\\"name\\":\\"One\\"},"
-    "{\\"type\\":\\"movie\\",\\"id\\":\\"ambiguous\\",\\"name\\":\\"Two\\"}]}";
+    "{\"catalogs\":["
+    "{\"type\":\"movie\",\"id\":\"popular\",\"extra\":[{\"name\":\"skip\"}]},"
+    "{\"type\":\"series\",\"id\":\"popular\",\"extraSupported\":[\"skip\"]},"
+    "{\"type\":\"movie\",\"id\":\"no-skip\",\"name\":\"No skip\"},"
+    "{\"type\":\"movie\",\"id\":\"ambiguous\",\"name\":\"One\"},"
+    "{\"type\":\"movie\",\"id\":\"ambiguous\",\"name\":\"Two\"}]}";
 static int active = 1;
 unsigned addons_versao(void) { return 11; }
 int addons_catalogo_base_ativo(const char *base) {
