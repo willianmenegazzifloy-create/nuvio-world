@@ -97,11 +97,13 @@ int main(void) {
     "{\"collections\":[{\"id\":\"d\",\"title\":\"Descobrir\",\"folders\":["
     "{\"id\":\"nf\",\"title\":\"Novos Filmes\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
     "{\"id\":\"ns\",\"title\":\"Novas Séries\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"TV\"}]},"
-    "{\"id\":\"alta\",\"title\":\"Filmes em Alta\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]}]}]}";
-  assert(col_definir_json(descobrir) == 3);
+    "{\"id\":\"alta\",\"title\":\"Filmes em Alta\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"DISCOVER\",\"mediaType\":\"MOVIE\"}]},"
+    "{\"id\":\"rede\",\"title\":\"Rede de TV\",\"sources\":[{\"provider\":\"tmdb\",\"tmdbSourceType\":\"NETWORK\",\"mediaType\":\"MOVIE\",\"tmdbId\":123}]}]}]}";
+  assert(col_definir_json(descobrir) == 4);
   assert(col_folder(0)->sources[0].somenteLancados == 1);
   assert(col_folder(1)->sources[0].somenteLancados == 1);
   assert(col_folder(2)->sources[0].somenteLancados == 0);
+  assert(!strcmp(col_folder(3)->sources[0].type, "series"));
   puts("ok  filtro de lancamentos futuros ativado somente em Descobrir / Novos Filmes e Novas Series");
 
   // A capacidade real usada pela collection do usuario: 249 pastas numa
