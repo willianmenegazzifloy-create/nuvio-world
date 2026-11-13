@@ -60,6 +60,12 @@ int main(void) {
   assert(strstr(rot[3], "Top Rated Netflix") && strstr(rot[3], "Séries"));
   assert(strncmp(rot[0], "Latest", 6) == 0 && strncmp(rot[2], "Top Rated", 9) == 0);
 
+  // Addon genre is part of the visible source name, like the Original.
+  strcpy(fs[0].genre, "Action");
+  abaRotulos(rot, 4);
+  assert(strstr(rot[0], "Latest Netflix · Action"));
+  fs[0].genre[0] = 0;
+
   // 1b) more sources than COL_SOURCE_MAX must not overflow the label buffers.
   { static ColSource many[20]; static ColFolder big; static char r2[16][180];
     for (int i = 0; i < 20; i++) { snprintf(many[i].title, 128, "Cat %d", i); strcpy(many[i].type, "movie"); }
