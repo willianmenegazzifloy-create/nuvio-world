@@ -50,7 +50,8 @@ for (const c of collections) {
   const folders=[];
   for (const f of c.folders||[]) {
     const sources=[];
-    for(const s of f.sources?.length?f.sources:f.catalogSources||[]) {
+    const selectedSources = f.catalogSources?.length ? f.catalogSources : f.sources||[];
+    for(const s of selectedSources) {
       if(s.provider && s.provider!=='addon') continue;
       const a=addons.get(s.addonId);
       // Igual ao Original: addonId identifica a fonte. Se ele existe, usa a
