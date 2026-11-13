@@ -1,0 +1,144 @@
+name: Publish Nuvio World Android Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nuvio-world-android-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and publish signed Android APKs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      NUVIO_APK_LITE: "1"
+      NUVIO_REQUIRE_CORE: "1"
+      NUVIO_BUILD_JOBS: "2"
+      NUVIO_ANDROID_JOBS: "2"
+      NUVIO_ANDROID_CACHE: /home/runner/.cache/nuvio-android
+      CARGO_HOME: /home/runner/.cargo
+      RUSTUP_HOME: /home/runner/.rustup
+
+    steps:
+      - name: Checkout Nuvio World
+        uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        run: |
+          VERSION=$(python3 -c 'import json; print(json.load(open("deploy/app/appinfo.json"))["version"])')
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Nuvio World version: $VERSION"
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Install Rust targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install native build tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential cmake ninja-build ffmpeg curl git python3 \
+            pkg-config nasm yasm autoconf automake libtool
+
+      - name: Install Android SDK, NDK and CMake versions
+        run: |
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "ndk;27.2.12479018" \
+            "cmake;3.22.1"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+          mkdir -p "$ANDROID_HOME/cmake/3.22.1/bin"
+          if [ ! -x "$ANDROID_HOME/cmake/3.22.1/bin/ninja" ]; then
+            ln -s "$(command -v ninja)" "$ANDROID_HOME/cmake/3.22.1/bin/ninja"
+          fi
+
+      - name: Cache Android native dependencies and Rust crates
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/runner/.cache/nuvio-android
+            /home/runner/.cargo/registry
+            /home/runner/.cargo/git
+          key: ${{ runner.os }}-nuvio-world-android-release-${{ hashFiles('tools/android/deps.sh', 'tools/android/ffmpeg-android.sh', 'tools/android.sh', 'tools/rust-mkvcore.sh', 'rust/mkvcore/Cargo.lock') }}
+
+      - name: Recover required public build configuration
+        run: |
+          curl --fail --location --retry 3 \
+            "https://github.com/iqui27/nuvio-native-legacy/releases/download/v2.0.8/Nuvio-2.0.8-android-lite-armv7.apk" \
+            --output "$RUNNER_TEMP/nuvio-config-source.apk"
+          python3 tools/android/extract-config-from-apk.py \
+            "$RUNNER_TEMP/nuvio-config-source.apk" --output local.properties
+
+      - name: Prepare World signing key
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          KEYSTORE="$RUNNER_TEMP/nuvio-world-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          chmod 600 "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
+          {
+            echo "NUVIO_KEYSTORE=$KEYSTORE"
+            echo "NUVIO_KEYSTORE_PASS=$ANDROID_KEYSTORE_PASSWORD"
+            echo "NUVIO_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+            echo "NUVIO_KEY_PASS=$ANDROID_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Build signed Nuvio World APKs
+        run: |
+          bash tools/android/deps.sh arm64-v8a armeabi-v7a
+          bash tools/android.sh --release-only
+
+      - name: Verify APK signatures and package identity
+        run: |
+          set -euo pipefail
+          BT="$ANDROID_HOME/build-tools/35.0.0"
+          for APK in \
+            "build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-armv7.apk" \
+            "build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-arm64.apk"; do
+            test -f "$APK"
+            "$BT/apksigner" verify "$APK"
+            PACKAGE=$("$BT/aapt" dump badging "$APK" | sed -n "s/^package: name='\\([^']*\\)'.*/\\1/p")
+            test "$PACKAGE" = "space.nuvio.world"
+            echo "Verified: $APK ($PACKAGE)"
+          done
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.value }}
+          name: Nuvio World v${{ steps.version.outputs.value }}
+          generate_release_notes: true
+          make_latest: true
+          fail_on_unmatched_files: true
+          files: |
+            build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-armv7.apk
+            build/android/Nuvio-${{ steps.version.outputs.value }}-android-lite-arm64.apk
