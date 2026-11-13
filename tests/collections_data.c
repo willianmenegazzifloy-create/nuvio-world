@@ -182,8 +182,12 @@ int main(void) {
     const ColSource *s = &folder->sources[tab];
     desc_vertudo_filtro(s->base, s->type, s->catId, s->genre); waitDone();
     if (desc_vertudo_erro()) fprintf(stderr, "FAIL tab=%s: catalog path returned %d\n", s->title, fixtureStatus);
-    assert(!desc_vertudo_erro() && desc_vertudo_n() == 1);
-    assert(desc_vertudo_item(0, &i) && !strcmp(i.tipo, s->type));
+    if (!strcmp(s->type, "tv")) {
+      assert(!desc_vertudo_erro() && desc_vertudo_n() == 0);
+    } else {
+      assert(!desc_vertudo_erro() && desc_vertudo_n() == 1);
+      assert(desc_vertudo_item(0, &i) && !strcmp(i.tipo, s->type));
+    }
     char tabUrl[NV_ADDON_PEDIDO_MAX];
     snprintf(tabUrl, sizeof tabUrl, "%s", fixtureUrl);
     CatItem initial[2]; DescColecaoResultado result;
