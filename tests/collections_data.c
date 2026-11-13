@@ -95,7 +95,9 @@ char *rede_baixar(const char *url,int timeout) {
         fixtureCatalogEnabled = 0; // simula desligar enquanto o GET responde
       }
       if (i == 1 || i == 3) return strdup("{\"metas\":[]}");
-      return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
+      if (i == 2 || i == 6)
+        return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"type\":\"series\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
+      return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"type\":\"movie\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
     }
     return NULL;
   }
