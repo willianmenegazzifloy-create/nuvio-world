@@ -6,11 +6,11 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+static const char *baseAddonAtual = "https://resolvido";
 const char *addons_base_por_id(const char *id) {
   if (id && !strcmp(id, "x")) return "https://addon/abc";
   return id && !strcmp(id, "org.x") ? baseAddonAtual : "";
 }
-const char *addons_base_por_id(const char *id) { return id && !strcmp(id, "org.x") ? baseAddonAtual : ""; }
 int main(void) {
   const char *web =
     "[{\"collections_json\":{\"collections\":[{\"id\":\"c1\",\"title\":\"Streaming\",\"backdropImageUrl\":\"https://img/bg.jpg\",\"viewMode\":\"FOLLOW_LAYOUT\",\"showAllTab\":true,"
