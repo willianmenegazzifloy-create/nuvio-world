@@ -2144,9 +2144,10 @@ static void toqueVitrineRetomarFoco(void) {
   float w, h, passo, rot;
   home_vitrine_medida(&w, &h, &passo, &rot);
   if (vitToqueY.livre) {
-    float melhor = 1e9f, centro = (NV_SHELF_TOP - 8.0f + NV_TELA_H) * .5f;
+    float topo = vitTopo();
+    float melhor = 1e9f, centro = topo - 8.0f + vitAlturaViewport() * .5f;
     for (int r = 0; r < vitN; r++) if (vitLin[r].n > 0) {
-      float d = fabsf(NV_SHELF_TOP + r * vitPasso() - vitScroll + VIT_TITULO_H + h * .5f - centro);
+      float d = fabsf(topo + r * vitPasso() - vitScroll + VIT_TITULO_H + h * .5f - centro);
       if (d < melhor) { melhor = d; vitFR = r; vitFC = vitColLemb[r]; tabFocus = 0; }
     }
   }
