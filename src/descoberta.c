@@ -2367,6 +2367,81 @@ const char *desc_nome_catalogo(const char *base, const char *tipo, const char *i
   return saida;
 }
 
+// Mesma identidade usada pelo Original: primeiro tenta type exato; depois,
+// quando ha uma unica declaracao com o mesmo tipo normalizado, aceita a forma
+// canonica (movie/series/channel/tv). Tipos privados permanecem literais.
+static void catalogoTipoChave(const char *tipo, char *dst, size_t tam) {
+  const char *ini = tipo ? tipo : "";
+  while (*ini && isspace((unsigned char)*ini)) ini++;
+  size_t n = strlen(ini);
+  while (n && isspace((unsigned char)ini[n - 1])) n--;
+  if (n == 5 && !strncasecmp(ini, "movie", n)) snprintf(dst, tam, "movie");
+  else if (n == 6 && !strncasecmp(ini, "series", n)) snprintf(dst, tam, "series");
+  else if (n == 7 && !strncasecmp(ini, "channel", n)) snprintf(dst, tam, "channel");
+  else if (n == 2 && !strncasecmp(ini, "tv", n)) snprintf(dst, tam, "tv");
+  else snprintf(dst, tam, "%.*s", (int)n, ini);
+}
+
+static int descCatalogoResolverId(const char *corpo, const char *tipo, const char *id,
+                                  int *supportsSkip) {
+  const char *p = js_array(corpo, NULL, "catalogs");
+  char tipoChave[64], tipoDecl[64], idDecl[160];
+  int canonicos = 0, unicoSkip = 0;
+  catalogoTipoChave(tipo, tipoChave, sizeof tipoChave);
+  if (supportsSkip) *supportsSkip = 0;
+  for (; p; p = js_prox(js_fim(p))) {
+    const char *f = js_fim(p);
+    if (!f || *p != '{') continue;
+    tipoDecl[0] = idDecl[0] = 0;
+    js_texto_raiz_em(p, f, "type", tipoDecl, sizeof tipoDecl);
+    js_texto_raiz_em(p, f, "id", idDecl, sizeof idDecl);
+    if (strcmp(idDecl, id)) continue;
+    if (!strcmp(tipoDecl, tipo)) {
+      if (supportsSkip) *supportsSkip = aceitaSkip(p, f);
+      return 1;
+    }
+    char declaradoChave[64];
+    catalogoTipoChave(tipoDecl, declaradoChave, sizeof declaradoChave);
+    if (!strcmp(declaradoChave, tipoChave)) {
+      canonicos++;
+      unicoSkip = aceitaSkip(p, f);
+    }
+  }
+  if (canonicos == 1) {
+    if (supportsSkip) *supportsSkip = unicoSkip;
+    return 1;
+  }
+  return 0;
+}
+
+int desc_catalogo_resolver(const char *base, const char *tipo, const char *id,
+                           int *supportsSkip) {
+  char url[NV_ADDON_PEDIDO_MAX], idSemExtra[96];
+  int w, valido = 0, paginavel = 0;
+  char *corpo;
+  if (supportsSkip) *supportsSkip = 0;
+  if (!base || !*base || !tipo || !*tipo || !id || !*id ||
+      !addons_catalogo_base_ativo(base)) return 0;
+  w = nv_addon_url(url, sizeof url, base, "/manifest.json");
+  if (!nv_addon_pedido_coube(base, w, sizeof url)) return 0;
+  corpo = desc_manifesto_cache_obter(url, addons_versao());
+  if (!corpo) return 0;  // manifesto ainda nao foi validado nesta versao da lista
+  valido = descCatalogoResolverId(corpo, tipo, id, &paginavel);
+  // O exportador de Collections pode anexar argumentos ao catalogId. Como no
+  // Original, se o id completo nao existe tenta somente a parte antes da virgula.
+  if (!valido) {
+    const char *virgula = strchr(id, ',');
+    if (virgula && virgula > id && (size_t)(virgula - id) < sizeof idSemExtra) {
+      memcpy(idSemExtra, id, (size_t)(virgula - id));
+      idSemExtra[virgula - id] = 0;
+      valido = descCatalogoResolverId(corpo, tipo, idSemExtra, &paginavel);
+    }
+  }
+  free(corpo);
+  if (supportsSkip) *supportsSkip = valido ? paginavel : 0;
+  return valido;
+}
+
 // --- QUAIS CATALOGOS A COTA LE (issue #126) -----------------------------------
 //
 // A cota por addon (montar, "COTA POR ADDON") deixa cada addon declarar ate N
