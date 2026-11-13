@@ -52,10 +52,14 @@ for (const c of collections) {
     const sources=[];
     for(const s of f.sources?.length?f.sources:f.catalogSources||[]) {
       if(s.provider && s.provider!=='addon') continue;
-      const a=addons.get(s.addonId); const base=s.addonBaseUrl||a?.base;
+      const a=addons.get(s.addonId);
+      // Igual ao Original: addonId identifica a fonte. Se ele existe, usa a
+      // base do manifesto instalado; nao preserva addonBaseUrl antigo caso o
+      // addon tenha sido trocado. Fonte legada sem addonId continua por URL.
+      const base=s.addonId?a?.base:s.addonBaseUrl;
       if(!base || !s.catalogId || !s.type) continue;
       const declared=a?.catalogs.find(x=>x.id===s.catalogId&&x.type===s.type);
-      sources.push({title:s.title||s.catalogName||declared?.name||s.catalogId,base,type:s.type,catId:s.catalogId,genre:s.genre&&s.genre!=='None'?s.genre:''});
+      sources.push({title:s.title||s.catalogName||declared?.name||s.catalogId,addonId:s.addonId||'',base,type:s.type,catId:s.catalogId,genre:s.genre&&s.genre!=='None'?s.genre:''});
     }
     const id=f.id.replace(/[^a-zA-Z0-9_-]/g,'_');
     const dir=path.join(art,'collections',id);
