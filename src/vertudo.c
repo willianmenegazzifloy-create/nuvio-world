@@ -1402,7 +1402,7 @@ static void nomesFontesColecao(char nomes[][180], int n) {
     col_nome_fonte(s, desc_nome_catalogo(baseDaFonte(s), s->type, s->catId), base, sizeof base);
     if (!base[0]) snprintf(base, sizeof base, "%s", tipo);
     if (!s->prov[0] && s->genre[0] && strcasecmp(s->genre, "None"))
-      snprintf(nomes[i], 180, "%s · %s", base, s->genre);
+      snprintf(nomes[i], 180, "%.127s · %.47s", base, s->genre);
     else
       snprintf(nomes[i], 180, "%s", base);
   }
@@ -1418,7 +1418,7 @@ static void rotulosAbas(char (*rot)[180]) {
     int repete = 0;
     for (int j = 0; j < n; j++)
       if (j != i && !strcmp(nomeAba[i], nomeAba[j])) repete = 1;
-    if (repete) snprintf(rot[i], 180, "%s · %s", nomeAba[i], tipo);
+    if (repete) snprintf(rot[i], 180, "%.168s · %.7s", nomeAba[i], tipo);
     else snprintf(rot[i], 180, "%s", nomeAba[i]);
   }
 }
@@ -2570,7 +2570,7 @@ static void abaRotulos(char rot[][180], int nAbas) {
     int repete = 0;
     for (int j = 0; j < nAbas; j++)
       if (j != i && !strcmp(nomeAba[i], nomeAba[j])) repete = 1;
-    if (repete) snprintf(rot[i], 180, "%s · %s", nomeAba[i], tipo);
+    if (repete) snprintf(rot[i], 180, "%.168s · %.7s", nomeAba[i], tipo);
     else snprintf(rot[i], 180, "%s", nomeAba[i]);
   }
 }
