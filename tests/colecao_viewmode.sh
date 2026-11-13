@@ -56,11 +56,14 @@ main = r"""
 int main(void) {
   memset(&pasta, 0, sizeof pasta);
 
-  // The account's Follow Layout must resolve to source rows.
+  // FOLLOW_LAYOUT follows the preference selected in the Nuvio app.
   pasta.viewMode = COL_VIEW_FOLLOW_LAYOUT;
+  padrao = VT_LAY_MURAL;
+  assert(layAuto() == VT_LAY_MURAL);
+  padrao = VT_LAY_VITRINE;
   assert(layAuto() == VT_LAY_VITRINE);
 
-  // Explicit Rows also uses the World row-based presentation.
+  // Explicit Rows always uses the row-based presentation.
   pasta.viewMode = COL_VIEW_ROWS;
   assert(layAuto() == VT_LAY_VITRINE);
 
@@ -105,4 +108,91 @@ with tempfile.TemporaryDirectory(prefix="nuvio-collection-viewmode-") as folder:
     subprocess.run([str(binary)], check=True)
 
 print("collection viewMode: FOLLOW_LAYOUT, ROWS, TABBED_GRID and legacy defaults PASS")
+PY
+
+
+# Verify that a disabled add-on cannot reuse stale Collection results.
+python3 - <<'PY'
+from pathlib import Path
+import re
+import subprocess
+import tempfile
+
+source = Path("src/descoberta.c").read_text(encoding="utf-8")
+match = re.search(
+    r"void desc_vertudo_filtro_desde\\s*\\([^;]*?\\)\\s*\\{",
+    source,
+    re.S,
+)
+assert match, "desc_vertudo_filtro_desde() missing"
+start = match.start()
+brace = source.index("{", match.start())
+depth = 1
+end = brace + 1
+while depth:
+    if source[end] == "{":
+        depth += 1
+    elif source[end] == "}":
+        depth -= 1
+    end += 1
+function = source[start:end]
+
+prefix = r"""
+#include <assert.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <string.h>
+
+static pthread_mutex_t vtTrava = PTHREAD_MUTEX_INITIALIZER;
+static char vtBase[128], vtTipo[16], vtCat[64], vtGenre[64];
+static int vtN, vtPagina, vtFim, vtErro, vtProvedor, disparos;
+static unsigned vtGeracao;
+static int desligado;
+
+static int addons_base_desligada(const char *base) {
+  (void)base;
+  return desligado;
+}
+static int ajustes_ocultar_filmes_vistos(void) { return 0; }
+static int vtProjetar(void) { return 0; }
+static void vtDisparar(void) { disparos++; }
+"""
+
+main = r"""
+int main(void) {
+  strcpy(vtBase, "https://addon.invalid");
+  strcpy(vtTipo, "movie");
+  strcpy(vtCat, "popular");
+  vtN = 4;
+  vtGeracao = 7;
+  desligado = 1;
+
+  desc_vertudo_filtro_desde("https://addon.invalid", "movie", "popular", "", 0);
+  assert(vtN == 0);
+  assert(vtFim == 1);
+  assert(vtGeracao == 8);
+  assert(disparos == 0);
+
+  // Re-enabling the same add-on starts a fresh query instead of using cache.
+  desligado = 0;
+  desc_vertudo_filtro_desde("https://addon.invalid", "movie", "popular", "", 0);
+  assert(vtN == 0);
+  assert(vtFim == 0);
+  assert(vtGeracao == 9);
+  assert(disparos == 1);
+  return 0;
+}
+"""
+
+with tempfile.TemporaryDirectory(prefix="nuvio-collection-addon-cache-") as folder:
+    cfile = Path(folder) / "cache.c"
+    binary = Path(folder) / "cache"
+    cfile.write_text(prefix + function + main, encoding="utf-8")
+    subprocess.run(
+        ["cc", "-std=c11", "-Wall", "-Wextra", "-pthread", str(cfile), "-o", str(binary)],
+        check=True,
+    )
+    subprocess.run([str(binary)], check=True)
+
+print("collection add-on cache: disabled clears stale results; re-enable reloads")
 PY
