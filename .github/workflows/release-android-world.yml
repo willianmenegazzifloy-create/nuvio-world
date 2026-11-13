@@ -57,7 +57,7 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
-            build-essential cmake ninja-build ffmpeg curl git python3 \
+            build-essential cmake ninja-build ffmpeg curl git python3 libsdl2-dev \
             pkg-config nasm yasm autoconf automake libtool
 
       - name: Install Android SDK, NDK and CMake versions
