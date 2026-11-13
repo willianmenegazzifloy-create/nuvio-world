@@ -77,6 +77,12 @@ char *rede_baixar(const char *url,int timeout) {
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/search=new%20%26%20fresh.json?config=fixture",
       "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25.json?config=fixture"
     };
+    if (!strcmp(path, "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25.json?config=fixture")) {
+      fixtureStatus = fixtureReject ? 403 : 200;
+      return fixtureStatus == 200
+        ? strdup("{\"metas\":[{\"id\":\"ttfixture\",\"type\":\"series\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}")
+        : NULL;
+    }
     if (!strcmp(path, "/addon/catalog/movie/mixed.json?config=fixture") ||
         !strcmp(path, "/addon/catalog/series/mixed.json?config=fixture")) {
       fixtureStatus = fixtureReject ? 403 : 200;
