@@ -112,8 +112,14 @@ jobs:
             echo "NUVIO_KEY_PASS=$ANDROID_KEY_PASSWORD"
           } >> "$GITHUB_ENV"
 
+      - name: Run collection parser regression tests
+        run: bash tests/colecoes.sh
+
       - name: Run collection view-mode regression tests
         run: bash tests/colecao_viewmode.sh
+
+      - name: Run collection source-label regression tests
+        run: bash tests/vertudo_streamtabs.sh
 
       - name: Build signed Nuvio World APKs
         run: |
