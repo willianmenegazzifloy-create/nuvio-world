@@ -9314,6 +9314,15 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
     corpo = !prov ? colecaoBaixar(url, &status) :
             prov == 2 ? rede_baixar_com(url, 12, cab) : rede_baixar(url, 12);
     if (!descSessaoAtual()) { free(corpo); free(ids); return 0; }
+    // O addon pode ser desligado/removido enquanto o GET esta em voo. A
+    // resposta dessa requisicao nao pode entrar na Collection depois disso.
+    if (!prov && !desc_catalogo_resolver(origem, f.type, f.catId, NULL)) {
+      free(corpo); free(ids);
+      memset(itens, 0, sizeof(*itens) * (size_t)(2 * limite));
+      r = (DescColecaoResultado){0};
+      *resultado = r;
+      return nv_perfil_sessao_atual(sessao);
+    }
     if (!colecaoArray(corpo, vetor, &p)) {
       if (!prov) colecaoLog(f.title, origem, f.type, f.catId, f.genre, skip, status, 0,
                              corpo ? "invalid_metas" : "http_or_transport");
@@ -9384,6 +9393,16 @@ int desc_colecao_inicial(const ColSource *fonte, const char *base,
   free(ids);
   if (r.erro) r.mais = 0;
   if (!descSessaoAtual()) return 0;
+  // Ultima barreira antes de publicar: nao devolver nem mesmo o lote ja
+  // montado se a fonte deixou de existir durante a leitura/paginacao.
+  if (!prov && !desc_catalogo_resolver(origem, f.type, f.catId, NULL)) {
+    memset(itens, 0, sizeof(*itens) * (size_t)(2 * limite));
+    r = (DescColecaoResultado){0};
+    if (!nv_perfil_sessao_travar(sessao)) return 0;
+    *resultado = r;
+    nv_perfil_sessao_destravar();
+    return 1;
+  }
   if (prov == 2) {
     // Somente as duas janelas que serao mostradas precisam de arte. O helper
     // usa o mesmo pedido de sessao e seus proprios fios/buffers de enfeite.
