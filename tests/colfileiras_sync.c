@@ -121,7 +121,8 @@ int main(void) {
   colfileiras_sincronizar();
   assert(idx("collection_c2") < idx("collection_c1"));
   assert(fil_estado_chave("collection_c2") == FIL_FORA && fil_estado_chave("addon.demo_movie_s2") == FIL_FORA);
-  fprintf(stderr, "[test-debug] na_home=%d capacidade=%d fila=%d\\n", fil_n_na_home(), fil_n_capacidade(), fil_n_fila());
+  fprintf(stderr, "[test-debug] na_home=%d capacidade=%d fila=%d total=%d\\n", fil_n_na_home(), fil_n_capacidade(), fil_n_fila(), fil_n());
+  for (int z = 0; z < fil_n(); z++) fprintf(stderr, "[test-debug] %s origem=%d estado=%d oculta=%d naHome=%d vista=%d\\n", fil_chave(z), fil_linha_origem(z), fil_estado(z), fil_linha_oculta(z), fil_linha_na_home(z), fil_linha_vista(z));
   assert(fil_n_na_home() == 5 && fil_n_capacidade() == 2);
   catordem_ler("{\"items\":[]}"); colfileiras_sincronizar();
   assert(fil_estado_chave("collection_c2") == FIL_NA_HOME);
