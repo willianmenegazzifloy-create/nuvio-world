@@ -325,7 +325,7 @@ static const char *ajVisualIcone(int op) {
 // e mais categoria (Cartazes e trailers e uma so): fica depois de AJS_N como a
 // CENA das opcoes de trailer dentro de Cartazes e trailers.
 enum { AJS_REPRODUCAO = 0, AJS_IDIOMAS, AJS_FONTES, AJS_TVAOVIVO,
-       AJS_HOME, AJS_APARENCIA, AJS_TITULO, AJS_CARTAZES,
+       AJS_HOME, AJS_COLECOES, AJS_APARENCIA, AJS_TITULO, AJS_CARTAZES,
        AJS_CONTAS, AJS_DESEMPENHO, AJS_SOBRE, AJS_N, AJS_TRAILERS = AJS_N };
 static float ajPreviaHome(float x, float y, float w);
 static float ajPreviaHomeArte(float x, float y, float w, int arte);
@@ -349,6 +349,7 @@ static const signed char AJ_ARTE_SEC[AJS_N + 1][AJ_ARTE_BLOCOS] = {
   {  5, 28, 37, 10, -1, -1, -1, -1, -1, -1 },   // Fontes e addons: Addons, Falha na reproducao, Debrid, Servidores
   {  2, 19, 14, 14, -1, -1, -1, -1, -1, -1 },   // TV ao vivo: Contas, Guia de TV, Se o canal nao abre; Mais
   { 12,  0, 29, 20,  1, 31, 12,  0, 20,  1 },   // Tela inicial: Estilo, Fileiras, Colecoes, Continuar, Barra lateral, Escolha de perfil; Mais
+  { 29, -1, -1, -1, -1, -1, -1, -1, -1, -1 },   // Colecoes: arte e organizacao das pastas
   {  9, 36, 39, 38,  6, 11,  9, -1, -1, -1 },   // Aparencia: Cores e vidro, Fileiras, Logo e abertura, Texto e tamanho, Movimento e relogio, Tela de descanso; Mais
   {  3,  4, 17,  4, 17, -1, -1, -1, -1, -1 },   // Pagina do titulo: O que aparece, Notas, Dados do titulo; Mais: notas, dados
   { 13, 35, 27, 15, 16, 13, 35, 27, 15, -1 },   // Cartazes e trailers: Cartaz em foco, Forma, Arte, Trailers, Som e imagem; Mais
