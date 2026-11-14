@@ -25,16 +25,23 @@ static int pastaTemFonteAtiva(const ColFolder *f) {
   return 0;
 }
 static int chaveFonte(const ColSource *s, char *dst) {
+  char baseAtual[NV_ADDON_URL_MAX];
+  const char *id, *base;
   if (!s || s->prov[0] || !s->type[0] || !s->catId[0]) return 0;
-  const char *id = s->addonId;
-  if (!id[0] && s->base[0]) {
+  id = s->addonId;
+  base = s->base;
+  if (id[0]) {
+    // A URL salva pode ser antiga. Para a identidade de fileira, use a base
+    // atual do addon identificado pelo manifesto, nunca a URL em cache.
+    if (addons_base_por_id_copiar(id, baseAtual, sizeof baseAtual))
+      base = baseAtual;
+  } else if (base && base[0]) {
     for (int i = 0; i < addons_n(); i++)
-      if (!strcmp(addons_base(i), s->base)) { id = addons_id_manifesto(i); break; }
-    if (!id || !id[0]) id = s->base;
+      if (!strcmp(addons_base(i), base)) { id = addons_id_manifesto(i); break; }
+    if (!id || !id[0]) id = base;
   }
   if (!id || !id[0]) return 0;
-  addons_catalogo_chave(id, s->base[0] ? s->base : addons_base_por_id(id),
-                        s->type, s->catId, dst, FIL_CHAVE);
+  addons_catalogo_chave(id, base, s->type, s->catId, dst, FIL_CHAVE);
   return dst[0] != 0;
 }
 
