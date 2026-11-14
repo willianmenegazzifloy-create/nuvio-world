@@ -14,6 +14,16 @@
 extern int fil_addon_ausente(const char *, const char *) NV_PERFIL_OPCIONAL;
 extern int col_podar_fontes_addon(int (*)(const char *, const char *)) NV_PERFIL_OPCIONAL;
 
+static int fonteAtiva(const ColSource *s) {
+  char base[NV_ADDON_URL_MAX];
+  return col_fonte_base_ativa(s, base, sizeof base);
+}
+static int pastaTemFonteAtiva(const ColFolder *f) {
+  if (!f) return 0;
+  for (int i = 0; i < f->nSources; i++)
+    if (fonteAtiva(&f->sources[i])) return 1;
+  return 0;
+}
 static int chaveFonte(const ColSource *s, char *dst) {
   if (!s || s->prov[0] || !s->type[0] || !s->catId[0]) return 0;
   const char *id = s->addonId;
@@ -122,10 +132,19 @@ void colfileiras_sincronizar(void) {
   for (int i = 0; i < col_n() && n < max; i++) {
     const ColFolder *f = col_folder(i);
     if (!f || !f->group[0]) continue;
+    int ativa = pastaTemFonteAtiva(f);
     for (int j = 0; j < f->nSources; j++) {
       char chave[FIL_CHAVE];
-      if (chaveFonte(&f->sources[j], chave)) fil_colecao_catalogo_restaurado(chave);
+      if (!chaveFonte(&f->sources[j], chave)) continue;
+      // Desligar um addon precisa retirar tambem a antiga linha solta do
+      // catalogo. Antes este caminho restaurava incondicionalmente todas as
+      // fontes da Collection, mesmo quando o addon ja estava desativado.
+      if (fonteAtiva(&f->sources[j])) fil_colecao_catalogo_restaurado(chave);
+      else fil_colecao_catalogo_removido(chave);
     }
+    // Uma Collection sem nenhuma fonte ativa nao deve continuar como fileira
+    // vazia na Home nem participar da ordem/cota.
+    if (!ativa) continue;
     col_chave_pasta(f, ids[n], sizeof ids[n]);
     int j;
     for (j = 0; j < n; j++) if (!strcmp(ids[j], ids[n])) break;
@@ -162,7 +181,8 @@ void colfileiras_sincronizar(void) {
     if (fil_oculta(grupo) || catordem_oculta(grupo, grupo)) continue;
     for (int j = 0; j < f->nSources; j++) {
       char chave[FIL_CHAVE];
-      if (chaveFonte(&f->sources[j], chave) && !fil_adicionada_na_tv(chave))   // #327
+      if (fonteAtiva(&f->sources[j]) &&
+          chaveFonte(&f->sources[j], chave) && !fil_adicionada_na_tv(chave))
         for (int k = 0; k < q; k++)
           if (!strcmp(ordenadas[k], chave)) dentro[k] = 1;
     }
