@@ -175,7 +175,7 @@ int main(void) {
   assert(fil_n() == 0 && col_n() == 0 && !col_tem_conta());
   colfileiras_receber(duas); colfileiras_sincronizar();
   assert(fil_n() == 2 && !fil_oculta("addon.demo_movie_a"));
-  fil_definir_perfil(1); assert(fil_oculta("addon.demo_movie_new_a"));
+  fil_definir_perfil(1); assert(fil_estado_chave("addon.demo_movie_new_a") == -1); // fonte não foi promovida a fileira independente
   usuario = "account-B"; colfileiras_contexto();
   assert(!fil_oculta("addon.demo_movie_new_a") && fil_oculta("addon.demo_movie_s2"));
   assert(!col_tem_conta());
