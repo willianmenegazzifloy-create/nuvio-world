@@ -50,6 +50,12 @@ const char *addons_base(int i) { (void)i; return ""; }
 const char *addons_id_manifesto(int i) { (void)i; return ""; }
 void cat_trocar_continuar(const CatItem *l, int q) { (void)l; (void)q; }
 const char *addons_base_por_id(const char *id) { (void)id; return ""; }
+int addons_base_por_id_copiar(const char *id, char *base, unsigned tam) {
+  (void)id;
+  if (!base || !tam) return 0;
+  base[0] = 0;
+  return 0; // Este teste usa fontes legadas por URL, sem identidade de addon.
+}
 int cat_visto(const CatItem *item) { (void)item; return 0; }
 int cat_copiar_por_id(const char *id, const char *type, CatItem *item) {
   (void)id; (void)type; (void)item; return 0;
