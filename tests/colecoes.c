@@ -343,8 +343,8 @@ int main(void) {
     assert(col_grupo_forma("nao existe") == COL_FORMA_PAISAGEM);
     assert(col_forma_texto("square") == COL_FORMA_QUADRADO);
     puts("ok  tileShape da pasta vira a forma do cartao, na regra do web"); }
-  // Empty account snapshots remove package rows too. A later nonempty profile
-  // snapshot can still recover the curated artwork without reviving old rows.
+  // Empty account snapshots preserve the last local state, as in Nuvio original.
+  // A profile switch explicitly forgets the previous account; then empty stays empty.
   { char dir[NVT_MAX], arq[700]; nvt_set(dir, sizeof dir, "/nuvio-col-perfil-XXXXXX");
     FILE *f;
     int i, achou = 0;
@@ -355,7 +355,8 @@ int main(void) {
           "\"cover\":\"c.jpg\",\"sources\":[{\"base\":\"https://a\",\"type\":\"movie\",\"catId\":\"m\"}]}]}]}", f);
     fclose(f);
     assert(col_carregar(dir) == 1);
-    assert(col_definir_json("[{\"collections_json\":[]}]") == 0 && col_n() == 0);
+    assert(col_definir_json("[{\"collections_json\":[]}]") == 1 && col_n() == 1);
+    assert(!strcmp(col_folder(0)->id, "f1"));
     col_esquecer_perfil();
     assert(col_n() == 0);
     assert(col_definir_json("[{\"collections_json\":[]}]") == 0 && col_n() == 0);
