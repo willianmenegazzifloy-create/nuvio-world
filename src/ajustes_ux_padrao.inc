@@ -354,3 +354,4 @@
 #endif
   0, /* copy settings from another profile */
   1, /* normal navigation speed */
+  0, /* read-only Collections status row */
