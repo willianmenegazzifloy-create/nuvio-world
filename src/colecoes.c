@@ -205,16 +205,37 @@ static int lerBase(const char *s, const char *se, const char *chave, ColSource *
            (unsigned long)sizeof a->base - 1);
   return 1;
 }
+int col_fonte_base_ativa(const ColSource *fonte, char *base, unsigned tam) {
+  char atual[NV_ADDON_URL_MAX];
+  if (!base || !tam) return 0;
+  base[0] = 0;
+  if (!fonte || fonte->prov[0]) return 0;
+  // Preferir a identidade persistente; a URL e somente compatibilidade para
+  // colecoes antigas, e tambem precisa pertencer a um addon ativo hoje.
+  if (fonte->addonId[0]) {
+    if (!addons_base_por_id_copiar(fonte->addonId, atual, sizeof atual)) return 0;
+  } else {
+    if (!fonte->base[0] || strlen(fonte->base) >= sizeof atual) return 0;
+    snprintf(atual, sizeof atual, "%s", fonte->base);
+  }
+  if (!atual[0] || !addons_catalogo_base_ativo(atual) || strlen(atual) >= tam) return 0;
+  snprintf(base, tam, "%s", atual);
+  return 1;
+}
+static int pastaTemFonteAtiva(const ColFolder *pasta) {
+  char base[NV_ADDON_URL_MAX];
+  if (!pasta) return 0;
+  for (int s = 0; s < pasta->nSources; s++)
+    if (col_fonte_base_ativa(&pasta->sources[s], base, sizeof base)) return 1;
+  return 0;
+}
 static void resolverBases(ColFolder *v) {
   for (int s = 0; s < v->nSources; s++) {
     ColSource *fonte = &v->sources[s];
     if (fonte->prov[0] || !fonte->addonId[0]) continue;
-    // addonId e a identidade canonica do Original. addonBaseUrl pode ter
-    // ficado obsoleta depois de trocar/reinstalar/configurar o addon; nunca
-    // deve vencer a base atual resolvida pelo manifesto.
-    const char *atual = addons_base_por_id(fonte->addonId);
-    if (atual && atual[0] && addons_catalogo_base_ativo(atual)) baseCabe(fonte, atual);
-    else fonte->base[0] = 0; // addon ausente/desligado nao autoriza a fonte
+    char atual[NV_ADDON_URL_MAX];
+    if (col_fonte_base_ativa(fonte, atual, sizeof atual)) baseCabe(fonte, atual);
+    else fonte->base[0] = 0; // a identidade permite resolver novamente ao religar
   }
 }
 const ColFolder *col_folder(int i) {
@@ -275,10 +296,11 @@ int col_grupo_addon(const char *name, char *dst, unsigned n) {
   char dono[96] = "";
   if (n) dst[0] = 0;
   for (i = 0; i < count; i++) {
-    if (strcasecmp(name, PASTA(i).group)) continue;
+    if (strcasecmp(name, PASTA(i).group) || !pastaTemFonteAtiva(&PASTA(i))) continue;
     for (k = 0; k < PASTA(i).nSources; k++) {
       const ColSource *sc = &PASTA(i).sources[k];
-      if (sc->prov[0] || !sc->addonId[0]) continue;   // TMDB/Trakt nao e addon
+      char base[NV_ADDON_URL_MAX];
+      if (!col_fonte_base_ativa(sc, base, sizeof base)) continue;
       if (!dono[0]) snprintf(dono, sizeof dono, "%s", sc->addonId);
       else if (strcmp(dono, sc->addonId)) return 0;   // misto
     }
@@ -298,7 +320,8 @@ int col_grupo_forma(const char *name) {
   int conta[COL_FORMA_N] = {0}, primeira = -1, melhor, i;
   for (i = 0; i < count; i++) {
     int f = PASTA(i).forma;
-    if (strcasecmp(name, PASTA(i).group) || f < 0 || f >= COL_FORMA_N) continue;
+    if (strcasecmp(name, PASTA(i).group) || f < 0 || f >= COL_FORMA_N ||
+        !pastaTemFonteAtiva(&PASTA(i))) continue;
     if (primeira < 0) primeira = f;
     conta[f]++;
   }
@@ -309,7 +332,10 @@ int col_grupo_forma(const char *name) {
 }
 
 int col_grupo(const char *name,int *indices,int max) {
-  int n=0;for(int i=0;i<count&&n<max;i++) if(!strcasecmp(name,PASTA(i).group)) indices[n++]=i;return n;
+  int n=0;
+  for(int i=0;i<count&&n<max;i++)
+    if(!strcasecmp(name,PASTA(i).group)&&pastaTemFonteAtiva(&PASTA(i))) indices[n++]=i;
+  return n;
 }
 // RESOLVE A BASE ANTES DE COMPARAR, e isso e o conserto de verdade do #18.
 //
@@ -425,11 +451,8 @@ int col_diagnostico(const char *base, const char *type, const char *id,
   for (i = 0; i < count; i++) {
     for (s = 0; s < PASTA(i).nSources; s++) {
       const ColSource *v = &PASTA(i).sources[s];
-      int nivel;
-      if (v->prov[0]) continue;   // fonte tmdb/trakt nao casa com catalogo de addon
-      // addonId e a identidade principal; URL salva so vale para fonte legada.
-      const char *b = v->addonId[0] ? addons_base_por_id(v->addonId) : v->base;
-      if (!b || !b[0] || strcmp(b, base)) continue;
+      int nivel; char b[NV_ADDON_URL_MAX];
+      if (!col_fonte_base_ativa(v, b, sizeof b) || strcmp(b, base)) continue;
       nivel = 1;
       if (!strcmp(v->type, type)) {
         nivel = 2;
@@ -483,9 +506,8 @@ const ColFolder *col_por_catalogo(const char *base,const char *type,const char *
   for(int i=0;i<count;i++) {
     for(int s=0;s<PASTA(i).nSources;s++) {
       const ColSource *v=&PASTA(i).sources[s];
-      // addonId e a identidade principal; URL salva so vale para fonte legada.
-      const char *b = v->addonId[0] ? addons_base_por_id(v->addonId) : v->base;
-      if(b && b[0] && !strcmp(b,base)&&!strcmp(v->type,type)&&!strcmp(v->catId,id)) {
+      char b[NV_ADDON_URL_MAX];
+      if(col_fonte_base_ativa(v,b,sizeof b)&&!strcmp(b,base)&&!strcmp(v->type,type)&&!strcmp(v->catId,id)) {
         int ns = fontesValidas(&PASTA(i));
         copia.f = PASTA(i);
         memcpy(copia.s, PASTA(i).sources, sizeof(ColSource) * (size_t)ns);
@@ -558,6 +580,7 @@ static int carregarPacote(const char *dir) {
       for(const char *s=js_array(p,pe,"sources");s&&v->nSources<COL_SOURCE_MAX;s=js_prox(js_fim(s))) {
         const char *se=js_fim(s);ColSource *a=&v->sources[v->nSources];
         js_texto(s,se,"title",a->title,sizeof a->title);lerBase(s,se,"base",a,v->title);
+        js_texto(s,se,"addonId",a->addonId,sizeof a->addonId);
         js_texto(s,se,"type",a->type,sizeof a->type);js_texto(s,se,"catId",a->catId,sizeof a->catId);js_texto(s,se,"genre",a->genre,sizeof a->genre);
         if(a->base[0]&&a->type[0]&&a->catId[0])v->nSources++;
       }
@@ -1253,7 +1276,7 @@ int col_grupo_chave(const char *chave, int *indices, int max) {
   int n = 0;
   for (int i = 0; i < count && n < max; i++) {
     char k[192]; col_chave_pasta(&PASTA(i), k, sizeof k);
-    if (!strcmp(k, chave)) indices[n++] = i;
+    if (!strcmp(k, chave) && pastaTemFonteAtiva(&PASTA(i))) indices[n++] = i;
   }
   return n;
 }
@@ -1263,7 +1286,7 @@ int col_grupo_forma_chave(const char *chave) {
   for (int i = 0; i < count; i++) {
     char k[192]; col_chave_pasta(&PASTA(i), k, sizeof k);
     int f = PASTA(i).forma;
-    if (strcmp(k, chave) || f < 0 || f >= COL_FORMA_N) continue;
+    if (strcmp(k, chave) || f < 0 || f >= COL_FORMA_N || !pastaTemFonteAtiva(&PASTA(i))) continue;
     if (primeiro < 0) primeiro = f;
     conta[f]++;
   }
