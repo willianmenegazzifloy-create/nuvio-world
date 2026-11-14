@@ -13,6 +13,11 @@
 
 static int addonCatalogActive = 1;
 const char *addons_base_por_id(const char *id) { (void)id; return "https://fixture.example"; }
+int addons_base_por_id_copiar(const char *id, char *dst, unsigned tam) {
+  if (!id || strcmp(id, "addon.demo") || !dst || !tam) return 0;
+  snprintf(dst, tam, "%s", "https://fixture.example");
+  return 1;
+}
 int addons_catalogo_base_ativo(const char *base) {
   return addonCatalogActive && base && !strcmp(base, "https://fixture.example");
 }
