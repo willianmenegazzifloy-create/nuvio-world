@@ -93,6 +93,43 @@ n_sec = sum(1 for t, _ in itens if t == "SEC")
 if n_sec != 12:
     falhas.append("esperadas 12 categorias, encontradas %d" % n_sec)
 
+# O indice visual (AJS_*) precisa seguir exatamente a ordem de SEC em TELA[].
+# Sem AJS_COLECOES aqui, Aparencia passa a usar o resumo de Colecoes e todos os
+# paineis seguintes ficam deslocados uma categoria.
+raiz = Path(__file__).resolve().parents[1] / "src"
+visual = (raiz / "ajustes_ux_visual.inc").read_text(encoding="utf-8")
+v2 = (raiz / "ajustes_ux_v2.inc").read_text(encoding="utf-8")
+enum_sec = re.search(r"enum\s*\{\s*(.*?)\s*AJS_N\s*,\s*AJS_TRAILERS\s*=\s*AJS_N\s*\}", visual, re.S)
+if not enum_sec:
+    falhas.append("enum AJS_* nao encontrado em ajustes_ux_visual.inc")
+else:
+    ordem_esperada = [
+        "AJS_REPRODUCAO", "AJS_IDIOMAS", "AJS_FONTES", "AJS_TVAOVIVO",
+        "AJS_HOME", "AJS_COLECOES", "AJS_APARENCIA", "AJS_TITULO",
+        "AJS_CARTAZES", "AJS_CONTAS", "AJS_DESEMPENHO", "AJS_SOBRE",
+    ]
+    ordem_real = re.findall(r"\bAJS_[A-Z_]+\b", enum_sec.group(1))
+    if ordem_real != ordem_esperada:
+        falhas.append("ordem AJS_* diverge das 12 categorias de TELA[]: %r" % ordem_real)
+
+titulos_esperados = [
+    "Reprodução", "Idiomas e legendas", "Fontes e addons", "TV ao vivo",
+    "Tela inicial", "Coleções", "Aparência", "Página do título",
+    "Cartazes e trailers", "Conta e serviços", "Esta TV", "Sobre e ajuda",
+]
+titulos_reais = [v for t, v in itens if t == "SEC"]
+if titulos_reais != ['"' + t + '"' for t in titulos_esperados]:
+    falhas.append("titulos SEC[] nao estao na ordem do indice AJS_*: %r" % titulos_reais)
+
+tabela_arte = re.search(r"static const signed char AJ_ARTE_SEC\[AJS_N \+ 1\]\[AJ_ARTE_BLOCOS\] = \{(.*?)\n\};", visual, re.S)
+if not tabela_arte:
+    falhas.append("AJ_ARTE_SEC[] nao encontrado")
+elif len(re.findall(r"^\s*\{", tabela_arte.group(1), re.M)) != n_sec + 1:
+    falhas.append("AJ_ARTE_SEC[] precisa de uma linha por categoria mais a cena de trailers")
+
+if "case AJS_COLECOES: op = AJ_COLECOES_STATUS; break;" not in v2:
+    falhas.append("resumo da categoria Colecoes nao aponta para AJ_COLECOES_STATUS")
+
 ajuda = re.search(r"static const char \*SECAO_AJUDA\[\] = \{(.*?)\n\};", catalogo, re.S)
 if not ajuda:
     falhas.append("SECAO_AJUDA[] nao encontrado no include")
