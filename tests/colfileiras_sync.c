@@ -12,18 +12,21 @@
 #include <string.h>
 
 static int addonCatalogActive = 1;
-const char *addons_base_por_id(const char *id) { (void)id; return "https://fixture.example"; }
+static const char *addonBaseAtual = "https://fixture.example";
+const char *addons_base_por_id(const char *id) {
+  return id && !strcmp(id, "addon.demo") ? addonBaseAtual : "";
+}
 int addons_base_por_id_copiar(const char *id, char *dst, unsigned tam) {
   if (!id || strcmp(id, "addon.demo") || !dst || !tam) return 0;
-  snprintf(dst, tam, "%s", "https://fixture.example");
+  snprintf(dst, tam, "%s", addonBaseAtual);
   return 1;
 }
 int addons_catalogo_base_ativo(const char *base) {
-  return addonCatalogActive && base && !strcmp(base, "https://fixture.example");
+  return addonCatalogActive && base && !strcmp(base, addonBaseAtual);
 }
 int addons_n(void) { return 1; }
 int addons_base_desligada(const char *b) { (void)b; return 0; }   // 203-desligados
-const char *addons_base(int i) { (void)i; return "https://fixture.example"; }
+const char *addons_base(int i) { (void)i; return addonBaseAtual; }
 const char *addons_id_manifesto(int i) { (void)i; return "addon.demo"; }
 void addons_catalogo_chave(const char *id, const char *base, const char *type,
                            const char *catalog, char *dst, unsigned size) {
@@ -70,7 +73,7 @@ static atomic_int terminar;
 static void *leitor(void *arg) {
   (void)arg;
   while (!atomic_load(&terminar)) {
-    const ColFolder *f = col_por_catalogo("https://fixture.example", "movie", "shared");
+    const ColFolder *f = col_por_catalogo(addonBaseAtual, "movie", "shared");
     assert(f && f->nSources == 1 && !strcmp(f->sources[0].catId, "shared"));
     assert(!strcmp(f->groupId, "r1") || !strcmp(f->groupId, "r2"));
     assert(!strcmp(f->id, "safe"));
@@ -79,6 +82,14 @@ static void *leitor(void *arg) {
 }
 int main(void) {
   fil_definir_perfil(1); fil_definir_limite(3);
+  // A Collection guardou a URL antiga, mas o addon atual tem o mesmo addonId
+  // e uma base nova. A poda deve priorizar a identidade do manifesto.
+  addonBaseAtual = "https://fixture-new.example";
+  {
+    const char *ids[] = { "addon.demo" };
+    const char *bases[] = { "https://fixture-new.example" };
+    assert(fil_podar_catalogos(ids, bases, 1, 1) == 0);
+  }
   fil_registrar("continue_watching", "Continue", "", "", 2);
   fil_registrar("social_activity", "Friends", "", "", 1);
   for (int i = 1; i <= 3; i++) {
@@ -86,6 +97,10 @@ int main(void) {
     fil_registrar(k, k, "Addon", "movie", 5);
   }
   assert(colfileiras_receber(duas) == 2);
+  // addonBaseUrl de ambas as pastas ainda e fixture.example: o addonId deve
+  // resolver para a base nova sem descartar a fonte nem a pasta.
+  assert(col_folder(0)->nSources == 1);
+  assert(!strcmp(col_folder(0)->sources[0].base, "https://fixture-new.example"));
   colfileiras_sincronizar(); fil_normalizar();
   assert(fil_n_na_home() == 7 && fil_n_capacidade() == 3 && fil_n_fila() == 0);
   assert(fil_estado_chave("collection_c1") == FIL_NA_HOME);
