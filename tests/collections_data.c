@@ -259,6 +259,7 @@ int main(void) {
     desc_vertudo_mais(); waitDone();
     assert(desc_vertudo_n() == 1 && desc_vertudo_fim());
     assert(desc_vertudo_item(0, &i) && !strcmp(i.imdb, "ttcomedy"));
+    col_esquecer_perfil();
     assert(col_definir_json("{\"collections\":[]}")==0);
     assert(col_carregar("tests/fixtures/collections/new-tabs") == 1);
   }
