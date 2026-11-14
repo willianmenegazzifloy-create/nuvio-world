@@ -118,6 +118,24 @@ static void localiza(char *value,size_t cap,const char *dir) {
   char rel[600];snprintf(rel,sizeof rel,"%s",value);snprintf(value,cap,"%s/%s",dir,rel);
 }
 int col_n(void) { int n; pthread_mutex_lock(&colTrava); n = count; pthread_mutex_unlock(&colTrava); return n; }
+void col_estatisticas(int *pastas, int *fontes, int *ativas) {
+  int np = 0, nf = 0, na = 0;
+  pthread_mutex_lock(&colTrava);
+  for (int i = 0; i < count; i++) {
+    ColFolder *f = &PASTA(i);
+    if (f->extra) continue;  // playlists pinned by other screens are not account Collections
+    np++;
+    for (int s = 0; s < f->nSources; s++) {
+      char base[NV_ADDON_URL_MAX];
+      nf++;
+      if (col_fonte_base_ativa(&f->sources[s], base, sizeof base)) na++;
+    }
+  }
+  pthread_mutex_unlock(&colTrava);
+  if (pastas) *pastas = np;
+  if (fontes) *fontes = nf;
+  if (ativas) *ativas = na;
+}
 
 // SOBE A CADA TROCA DO CONJUNTO DE PASTAS. A home decide se remonta por uma
 // assinatura, e ate agora essa assinatura so olhava as fileiras de CATALOGO —
