@@ -7800,7 +7800,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_POSTER_MODELO: return "Endereço com {imdb}, {tmdb}, {type} (movie ou series) e {tipo_tmdb} (movie ou tv), por exemplo https://meu.servidor/{type}/{imdb}.jpg. Quem não tiver o dado que o modelo pede fica com o cartaz normal.";
     case AJ_POSTER_TESTAR: return "Baixa o cartaz de um filme conhecido com a configuração atual e mostra se deu certo. O primeiro cartaz de cada título é montado no servidor e pode levar alguns segundos.";
     case AJ_COLECAO_EXIBICAO: return "Vale para coleções sem escolha própria neste perfil. Automático mantém a exibição original. Em Exibição, escolha Padrão para seguir este ajuste novamente.";
-    case AJ_COLECOES_STATUS: return "Quantidade de pastas recebidas e fontes de catálogo de addons reconhecidas como instaladas e ativas nesta TV. Se houver pastas, mas nenhuma fonte ativa, confira os addons da conta.";
+    case AJ_COLECOES_STATUS: return "Mostra as pastas recebidas e quantas fontes de catálogo pertencem a addons ativos nesta TV. Se uma pasta foi recebida, mas nenhuma fonte está ativa, confira se o addon foi reconfigurado: nesse caso, selecione novamente o catálogo no editor de coleções do site.";
     case AJ_MURAL_TITULOS: return "Ligado (padrão): cada ladrilho do Mural mostra o nome do título. Desligado: o nome fica só no painel da direita. Vale só nesta TV.";
     case AJ_HOME_LAYOUT: return "Moderna: destaque atrás das fileiras. Padrão: destaque num banner no topo. Dinâmica: estilo Apple TV, com destaques grandes e Top 10.";
     case AJ_VIDRO: return "Painéis, botões e menus viram ilhas translúcidas que deixam a arte aparecer. Desligado, as mesmas ilhas ficam opacas. Só muda o visual; nada muda de lugar.";
