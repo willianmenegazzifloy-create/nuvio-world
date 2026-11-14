@@ -118,6 +118,9 @@ jobs:
       - name: Run Collection parser and paged-data regressions
         run: bash tests/collections.sh
 
+      - name: Run Collection addon identity and Home reconciliation regressions
+        run: bash tests/colfileiras_sync.sh
+
       - name: Run collection parser regression tests
         run: bash tests/colecoes.sh
 
