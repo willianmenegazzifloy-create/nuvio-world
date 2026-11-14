@@ -108,7 +108,10 @@ char *rede_baixar(const char *url,int timeout) {
       }
       if (i == 2 || i == 4) return strdup("{\"metas\":[]}");
       if (i == 1)
-        return strdup("{\"metas\":[{\"id\":\"ttbuddy\",\"type\":\"movie\",\"name\":\"Buddy\",\"poster\":\"buddy.jpg\",\"genres\":[\"Horror\",\"Thriller\",\"Fantasy\"]}]}");
+        return strdup("{\"metas\":["
+          "{\"id\":\"ttbuddy\",\"type\":\"movie\",\"name\":\"Buddy\",\"poster\":\"buddy.jpg\",\"genres\":[\"Horror\",\"Thriller\",\"Fantasy\"]},"
+          "{\"id\":\"ttcomedy\",\"type\":\"movie\",\"name\":\"A comedy\",\"poster\":\"comedy.jpg\",\"genres\":[\"Comedy\",\"Drama\"]},"
+          "{\"id\":\"ttdrama\",\"type\":\"movie\",\"name\":\"A drama\",\"poster\":\"drama.jpg\",\"genres\":[\"Drama\",\"Mystery\"]}]}");
       if (i == 7)
         return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"type\":\"series\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
       return strdup("{\"metas\":[{\"id\":\"ttfixture\",\"type\":\"movie\",\"name\":\"New release\",\"poster\":\"p.jpg\",\"genres\":[\"New & fresh/TV\",\"Action\"]}]}");
@@ -243,12 +246,15 @@ int main(void) {
     snprintf(genre.genre, sizeof genre.genre, "Comedy");
     assert(desc_colecao_inicial(&genre, genre.base, nv_perfil_sessao_ler(),
                                 genreItems, 4, &genreResult));
-    assert(genreResult.n == 0);
+    assert(genreResult.n == 1);
+    assert(!strcmp(genreItems[0].imdb, "ttcomedy"));
 
-    // "Ver tudo" deve aplicar o mesmo filtro local, mesmo que o addon devolva Buddy.
+    // "Ver tudo" deve manter a comedia e descartar Buddy (Horror/Thriller/Fantasy)
+    // e o drama, mesmo que o addon devolva os tres ignorando o parametro genre.
     assert(col_definir_json("{\"collections\":[{\"id\":\"genre\",\"title\":\"Genre\",\"folders\":[{\"id\":\"g\",\"title\":\"Comedy\",\"sources\":[{\"provider\":\"addon\",\"addonBaseUrl\":\"https://collection.invalid/addon?config=fixture\",\"type\":\"movie\",\"catalogId\":\"new/movies #1?fresh%\",\"genre\":\"Comedy\"}]}]}]}") == 1);
     desc_vertudo_filtro(genre.base, genre.type, genre.catId, genre.genre); waitDone();
-    assert(desc_vertudo_n() == 0 && desc_vertudo_fim());
+    assert(desc_vertudo_n() == 1 && desc_vertudo_fim());
+    assert(desc_vertudo_item(0, &i) && !strcmp(i.imdb, "ttcomedy"));
     assert(col_definir_json("{\"collections\":[]}")==0);
     assert(col_carregar("tests/fixtures/collections/new-tabs") == 1);
   }
