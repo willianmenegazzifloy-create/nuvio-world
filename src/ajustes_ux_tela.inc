@@ -149,7 +149,6 @@ static const Item TELA[] = {
       OPC(AJ_OCULTAR_FILMES_VISTOS), OPC(AJ_BIB_HOME), OPC(AJ_AMIGOS_ESTILO),
       // A curadoria da fileira Herói (#205): a fonte do cartão único.
       OPC(AJ_CURADORIA_URL),
-    ROT("Coleções"), OPC(AJ_COLECAO_EXIBICAO),
     ROT("Continuar assistindo"),
       OPC(AJ_CW_LIGADO), OPC(AJ_CW_OK), OPC(AJ_CW_ESTILO), OPC(AJ_CW_THUMB),
       OPC(AJ_CW_BLUR_PROX), OPC(AJ_CW_ORDEM), OPC(AJ_CW_NAO_EXIBIDOS),
@@ -167,6 +166,12 @@ static const Item TELA[] = {
 #if (defined(NV_TPK) || defined(__EMSCRIPTEN__)) && !defined(NV_TPK40)
       OPC(AJ_MIC_BUSCA),
 #endif
+
+  SEC("Coleções", "Exibição, organização e arte das coleções da conta", "aj_library"),
+    ROT("Exibição"),
+      OPC(AJ_COLECAO_EXIBICAO),
+    ROT("Arte das pastas"),
+      OPC(AJ_COL_ARTE_CONTA),
 
   SEC("Aparência", "Cor, transparência, fonte, animações e relógio", "aj_palette"),
 #ifdef NV_TOUCH_UI
@@ -236,7 +241,7 @@ static const Item TELA[] = {
       OPC(AJ_PROF_BRILHO),
     ROT("De onde vem a arte"),
       OPC(AJ_ADDON_POSTER), OPC(AJ_ADDON_FUNDO), OPC(AJ_ADDON_LOGO),
-      OPC(AJ_COL_ARTE_CONTA), OPC(AJ_POSTER_INST), OPC(AJ_POSTER_TOKEN),
+      OPC(AJ_POSTER_INST), OPC(AJ_POSTER_TOKEN),
       OPC(AJ_POSTER_EXTRA), OPC(AJ_POSTER_CHAVE), OPC(AJ_POSTER_MODELO),
       OPC(AJ_POSTER_TESTAR),
     ROT("Trailers"),
@@ -287,6 +292,7 @@ static const char *SECAO_AJUDA[] = {
   "Addons e plugins, debrid e servidores pessoais.",
   "Conexão dos provedores e diagnóstico de reprodução de canais ao vivo.",
   "Estilo da home, fileiras, Continuar assistindo, barra lateral e escolha de perfil.",
+  "Exibição padrão e arte das pastas das coleções da conta.",
   "Cor de destaque, transparência, tipografia, animações e relógio na tela.",
   "Informações visíveis, notas e fontes de dados da página de cada título.",
   "Cartaz em foco, de onde vem a arte e os trailers da home e da página do título.",
