@@ -2949,7 +2949,7 @@ static void sincronizarFileiras(void) {
   // direto (cat_revisao); cat_revisao e bumpado em cat_definir_tudo,
   // cat_trocar_continuar E cat_republicar_fileiras, cobrindo todo caminho
   // que troca fils[].
-  static unsigned ultCatRev, ultFilRev, ultColRev, ultFilLim, ultCwoRev, ultOrdemRev, ultRetRev, ultItensRev, ultCurRev;
+  static unsigned ultCatRev, ultFilRev, ultColRev, ultFilLim, ultCwoRev, ultOrdemRev, ultRetRev, ultItensRev, ultCurRev, ultAddonsRev;
   unsigned catRev = cat_revisao(), filRev = fil_revisao();
   unsigned itensRev = ajustes_ocultar_filmes_vistos() || ajustes_bib_home() ? cat_revisao_itens() : 0;
   int filLim = fil_limite();
@@ -2958,6 +2958,7 @@ static void sincronizarFileiras(void) {
   // na próxima publicação da descoberta — que pode demorar a noite inteira.
   unsigned curRev = curadoria_revisao();
   unsigned colRev = col_revisao();
+  unsigned addonsRev = addons_versao();
   unsigned ordemRev = catordem_revisao();
   // cwo_revisao tambem: o conjunto de futuros pode mudar sem o catalogo mudar
   // (a mesma lista publicada, so a divisao outra), e o hash abaixo ja o pesa.
@@ -2965,17 +2966,19 @@ static void sincronizarFileiras(void) {
   if (nCat == filsAplicadas && assin == prefsAplicadas &&
       catRev == ultCatRev && filRev == ultFilRev && itensRev == ultItensRev &&
       colRev == ultColRev && ordemRev == ultOrdemRev &&
+      addonsRev == ultAddonsRev &&
       filLim == ultFilLim && cwoRev == ultCwoRev &&
       retomarAplicada == retomarRev && cw_retido_rev() == ultRetRev &&
       curRev == ultCurRev &&
       ultCatRev) {   // ultCatRev=0: primeira chamada, cai no hash
     ultFilRev = filRev; ultColRev = colRev; ultFilLim = (unsigned)filLim;
-    ultCurRev = curRev;
+    ultCurRev = curRev; ultAddonsRev = addonsRev;
     return;
   }
   // Local group visibility changes also change which source rows are wrapped.
   // Reconcile only after the fast guard fails, never on an unchanged frame.
-  if (filRev != ultFilRev || colRev != ultColRev || ordemRev != ultOrdemRev)
+  if (filRev != ultFilRev || colRev != ultColRev || ordemRev != ultOrdemRev ||
+      addonsRev != ultAddonsRev)
     colfileiras_sincronizar();
   filRev = fil_revisao(); colRev = col_revisao();
   ultCatRev = catRev; ultFilRev = filRev; ultColRev = colRev; ultFilLim = (unsigned)filLim;
@@ -2984,6 +2987,7 @@ static void sincronizarFileiras(void) {
   ultOrdemRev = ordemRev;
   ultRetRev = cw_retido_rev();
   ultCurRev = curRev;
+  ultAddonsRev = addonsRev;
   unsigned revisao = 2166136261u;
   revisao = (revisao ^ itensRev) * 16777619u;
   revisao = (revisao ^ (unsigned)reservaEstado) * 16777619u;
@@ -3005,6 +3009,7 @@ static void sincronizarFileiras(void) {
   // em Ajustes: aquilo bumpa fil_revisao(), a assinatura muda, a home remonta e
   // a colecao aparece. Fechar e reabrir voltava ao mesmo lugar.
   revisao = (revisao ^ colRev) * 16777619u;
+  revisao = (revisao ^ addonsRev) * 16777619u;
   revisao = (revisao ^ ordemRev) * 16777619u;
   // Quem a montagem publicou como futuro (issue #127): so pesa em "Separar
   // futuros", mas e um inteiro — mais barato perguntar sempre que ramificar.
