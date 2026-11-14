@@ -110,10 +110,11 @@ int main(void) {
   // antes eram restaurados incondicionalmente como linhas independentes.
   addonCatalogActive = 0;
   colfileiras_sincronizar(); fil_normalizar();
+  // O addon segue instalado, entao as fontes ficam salvas; apenas a Home as
+  // esconde enquanto o manifesto/resource nao esta ativo nesta TV.
+  assert(col_n() == 2 && col_folder(0)->nSources == 1 && col_folder(1)->nSources == 1);
   assert(col_grupo_chave("collection_c1", pastas, 4) == 0);
   assert(col_grupo_chave("collection_c2", pastas, 4) == 0);
-  assert(fil_estado_chave("collection_c1") == FIL_FORA);
-  assert(fil_estado_chave("collection_c2") == FIL_FORA);
   assert(fil_oculta("addon.demo_movie_a") && fil_oculta("addon.demo_movie_b"));
   // Reativar o mesmo addon restaura as fontes e as pastas, sem duplicar linhas.
   addonCatalogActive = 1;
