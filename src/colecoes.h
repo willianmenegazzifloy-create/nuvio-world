@@ -136,6 +136,7 @@ unsigned col_revisao(void);
 // A complete account snapshot was accepted for this profile, even when empty.
 int col_tem_conta(void);
 const ColFolder *col_folder(int i);
+int col_fonte_base_ativa(const ColSource *fonte, char *base, unsigned tam);
 // IMPRESSAO DA ESTRUTURA das colecoes para o snapshot da Home (homeestado.c):
 // grupo, id e fontes de cada pasta, SEM arte (URL de arte muda sem criar
 // fileira nova). Calculada inteira sob a trava das colecoes (#203): pode ser
