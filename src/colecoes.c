@@ -213,7 +213,9 @@ int col_fonte_base_ativa(const ColSource *fonte, char *base, unsigned tam) {
   // Preferir a identidade persistente; a URL e somente compatibilidade para
   // colecoes antigas, e tambem precisa pertencer a um addon ativo hoje.
   if (fonte->addonId[0]) {
-    if (!addons_base_por_id_copiar(fonte->addonId, atual, sizeof atual)) return 0;
+    const char *resolvida = addons_base_por_id(fonte->addonId);
+    if (!resolvida || !resolvida[0] || strlen(resolvida) >= sizeof atual) return 0;
+    snprintf(atual, sizeof atual, "%s", resolvida);
   } else {
     if (!fonte->base[0] || strlen(fonte->base) >= sizeof atual) return 0;
     snprintf(atual, sizeof atual, "%s", fonte->base);
