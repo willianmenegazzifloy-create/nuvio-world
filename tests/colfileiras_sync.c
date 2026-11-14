@@ -298,5 +298,51 @@ int main(void) {
     colfileiras_sincronizar();
     assert(col_n() == 0 && col_grupo_chave("collection_stable", idxPastas, 2) == 0);
   }
+
+  // ID de manifesto regenerado com URL antiga ainda igual: resolver pelo host
+  // exato preserva a fonte e usa o ID atual na chave da Home.
+  {
+    const char *ids[] = { "addon.demo" };
+    const char *bases[] = { "https://fixture-new.example" };
+    const char *json =
+      "{\"collections\":[{\"id\":\"reconfigured\",\"title\":\"Reconfigured\","
+      "\"folders\":[{\"id\":\"f\",\"title\":\"F\","
+      "\"sources\":[{\"provider\":\"addon\",\"addonId\":\"addon.old-instance\","
+      "\"addonBaseUrl\":\"https://fixture-new.example/manifest.json\",\"type\":\"movie\","
+      "\"catalogId\":\"popular\"}]}]}]}";
+    fil_definir_perfil(21); col_esquecer_perfil(); catordem_esquecer();
+    assert(fil_podar_catalogos(ids, bases, 1, 21) == 0);
+    fil_registrar("addon.demo_movie_popular", "Popular", "Addon", "movie", 5);
+    assert(colfileiras_receber(json) == 1);
+    colfileiras_sincronizar();
+    assert(col_n() == 1 && col_folder(0)->nSources == 1);
+    char base[600]; int pastas[2];
+    assert(col_fonte_base_ativa(&col_folder(0)->sources[0], base, sizeof base));
+    assert(!strcmp(base, "https://fixture-new.example"));
+    assert(col_grupo_chave("collection_reconfigured", pastas, 2) == 1);
+  }
+
+  // O formato atual do site nao envia a URL. Um ID desconhecido nao pode ser
+  // adivinhado nem apagado: fica contabilizado como recebido/inativo e fora da Home.
+  {
+    const char *ids[] = { "addon.demo" };
+    const char *bases[] = { "https://fixture-new.example" };
+    const char *json =
+      "{\"collections\":[{\"id\":\"unresolved\",\"title\":\"Unresolved\","
+      "\"folders\":[{\"id\":\"f\",\"title\":\"F\","
+      "\"catalogSources\":[{\"addonId\":\"addon.old-instance\",\"type\":\"movie\","
+      "\"catalogId\":\"popular\"}]}]}]}";
+    fil_definir_perfil(22); col_esquecer_perfil(); catordem_esquecer();
+    assert(fil_podar_catalogos(ids, bases, 1, 22) == 0);
+    assert(colfileiras_receber(json) == 1);
+    colfileiras_sincronizar();
+    int pastas = 0, fontes = 0, ativas = 0, indices[2];
+    char base[600];
+    col_estatisticas(&pastas, &fontes, &ativas);
+    assert(pastas == 1 && fontes == 1 && ativas == 0);
+    assert(!col_fonte_base_ativa(&col_folder(0)->sources[0], base, sizeof base));
+    assert(col_grupo_chave("collection_unresolved", indices, 2) == 0);
+    assert(!fil_addon_ausente("addon.old-instance", ""));
+  }
   return 0;
 }
