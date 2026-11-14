@@ -674,13 +674,26 @@ static GfxRect aj2GradeR(void) {
 }
 static float aj2GradeColW(void) { return (aj2GradeR().w - 2 * AJ2_G_PAD - 2 * AJ2_G_VAO) / 3.0f; }
 static int aj2GradeLinha(int s) { int k = 0; while (s - k > 0 && aj2Grupo(s - k - 1) == aj2Grupo(s)) k++; return k; }
+// A grade usa a altura da coluna mais longa. O grupo Telas cresceu para cinco
+// categorias; dividir por quatro deixava o quinto cartao (Cartazes e trailers)
+// fora da janela em TVs 16:9.
+static int aj2GradeMaxLinhas(void) {
+  int s, maximo = 1;
+  for (s = 0; s < nSecoes; s++) {
+    int linhas = aj2GradeLinha(s) + 1;
+    if (linhas > maximo) maximo = linhas;
+  }
+  return maximo;
+}
 static float aj2GradeChipY(void) { return aj2GradeR().y + 45.0f; }
 static float aj2GradeDescY(void) { return aj2GradeChipY() + AJ2_G_CHIP + 32.0f + (ajRetrato() ? AJ2_G_CHIP + 20.0f : 0.0f); }
 static float aj2GradeCabY(void) { return aj2GradeDescY() + AJ2_G_DESC + 22.0f; }
 static float aj2GradeCartaoH(void) {
   GfxRect g = aj2GradeR();
+  int linhas = aj2GradeMaxLinhas();
   float util = g.y + g.h - 57.0f - (aj2GradeCabY() + AJ2_G_CAB), h;
-  h = (util - 3 * AJ2_G_VAO_V) / 4.0f;
+  if (linhas < 1) linhas = 1;
+  h = (util - (float)(linhas - 1) * AJ2_G_VAO_V) / (float)linhas;
   return h > AJ2_G_MAXH ? AJ2_G_MAXH : h;
 }
 static GfxRect aj2GradeCartao(int s) {
@@ -869,8 +882,12 @@ static void aj2GradeCartaoDesenhar(int s, float f) {
   const char *nome = aj2MenuTitulo(j);
   TxtEstilo en = TXT_V3_NOME;
   GfxRect r = aj2GradeSuperficie(aj2GradeCartao(s), 20.0f, k, 7.0f, 0.45f, 0);
-  // O ladrilho do icone (60 x 60 no mockup, raio 14).
-  tile = r.h - 50.0f > 75.0f ? 75.0f : r.h - 50.0f;
+  int compacto = r.h < 108.0f;
+  // Colunas com cinco categorias usam cartoes mais baixos: o icone encolhe e
+  // o resumo secundario sai do cartao para que o nome continue respirando.
+  tile = r.h - (compacto ? 20.0f : 50.0f);
+  if (tile > 75.0f) tile = 75.0f;
+  if (tile < 28.0f) tile = 28.0f;
   { GfxRect tr = { r.x + 25.0f, r.y + (r.h - tile) * 0.5f, tile, tile };
     float ico = tile * 0.50f;
     gfx_cor(tr, 17.0f / tile, 1, 1, 1, 0.07f + 0.12f * k);
@@ -880,10 +897,11 @@ static void aj2GradeCartaoDesenhar(int s, float f) {
   aj2MenuValor(s, vb, sizeof vb);
   // O nome inteiro, sempre: numa linha; em duas (alemao, russo) no mesmo corpo.
   { int linhas = (float)txt_largura(en, nome) > tw ? 2 : 1, ti = ajTinta();
-    float lineH = fmaxf(44.0f, (float)ajTxt(en, nome).h + 2.0f);
-    float nomeH = linhas == 1 ? 50.0f : lineH * 2.0f, valH = vb[0] && linhas == 1 ? 40.0f : 0.0f;
+    float lineH = fmaxf(compacto ? 34.0f : 44.0f, (float)ajTxt(en, nome).h + 2.0f);
+    float nomeH = linhas == 1 ? (compacto ? 42.0f : 50.0f) : lineH * 2.0f;
+    float valH = !compacto && vb[0] && linhas == 1 ? 40.0f : 0.0f;
     y = r.y + (r.h - nomeH - (valH > 0 ? 4.0f + valH : 0)) * 0.5f;
-    if (linhas == 1) aj2GradeTexto(en, nome, tx, y + 25.0f, tw, 1.0f, k);
+    if (linhas == 1) aj2GradeTexto(en, nome, tx, y + nomeH * 0.5f, tw, 1.0f, k);
     else {
       if (k < 0.99f) txt_bloco(en, nome, 243, 242, 239, tx, y, tw, lineH, 1.0f - k, 2);
       if (k > 0.01f) txt_bloco(en, nome, ti, ti, ti, tx, y, tw, lineH, k, 2);

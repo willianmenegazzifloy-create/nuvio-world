@@ -110,6 +110,34 @@ int main(void) {
   puts("ok  banner: heroBackdropUrl > coverImageUrl > backdropImageUrl da colecao; capa: cover > backdrop; vazio fica vazio");
   assert(col_definir_json(web) == 1);
   puts("ok  shape do web: linha da RPC, manifest.json cortado, fontes somente de addons, genre None vazio");
+  {
+    ColDiagnostico d;
+    col_snapshot_diagnostico(&d);
+    assert(d.colecoes == 1 && d.pastas == 2 && d.fontes == 2);
+    assert(d.fontesValidas == 2 && d.pastasValidas == 1 && d.pastasSemFonte == 1);
+  }
+
+  // Algumas exportacoes antigas usam snake_case e name em vez de title.
+  // O parser aceita os aliases sem mudar a regra: catalogo precisa de
+  // identidade, tipo e catalogId; provedores externos continuam de fora.
+  assert(col_definir_json("{\\\"collections\\\":[{\\\"id\\\":\\\"alias\\\",\\\"name\\\":\\\"Alias group\\\",\\\"folders\\\":[{\\\"id\\\":\\\"fa\\\",\\\"name\\\":\\\"Alias folder\\\",\\\"catalog_sources\\\":[{\\\"addon_id\\\":\\\"org.x\\\",\\\"catalog_type\\\":\\\"movie\\\",\\\"catalog_id\\\":\\\"alias-popular\\\"}]}]}]}") == 1);
+  {
+    const ColFolder *a = col_folder(0);
+    ColDiagnostico d;
+    assert(a && !strcmp(a->group, "Alias group") && !strcmp(a->title, "Alias folder"));
+    assert(a->nSources == 1 && !strcmp(a->sources[0].addonId, "org.x"));
+    assert(!strcmp(a->sources[0].type, "movie") && !strcmp(a->sources[0].catId, "alias-popular"));
+    col_snapshot_diagnostico(&d);
+    assert(d.colecoes == 1 && d.pastas == 1 && d.fontes == 1 && d.fontesValidas == 1);
+  }
+  assert(col_definir_json("{\\\"collections\\\":[{\\\"id\\\":\\\"incomplete\\\",\\\"title\\\":\\\"Incomplete\\\",\\\"folders\\\":[{\\\"id\\\":\\\"f\\\",\\\"title\\\":\\\"Missing catalog ID\\\",\\\"catalogSources\\\":[{\\\"addonId\\\":\\\"org.x\\\",\\\"type\\\":\\\"movie\\\"}]}]}]}") == 0);
+  {
+    ColDiagnostico d;
+    col_snapshot_diagnostico(&d);
+    assert(d.colecoes == 1 && d.pastas == 1 && d.fontes == 1);
+    assert(d.fontesIncompletas == 1 && d.fontesSemCatalogId == 1);
+    assert(d.pastasValidas == 0 && d.pastasSemFonte == 1);
+  }
 
   char chave[192];
   col_chave_grupo("Streaming", chave, sizeof chave); assert(!strcmp(chave, "collection_c1"));

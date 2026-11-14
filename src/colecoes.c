@@ -21,6 +21,7 @@ static pthread_mutex_t colTrava = PTHREAD_MUTEX_INITIALIZER;
 static ColFolder *blocos[COL_MAX / COL_BLOCO];
 #define PASTA(i) (blocos[(i) / COL_BLOCO][(i) % COL_BLOCO])
 static int count;
+static ColDiagnostico ultimoDiagnostico;
 // Maior indice ja escrito: as pastas de [count, altaMarca) sobraram de um
 // conjunto maior e sao apontadas para `vazias` (ver fecharSobras).
 static int altaMarca;
@@ -118,6 +119,12 @@ static void localiza(char *value,size_t cap,const char *dir) {
   char rel[600];snprintf(rel,sizeof rel,"%s",value);snprintf(value,cap,"%s/%s",dir,rel);
 }
 int col_n(void) { int n; pthread_mutex_lock(&colTrava); n = count; pthread_mutex_unlock(&colTrava); return n; }
+void col_snapshot_diagnostico(ColDiagnostico *saida) {
+  if (!saida) return;
+  pthread_mutex_lock(&colTrava);
+  *saida = ultimoDiagnostico;
+  pthread_mutex_unlock(&colTrava);
+}
 void col_estatisticas(int *pastas, int *fontes, int *ativas) {
   int np = 0, nf = 0, na = 0;
   pthread_mutex_lock(&colTrava);
@@ -689,8 +696,10 @@ static int lerColecaoWeb(const char *c, const char *ce) {
   char group[64] = "", groupId[64] = "", fundo[512] = "";
   char modo[32] = "", booleano[8] = "";
   int viewMode = COL_VIEW_UNSPECIFIED, showAllTab = 1;
-  js_texto_raiz_em(c, ce, "title", group, sizeof group);
   js_texto_raiz_em(c, ce, "id", groupId, sizeof groupId);
+  js_texto_raiz_em(c, ce, "title", group, sizeof group);
+  if (!group[0]) js_texto_raiz_em(c, ce, "name", group, sizeof group);
+  if (!group[0] && groupId[0]) snprintf(group, sizeof group, "%s", groupId);
   js_texto_raiz_em(c, ce, "backdropImageUrl", fundo, sizeof fundo);
   js_texto_raiz_em(c, ce, "viewMode", modo, sizeof modo);
   if (!strcasecmp(modo, "FOLLOW_LAYOUT")) viewMode = COL_VIEW_FOLLOW_LAYOUT;
@@ -700,6 +709,7 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     showAllTab = strstr(booleano, "false") ? 0 : 1;
   if (!group[0]) return 1;
   for (const char *p = js_array(c, ce, "folders"), *pe = NULL; p; p = js_prox(pe)) {
+    ultimoDiagnostico.pastas++;
     if (!vagaPasta(count)) return 0;
     pe = js_fim(p); ColFolder *v = &PASTA(count); memset(v, 0, sizeof *v);
     if (!(v->sources = vagaFontes())) return 0;
@@ -707,7 +717,10 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     snprintf(v->groupId, sizeof v->groupId, "%s", groupId);
     v->viewMode = viewMode;
     v->showAllTab = showAllTab;
-    js_texto_raiz_em(p, pe, "id", v->id, sizeof v->id); js_texto_raiz_em(p, pe, "title", v->title, sizeof v->title);
+    js_texto_raiz_em(p, pe, "id", v->id, sizeof v->id);
+    js_texto_raiz_em(p, pe, "title", v->title, sizeof v->title);
+    if (!v->title[0]) js_texto_raiz_em(p, pe, "name", v->title, sizeof v->title);
+    if (!v->id[0] && v->title[0]) snprintf(v->id, sizeof v->id, "%s", v->title);
     int somenteLancados = pastaDescobertaSomenteLancados(group, v->title);
     js_texto(p, pe, "coverImageUrl", v->cover, sizeof v->cover);
     js_texto(p, pe, "heroBackdropUrl", v->hero, sizeof v->hero);
@@ -741,21 +754,37 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     // e a projecao especifica dessas fontes e tem prioridade; sources e o
     // fallback para exports antigos que nao trazem essa projecao.
     const char *src = js_array(p, pe, "catalogSources");
+    if (!src || *src == ']') src = js_array(p, pe, "catalog_sources");
     if (!src || *src == ']') src = js_array(p, pe, "sources");
     for (const char *s = src, *se = NULL; s && v->nSources < COL_SOURCE_MAX; s = js_prox(se)) {
       se = js_fim(s); ColSource *a = &v->sources[v->nSources]; char prov[16] = "";
+      ultimoDiagnostico.fontes++;
       memset(a, 0, sizeof *a);
       js_texto(s, se, "provider", prov, sizeof prov);
       // Collections no World usam exclusivamente catalogos de addons.
       // Fontes diretas TMDB/Trakt nao sao addons instalados/ativos e portanto
       // nao podem alimentar uma pasta, mesmo que o JSON da conta as contenha.
-      if (prov[0] && strcasecmp(prov, "addon")) { fPulProvedor++; continue; }
+      if (prov[0] && strcasecmp(prov, "addon")) {
+        fPulProvedor++; ultimoDiagnostico.fontesNaoAddon++; continue;
+      }
       if (!lerBase(s, se, "addonBaseUrl", a, v->title)) lerBase(s, se, "addon_base_url", a, v->title);
       tirarManifest(a->base);
-      js_texto(s, se, "addonId", a->addonId, sizeof a->addonId);
+      if (!js_texto(s, se, "addonId", a->addonId, sizeof a->addonId))
+        js_texto(s, se, "addon_id", a->addonId, sizeof a->addonId);
       if (!a->base[0]) baseCabe(a, addons_base_por_id(a->addonId));
-      js_texto(s, se, "type", a->type, sizeof a->type);
-      if (!js_texto(s, se, "catalogId", a->catId, sizeof a->catId)) js_texto(s, se, "catalog_id", a->catId, sizeof a->catId);
+      if (!js_texto(s, se, "type", a->type, sizeof a->type) &&
+          !js_texto(s, se, "catalogType", a->type, sizeof a->type))
+        js_texto(s, se, "catalog_type", a->type, sizeof a->type);
+      if (!js_texto(s, se, "catalogId", a->catId, sizeof a->catId))
+        js_texto(s, se, "catalog_id", a->catId, sizeof a->catId);
+      int semIdentidade = !a->addonId[0] && !a->base[0];
+      int semTipo = !a->type[0];
+      int semCatalogId = !a->catId[0];
+      if (semIdentidade) ultimoDiagnostico.fontesSemIdentidade++;
+      if (semTipo) ultimoDiagnostico.fontesSemTipo++;
+      if (semCatalogId) ultimoDiagnostico.fontesSemCatalogId++;
+      if (semIdentidade || semTipo || semCatalogId) ultimoDiagnostico.fontesIncompletas++;
+      else ultimoDiagnostico.fontesValidas++;
       if (!js_texto(s, se, "title", a->title, sizeof a->title) && !js_texto(s, se, "catalogName", a->title, sizeof a->title))
         snprintf(a->title, sizeof a->title, "%s", a->catId);
       js_texto(s, se, "genre", a->genre, sizeof a->genre);
@@ -766,8 +795,10 @@ static int lerColecaoWeb(const char *c, const char *ce) {
     if (v->nSources && v->title[0]) {
       if (nNovas + v->nSources > COL_FONTES_MAX) return 0;
       nNovas += v->nSources; count++;
+      ultimoDiagnostico.pastasValidas++;
     } else {
-      if (!v->nSources) fPulSemFonte++; else fPulSemTitulo++;
+      if (!v->nSources) { fPulSemFonte++; ultimoDiagnostico.pastasSemFonte++; }
+      else { fPulSemTitulo++; ultimoDiagnostico.pastasSemTitulo++; }
       if (!fPrimeiraPulada[0] && v->title[0])
         snprintf(fPrimeiraPulada, sizeof fPrimeiraPulada, "%s", v->title);
     }
@@ -1012,6 +1043,9 @@ static int prepararResposta(const char *json, char **solto, const char **arrOut)
     pFim = js_fim(p);
     js_texto_raiz_em(p, pFim, "id", id, sizeof id);
     js_texto_raiz_em(p, pFim, "title", titulo, sizeof titulo);
+    if (!titulo[0]) js_texto_raiz_em(p, pFim, "name", titulo, sizeof titulo);
+    if (!titulo[0] && id[0]) snprintf(titulo, sizeof titulo, "%s", id);
+    if (!id[0] && titulo[0]) snprintf(id, sizeof id, "%s", titulo);
     const char *pastas = valorColecoes(p, "\"folders\"");
     if (!id[0] || !titulo[0] || !arrayCompleto(pastas)) {
       return 0;
@@ -1021,8 +1055,12 @@ static int prepararResposta(const char *json, char **solto, const char **arrOut)
       pfFim = js_fim(pf);
       js_texto_raiz_em(pf, pfFim, "id", id, sizeof id);
       js_texto_raiz_em(pf, pfFim, "title", titulo, sizeof titulo);
-      const char *fontes = valorColecoes(pf, "\"sources\"");
-      if (!fontes) fontes = valorColecoes(pf, "\"catalogSources\"");
+      if (!titulo[0]) js_texto_raiz_em(pf, pfFim, "name", titulo, sizeof titulo);
+      if (!titulo[0] && id[0]) snprintf(titulo, sizeof titulo, "%s", id);
+      if (!id[0] && titulo[0]) snprintf(id, sizeof id, "%s", titulo);
+      const char *fontes = valorColecoes(pf, "\"catalogSources\"");
+      if (!fontes || *fontes == ']') fontes = valorColecoes(pf, "\"catalog_sources\"");
+      if (!fontes || *fontes == ']') fontes = valorColecoes(pf, "\"sources\"");
       if (!id[0] || !titulo[0] || !arrayCompleto(fontes)) return 0;
     }
   }
@@ -1050,6 +1088,7 @@ static int definirJson(const char *json) {
     printf("[collections] missing or incomplete account snapshot retained\n");
     free(solto); return 0;
   }
+  memset(&ultimoDiagnostico, 0, sizeof ultimoDiagnostico);
   int antesTela = count;
   int recarregou = 0;
   // O QUE ESTA NA TELA, antes de mexer: decide no fim se a Home remonta.
@@ -1109,6 +1148,7 @@ static int definirJson(const char *json) {
     for (; c && *c == '{'; c = js_prox(cFim)) {
       int c0 = count, f0 = nNovas;
       cFim = js_fim(c);
+      ultimoDiagnostico.colecoes++;
       if (lerColecaoWeb(c, cFim)) continue;
       // NAO COUBE: sai a colecao inteira, e o log diz qual. As seguintes ainda
       // tentam — uma colecao menor pode caber no que sobrou.
@@ -1119,12 +1159,14 @@ static int definirJson(const char *json) {
         js_texto_raiz_em(c, cFim, "title", titulo, sizeof titulo);
         for (p = js_array(c, cFim, "folders"); p; p = js_prox(js_fim(p))) nPastas++;
         fPulCheio++;
+        ultimoDiagnostico.colecoesForaTeto++;
         printf("[colecoes] colecao \"%s\" fora: %d pasta(s) nao cabem (teto de %d pastas e "
                "%d fontes; %d pastas e %d fontes ja dentro)\n",
                titulo, nPastas, COL_MAX, COL_FONTES_MAX, count, nNovas); }
     } }
   fecharMontagem();
   nConta = count;
+  ultimoDiagnostico.pastasValidas = nConta;
   // UMA LINHA QUE RESPONDE "cade a colecao que eu instalei". Cada contagem e um
   // conserto diferente: provedor sem equivalente e falta de recurso, pasta sem
   // fonte e dado incompleto do lado da conta, e teto cheio e limite nosso.
@@ -1134,6 +1176,14 @@ static int definirJson(const char *json) {
            "(%d pastas / %d fontes)%s%s\n",
            fPulProvedor, fPulSemFonte, fPulSemTitulo, fPulCheio, COL_MAX, COL_FONTES_MAX,
            fPrimeiraPulada[0] ? " | primeira: " : "", fPrimeiraPulada);
+  printf("[colecoes] diagnostico do snapshot: %d colecao(oes), %d pasta(s), %d fonte(s), "
+         "%d fonte(s) completas, %d incompletas (identidade %d, tipo %d, catalogId %d), "
+         "%d nao-addon, %d pasta(s) validas\n",
+         ultimoDiagnostico.colecoes, ultimoDiagnostico.pastas, ultimoDiagnostico.fontes,
+         ultimoDiagnostico.fontesValidas, ultimoDiagnostico.fontesIncompletas,
+         ultimoDiagnostico.fontesSemIdentidade, ultimoDiagnostico.fontesSemTipo,
+         ultimoDiagnostico.fontesSemCatalogId, ultimoDiagnostico.fontesNaoAddon,
+         ultimoDiagnostico.pastasValidas);
   if (nConta && antigas) {
     int casadas = 0;
     for (int i = 0; i < count; i++) for (int j = 0; j < antes; j++) {

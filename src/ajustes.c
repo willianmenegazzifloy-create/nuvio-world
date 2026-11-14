@@ -6944,11 +6944,27 @@ static const char *textoLeitura(int op) {
     return r;
   }
   if(op==AJ_IPTV_NOME)return ajIptvNome(iptv_conta_indice());
-  static char buf[64];
+  static char buf[160];
   if (op == AJ_COLECOES_STATUS) {
     int pastas = 0, fontes = 0, ativas = 0;
+    ColDiagnostico diag;
     col_estatisticas(&pastas, &fontes, &ativas);
-    if (!pastas) return col_tem_conta() ? i18n("Recebida · 0 pastas válidas") : i18n("Nenhuma recebida");
+    col_snapshot_diagnostico(&diag);
+    if (!pastas) {
+      if (!col_tem_conta()) return i18n("Nenhuma recebida");
+      if (!diag.pastas) return i18n("Recebida · perfil sem coleções");
+      if (diag.fontesIncompletas)
+        snprintf(buf, sizeof buf, i18n("0 válidas · %d fontes incompletas"), diag.fontesIncompletas);
+      else if (diag.fontesNaoAddon && !diag.fontesValidas)
+        snprintf(buf, sizeof buf, i18n("0 válidas · %d fontes não-addon"), diag.fontesNaoAddon);
+      else if (diag.pastasSemFonte)
+        snprintf(buf, sizeof buf, i18n("0 válidas · %d pastas sem fontes"), diag.pastasSemFonte);
+      else if (diag.pastasSemTitulo)
+        snprintf(buf, sizeof buf, i18n("0 válidas · %d pastas sem título"), diag.pastasSemTitulo);
+      else
+        snprintf(buf, sizeof buf, i18n("0 válidas · %d pastas / %d fontes"), diag.pastas, diag.fontes);
+      return buf;
+    }
     if (!fontes) return i18n("Sem fontes");
     snprintf(buf, sizeof buf, i18n("%d pastas · %d/%d fontes"), pastas, ativas, fontes);
     return buf;

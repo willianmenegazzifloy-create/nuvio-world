@@ -29,6 +29,9 @@ jobs:
       - name: Run Settings category coverage
         run: bash tests/ajustes_secoes.sh
 
+      - name: Run Settings category grid layout regression
+        run: bash tests/ajustes_grade_colunas.sh
+
       - name: Run Collection addon identity and Home reconciliation regressions
         run: bash tests/colfileiras_sync.sh
 

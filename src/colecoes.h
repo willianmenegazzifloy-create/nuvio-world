@@ -132,6 +132,13 @@ void col_chave_grupo(const char *group, char *dst, unsigned n);
 int col_n(void);
 // Current folders and installed/active addon catalog sources for Settings diagnostics.
 void col_estatisticas(int *pastas, int *fontes, int *ativas);
+typedef struct {
+  int colecoes, colecoesForaTeto;
+  int pastas, pastasValidas, pastasSemFonte, pastasSemTitulo;
+  int fontes, fontesValidas, fontesNaoAddon, fontesIncompletas;
+  int fontesSemIdentidade, fontesSemTipo, fontesSemCatalogId;
+} ColDiagnostico;
+void col_snapshot_diagnostico(ColDiagnostico *saida);
 // Muda sempre que o conjunto de pastas muda. Quem decide remontar a tela deve
 // olhar ISTO e nao col_n(): trocar N pastas por outras N mantem o numero.
 unsigned col_revisao(void);
