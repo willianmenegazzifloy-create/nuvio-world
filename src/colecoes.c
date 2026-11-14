@@ -1062,6 +1062,11 @@ static int definirJson(const char *json) {
     for (int i = 0; i < count; i++) if (!PASTA(i).extra) locais++;
     if (locais > 0) {
       printf("[collections] empty remote snapshot; preserving %d local folder(s)\n", locais);
+      // A resposta foi recebida, mesmo que vazia. O status deve distinguir
+      // isso de uma sincronizacao que nunca aconteceu. Mantemos ultimoJson e
+      // ultimoComConta intactos para preservar o ultimo snapshot valido.
+      semConta = 1;
+      contaAplicada = 1;
       if (recarregou) revisao++;
       free(solto);
       return locais;
