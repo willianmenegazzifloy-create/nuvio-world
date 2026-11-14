@@ -113,7 +113,7 @@ int main(void) {
         p ? "," : "", p, p);
       for (int k = 0; k < fontes; k++)
         usado += (size_t)snprintf(grande + usado, sizeof grande - usado,
-          "%s{\"provider\":\"addon\",\"addonBaseUrl\":\"https://a.invalid\",\"type\":\"movie\",\"catalogId\":\"p%d_%d\"}",
+          "%s{\"provider\":\"addon\",\"addonBaseUrl\":\"https://addon/abc\",\"type\":\"movie\",\"catalogId\":\"p%d_%d\"}",
           k ? "," : "", p, k);
       usado += (size_t)snprintf(grande + usado, sizeof grande - usado, "]}");
       assert(usado < sizeof grande);
