@@ -205,7 +205,7 @@ int main(void) {
   { char dir[NVT_MAX]; nvt_set(dir, sizeof dir, "/nuvio-col-XXXXXX"); char caminho[300]; FILE *f;
     assert(mkdtemp(dir));
     snprintf(caminho, sizeof caminho, "%s/collections.json", dir); f = fopen(caminho, "w");
-    fputs("{\\"groups\\":[{\\"id\\":\\"c1\\",\\"title\\":\\"Streaming\\",\\"folders\\":[{\\"id\\":\\"f1\\",\\"title\\":\\"Netflix\\",\\"cover\\":\\"collections/f1/cover.jpg\\",\\"hero\\":\\"collections/f1/hero.jpg\\",\\"frames\\":12,\\"sources\\":[{\\"title\\":\\"Movies\\",\\"addonId\\":\\"org.x\\",\\"type\\":\\"movie\\",\\"catId\\":\\"nf_movies\\"}]}]}]}", f); fclose(f);
+     fputs("{\"groups\":[{\"id\":\"c1\",\"title\":\"Streaming\",\"folders\":[{\"id\":\"f1\",\"title\":\"Netflix\",\"cover\":\"collections/f1/cover.jpg\",\"hero\":\"collections/f1/hero.jpg\",\"frames\":12,\"sources\":[{\"title\":\"Movies\",\"addonId\":\"org.x\",\"type\":\"movie\",\"catId\":\"nf_movies\"}]}]}]}", f); fclose(f);
     assert(col_carregar(dir) == 1 && col_folder(0)->local && col_folder(0)->frames == 12);
     assert(col_folder(0)->nSources == 1 && !strcmp(col_folder(0)->sources[0].addonId, "org.x") &&
            !strcmp(col_folder(0)->sources[0].base, "https://resolvido"));
