@@ -258,21 +258,38 @@ int main(int argc, char **argv) {
     fil_definir_hero_fonte("collection_exclusiva");
     assert(indice("collection_exclusiva") >= 0);
     conta(0, 1); reconciliar(); colfileiras_sincronizar();
-    assert(col_n() == 2 && !fil_hero_fonte()[0]); apagado("collection_exclusiva");
+    // O ID opaco nao esta na lista atual e o JSON nao traz URL. Nao e possivel
+    // saber se o addon foi removido ou se gerou um novo ID ao ser reconfigurado:
+    // preservamos os metadados, mas a pasta sem fonte ativa some da Home.
+    assert(col_n() == 3 && !fil_hero_fonte()[0]); apagado("collection_exclusiva");
     visivel("collection_mista", 0); visivel("collection_trakt", 0);
-    assert(col_folder(0)->nSources == 2);
-    for (int i = 0; i < col_n(); i++) for (int j = 0; j < col_folder(i)->nSources; j++)
-      assert(strcmp(col_folder(i)->sources[j].addonId, "removido"));
+    {
+      int exclusiva = 0, mista = 0, inativas = 0;
+      for (int i = 0; i < col_n(); i++) {
+        const ColFolder *f = col_folder(i);
+        if (!strcmp(f->id, "f1")) {
+          exclusiva = 1;
+          assert(f->nSources == 1 && !strcmp(f->sources[0].addonId, "removido"));
+        }
+        if (!strcmp(f->id, "f2")) {
+          mista = 1;
+          assert(f->nSources == 2 && !strcmp(f->sources[0].addonId, "removido"));
+        }
+        for (int j = 0; j < f->nSources; j++)
+          if (!strcmp(f->sources[j].addonId, "removido")) inativas++;
+      }
+      assert(exclusiva && mista && inativas == 2);
+    }
     antes = arquivo(4); assert(!strstr(antes, "collection_exclusiva")); free(antes);
-    // Mesmo corpo reaplicado e o rebuild direto nao restauram a fonte apagada.
-    colfileiras_receber(json); assert(col_n() == 2); colfileiras_sincronizar();
-    assert(col_definir_json(json) == 3); colfileiras_sincronizar(); assert(col_n() == 2);
+    // Reaplicar o mesmo corpo conserva a fonte opaca, sem recriar a fileira.
+    colfileiras_receber(json); assert(col_n() == 3); colfileiras_sincronizar();
+    assert(col_definir_json(json) == 3); colfileiras_sincronizar(); assert(col_n() == 3);
     apagado("collection_exclusiva");
     fil_definir_perfil(5); fil_definir_perfil(4); perfilLista = 4; conta(0, 1); reconciliar();
     colfileiras_receber(json); colfileiras_sincronizar();
-    assert(col_n() == 2); apagado("collection_exclusiva"); assert(!fil_hero_fonte()[0]);
+    assert(col_n() == 3); apagado("collection_exclusiva"); assert(!fil_hero_fonte()[0]);
   }
-  puts("ok  colecoes removem fontes e pastas vazias; cache e reinicio nao as recriam");
+  puts("ok  IDs de addon sem URL ficam preservados/inativos; nao recriam fileiras soltas");
   // Uma lista com 128 donos nao e um retrato truncado dos primeiros dezesseis.
   {
     static char nomes[ADDONS_MAX][24], urls[ADDONS_MAX][64];
@@ -311,7 +328,7 @@ int main(int argc, char **argv) {
     const char *json = "{\"collections\":[{\"id\":\"novo\",\"title\":\"Novo\",\"folders\":[{\"id\":\"f\",\"title\":\"Pasta\",\"sources\":[{\"addonId\":\"removido\",\"type\":\"movie\",\"catalogId\":\"top\"}]}]}]}";
     fil_definir_perfil(7); perfilLista = 7; conta(0, 1);
     versaoLista++; versaoManifestos = versaoLista; reconciliar();
-    assert(fil_addon_ausente("removido", ""));
+    assert(!fil_addon_ausente("removido", "")); // sem URL, ID opaco nao prova exclusao
     conta(1, 1); versaoLista++; versaoManifestos = versaoLista; ids[1] = "";
     fil_registrar("removido_movie_top", "Fonte saudavel", "Novo", "movie", 5);
     assert(indice("removido_movie_top") >= 0);
@@ -322,7 +339,8 @@ int main(int argc, char **argv) {
     conta(1, 1); reconciliar();
     assert(fil_definir_tipo("removido_movie_top", FIL_TIPO_RANKING));
     conta(0, 1); versaoLista++; versaoManifestos = versaoLista; reconciliar();
-    colfileiras_sincronizar(); apagado("removido_movie_top"); assert(col_n() == 0);
+    colfileiras_sincronizar(); apagado("removido_movie_top");
+    assert(col_n() == 1 && col_folder(0)->nSources == 1); // mantem o ID opaco recebido, sem fonte ativa
     conta(1, 1); versaoLista++; versaoManifestos = versaoLista; ids[1] = "";
     fil_registrar("removido_movie_top", "Reinstalado", "Novo", "movie", 5);
     assert(indice("removido_movie_top") >= 0);
