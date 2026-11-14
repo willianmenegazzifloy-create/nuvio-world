@@ -36,6 +36,7 @@
 #include "teclado.h"
 #include "memlog.h"
 #include "descoberta.h"
+#include "colecoes.h"
 #include "extras.h"
 #include "notasfontes.h"
 #include "fileiras.h"
