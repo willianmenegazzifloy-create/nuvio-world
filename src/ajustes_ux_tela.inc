@@ -170,6 +170,8 @@ static const Item TELA[] = {
   SEC("Coleções", "Exibição, organização e arte das coleções da conta", "aj_library"),
     ROT("Exibição"),
       OPC(AJ_COLECAO_EXIBICAO),
+    ROT("Estado"),
+      OPC(AJ_COLECOES_STATUS),
     ROT("Arte das pastas"),
       OPC(AJ_COL_ARTE_CONTA),
 
