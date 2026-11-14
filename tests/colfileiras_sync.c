@@ -164,7 +164,7 @@ int main(void) {
   assert(!fil_oculta("addon.demo_movie_b") && fil_oculta("addon.demo_movie_s2"));
   assert(fil_n_capacidade() == 3 && fil_n_na_home() == 6); // collection_c1 permanece na Home
   fil_teste_recarregar();
-  assert(fil_oculta("addon.demo_movie_new_a") && !fil_oculta("addon.demo_movie_b"));
+  assert(fil_estado_chave("addon.demo_movie_new_a") == -1 && !fil_oculta("addon.demo_movie_b")); // fonte continua interna à coleção
   assert(fil_tipo("addon.demo_movie_s1") == estiloCat);
   colfileiras_receber(uma); colfileiras_sincronizar();
   assert(!fil_oculta("addon.demo_movie_new_a")); // re-add releases only automatic hiding
