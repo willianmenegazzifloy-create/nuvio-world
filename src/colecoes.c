@@ -1052,6 +1052,21 @@ static int definirJson(const char *json) {
     recarregou = 1;
   }
   antes = count;
+  // Como no Nuvio original, um snapshot remoto explicitamente vazio nao apaga
+  // a ultima colecao local valida. A conta pode devolver vazio durante a
+  // sincronizacao (ou antes de o perfil terminar de carregar); preservar o
+  // estado local evita que a Home desapareca. Sem pastas locais, o vazio e
+  // aplicado normalmente.
+  if (!arr) {
+    int locais = 0;
+    for (int i = 0; i < count; i++) if (!PASTA(i).extra) locais++;
+    if (locais > 0) {
+      printf("[collections] empty remote snapshot; preserving %d local folder(s)\\n", locais);
+      if (recarregou) revisao++;
+      free(solto);
+      return locais;
+    }
+  }
   // A conta manda o CONJUNTO e a ordem. Mas o pacote traz as mesmas pastas
   // (mesmo id: o collections.json e gerado do perfil do dono) com arte editorial,
   // quadros de animacao e ajustes curados que a conta nao tem — a versao local
