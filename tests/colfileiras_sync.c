@@ -11,7 +11,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+static int addonCatalogActive = 1;
 const char *addons_base_por_id(const char *id) { (void)id; return "https://fixture.example"; }
+int addons_catalogo_base_ativo(const char *base) {
+  return addonCatalogActive && base && !strcmp(base, "https://fixture.example");
+}
 int addons_n(void) { return 1; }
 int addons_base_desligada(const char *b) { (void)b; return 0; }   // 203-desligados
 const char *addons_base(int i) { (void)i; return "https://fixture.example"; }
@@ -82,6 +86,23 @@ int main(void) {
   assert(fil_estado_chave("collection_c1") == FIL_NA_HOME);
   assert(fil_estado_chave("collection_c2") == FIL_NA_HOME);
   int pastas[4];
+  // Desativar o addon precisa esconder as Collections e os catalogos que
+  // antes eram restaurados incondicionalmente como linhas independentes.
+  addonCatalogActive = 0;
+  colfileiras_sincronizar(); fil_normalizar();
+  assert(col_grupo_chave("collection_c1", pastas, 4) == 0);
+  assert(col_grupo_chave("collection_c2", pastas, 4) == 0);
+  assert(fil_estado_chave("collection_c1") == FIL_FORA);
+  assert(fil_estado_chave("collection_c2") == FIL_FORA);
+  assert(fil_oculta("addon.demo_movie_a") && fil_oculta("addon.demo_movie_b"));
+  // Reativar o mesmo addon restaura as fontes e as pastas, sem duplicar linhas.
+  addonCatalogActive = 1;
+  colfileiras_sincronizar(); fil_normalizar();
+  assert(col_grupo_chave("collection_c1", pastas, 4) == 1);
+  assert(col_grupo_chave("collection_c2", pastas, 4) == 1);
+  assert(fil_estado_chave("collection_c1") == FIL_NA_HOME);
+  assert(fil_estado_chave("collection_c2") == FIL_NA_HOME);
+  assert(!fil_oculta("addon.demo_movie_a") && !fil_oculta("addon.demo_movie_b"));
   assert(col_grupo_chave("collection_c1", pastas, 4) == 1 && pastas[0] == 0);
   assert(col_grupo_chave("collection_c2", pastas, 4) == 1 && pastas[0] == 1);
   unsigned c = col_revisao(), f = fil_revisao();
