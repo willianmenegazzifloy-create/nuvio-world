@@ -120,7 +120,7 @@ int main(void) {
   // Algumas exportacoes antigas usam snake_case e name em vez de title.
   // O parser aceita os aliases sem mudar a regra: catalogo precisa de
   // identidade, tipo e catalogId; provedores externos continuam de fora.
-  assert(col_definir_json("{\\\"collections\\\":[{\\\"id\\\":\\\"alias\\\",\\\"name\\\":\\\"Alias group\\\",\\\"folders\\\":[{\\\"id\\\":\\\"fa\\\",\\\"name\\\":\\\"Alias folder\\\",\\\"catalog_sources\\\":[{\\\"addon_id\\\":\\\"org.x\\\",\\\"catalog_type\\\":\\\"movie\\\",\\\"catalog_id\\\":\\\"alias-popular\\\"}]}]}]}") == 1);
+  assert(col_definir_json("{\"collections\":[{\"id\":\"alias\",\"name\":\"Alias group\",\"folders\":[{\"id\":\"fa\",\"name\":\"Alias folder\",\"catalog_sources\":[{\"addon_id\":\"org.x\",\"catalog_type\":\"movie\",\"catalog_id\":\"alias-popular\"}]}]}]}") == 1);
   {
     const ColFolder *a = col_folder(0);
     ColDiagnostico d;
@@ -130,7 +130,14 @@ int main(void) {
     col_snapshot_diagnostico(&d);
     assert(d.colecoes == 1 && d.pastas == 1 && d.fontes == 1 && d.fontesValidas == 1);
   }
-  assert(col_definir_json("{\\\"collections\\\":[{\\\"id\\\":\\\"incomplete\\\",\\\"title\\\":\\\"Incomplete\\\",\\\"folders\\\":[{\\\"id\\\":\\\"f\\\",\\\"title\\\":\\\"Missing catalog ID\\\",\\\"catalogSources\\\":[{\\\"addonId\\\":\\\"org.x\\\",\\\"type\\\":\\\"movie\\\"}]}]}]}") == 0);
+  assert(col_definir_json("{\"collections\":[{\"id\":\"incomplete\",\"title\":\"Incomplete\",\"folders\":[{\"id\":\"f\",\"title\":\"Missing catalog ID\",\"catalogSources\":[{\"addonId\":\"org.x\",\"type\":\"movie\"}]}]}]}") == 0);
+  {
+    ColDiagnostico d;
+    col_snapshot_diagnostico(&d);
+    assert(d.colecoes == 1 && d.pastas == 1 && d.fontes == 1);
+    assert(d.fontesIncompletas == 1 && d.fontesSemCatalogId == 1);
+    assert(d.pastasValidas == 0 && d.pastasSemFonte == 1);
+  }
   {
     ColDiagnostico d;
     col_snapshot_diagnostico(&d);
