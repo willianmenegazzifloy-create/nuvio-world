@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - nuvio-world-collections-follow-layout-fix
+      - nuvio-world-2.0.14-catalogos-addon-only
 
 permissions:
   contents: write
