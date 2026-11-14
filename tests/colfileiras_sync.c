@@ -121,6 +121,7 @@ int main(void) {
   colfileiras_sincronizar();
   assert(idx("collection_c2") < idx("collection_c1"));
   assert(fil_estado_chave("collection_c2") == FIL_FORA && fil_estado_chave("addon.demo_movie_s2") == FIL_FORA);
+  fprintf(stderr, "[test-debug] na_home=%d capacidade=%d fila=%d\\n", fil_n_na_home(), fil_n_capacidade(), fil_n_fila());
   assert(fil_n_na_home() == 5 && fil_n_capacidade() == 2);
   catordem_ler("{\"items\":[]}"); colfileiras_sincronizar();
   assert(fil_estado_chave("collection_c2") == FIL_NA_HOME);
@@ -276,11 +277,11 @@ int main(void) {
     const char *idsAtuais[] = { "addon.demo" };
     const char *basesAtuais[] = { "https://fixture-new.example" };
     const char *snapshot =
-      "{\\\"collections\\\":[{\\\"id\\\":\\\"stable\\\",\\\"title\\\":\\\"Stable\\\","
-      "\\\"folders\\\":[{\\\"id\\\":\\\"f\\\",\\\"title\\\":\\\"F\\\","
-      "\\\"sources\\\":[{\\\"provider\\\":\\\"addon\\\",\\\"addonId\\\":\\\"addon.demo\\\","
-      "\\\"addonBaseUrl\\\":\\\"https://fixture.example\\\",\\\"type\\\":\\\"movie\\\","
-      "\\\"catalogId\\\":\\\"popular\\\"}]}]}]}";
+      "{\"collections\":[{\"id\":\"stable\",\"title\":\"Stable\","
+      "\"folders\":[{\"id\":\"f\",\"title\":\"F\","
+      "\"sources\":[{\"provider\":\"addon\",\"addonId\":\"addon.demo\","
+      "\"addonBaseUrl\":\"https://fixture.example\",\"type\":\"movie\","
+      "\"catalogId\":\"popular\"}]}]}]}";
     fil_definir_perfil(20); col_esquecer_perfil(); catordem_esquecer();
     addonBaseAtual = "https://fixture-new.example";
     addonCatalogActive = 1;
