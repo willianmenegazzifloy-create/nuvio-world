@@ -11,6 +11,12 @@ const char *addons_base_por_id(const char *id) {
   if (id && !strcmp(id, "x")) return "https://addon/abc";
   return id && !strcmp(id, "org.x") ? baseAddonAtual : "";
 }
+int addons_base_por_id_copiar(const char *id, char *dst, unsigned tam) {
+  const char *base = addons_base_por_id(id);
+  if (!base || !base[0] || !dst || !tam) return 0;
+  snprintf(dst, tam, "%s", base);
+  return 1;
+}
 int addons_catalogo_base_ativo(const char *base) {
   return base && ((!strcmp(base, "https://addon/abc")) ||
                   (baseAddonAtual[0] && !strcmp(base, baseAddonAtual)));
