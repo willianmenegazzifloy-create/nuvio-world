@@ -170,7 +170,7 @@ int main(void) {
   assert(!fil_oculta("addon.demo_movie_new_a")); // re-add releases only automatic hiding
   assert(fil_oculta("addon.demo_movie_s2"));     // personal hiding remains
   colfileiras_receber("{\"collections\":[]}"); colfileiras_sincronizar();
-  assert(fil_oculta("addon.demo_movie_new_a"));
+  assert(!fil_oculta("addon.demo_movie_new_a")); // empty snapshot preserves the last valid collection/source
   fil_definir_perfil(2); col_esquecer_perfil();
   assert(fil_n() == 0 && col_n() == 0 && !col_tem_conta());
   colfileiras_receber(duas); colfileiras_sincronizar();
