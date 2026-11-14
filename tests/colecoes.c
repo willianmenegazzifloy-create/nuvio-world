@@ -173,15 +173,16 @@ int main(void) {
   assert(col_resposta_valida("{\"collections_json\":\"\\u000A\\u000D{\\\"collections\\\":[]}\\u0009\"}"));
   puts("ok  malformed envelope and encoded snapshot retain last-good collections; complete JSON values accepted");
   assert(col_definir_json("[]") == 0 && col_n() == 1 && col_revisao() == rev);
-  assert(col_definir_json("{\\"collections_json\\":null}") == 0 && col_n() == 1);
-  assert(col_definir_json("{\\"collections\\":[{\\"id\\":\\"cut\\"") == 0 && col_n() == 1);
-  assert(col_definir_json("{\\"collections\\":[]} ") == 0 && col_n() == 1 && col_revisao() == rev);
+  assert(col_definir_json("{\"collections_json\":null}") == 0 && col_n() == 1);
+  assert(col_definir_json("{\"collections\":[{\"id\":\"cut\"") == 0 && col_n() == 1);
+  assert(col_definir_json("{\"collections\":[]}") == 1 && col_n() == 1 && col_revisao() == rev);
   puts("ok  empty snapshot preserves the last local collection; malformed snapshots retain it");
   col_esquecer_perfil();
   rev = col_revisao();
   assert(col_n() == 0);
-  assert(col_definir_json("{\\"collections\\":[]} ") == 0 && col_n() == 0 && col_revisao() == rev);
+  assert(col_definir_json("{\"collections\":[]}") == 0 && col_n() == 0 && col_revisao() == rev);
   puts("ok  empty snapshot with no local collections remains empty");
+  // fonte so com addonId (como a conta manda): entra, e a base resolve no acesso
   //   // fonte so com addonId (como a conta manda): entra, e a base resolve no acesso
   assert(col_definir_json("{\"collections\":[{\"id\":\"c\",\"title\":\"T\",\"folders\":[{\"id\":\"g\",\"title\":\"G\",\"sources\":[{\"provider\":\"addon\",\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"k\"}]}]}]}") == 1);
   assert(!strcmp(col_folder(0)->sources[0].base, "https://resolvido"));
