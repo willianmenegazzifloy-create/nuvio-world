@@ -81,8 +81,8 @@ char *rede_baixar(const char *url,int timeout) {
       "/addon/catalog/tv/new%2Fseries%20%231%3Ffresh%25.json?config=fixture",
       "/other/catalog/movie/new%2Fmovies%20%231%3Ffresh%25.json?config=fixture",
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/search=new%20%26%20fresh.json?config=fixture",
-      "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25.json?config=fixture"
-      ,"/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=Comedy&skip=3.json?config=fixture"
+      "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25.json?config=fixture",
+      "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=Comedy&skip=3.json?config=fixture"
     };
     if (!strcmp(path, "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25.json?config=fixture")) {
       fixtureStatus = fixtureReject ? 403 : 200;
@@ -107,7 +107,7 @@ char *rede_baixar(const char *url,int timeout) {
         fixtureDisableDuringRequest = 0;
         fixtureCatalogEnabled = 0; // simula desligar enquanto o GET responde
       }
-      if (i == 2 || i == 4 || i == 10) return strdup("{\"metas\":[]}");
+      if (i == 2 || i == 4 || i == 9) return strdup("{\"metas\":[]}");
       if (i == 1)
         return strdup("{\"metas\":["
           "{\"id\":\"ttbuddy\",\"type\":\"movie\",\"name\":\"Buddy\",\"poster\":\"buddy.jpg\",\"genres\":[\"Horror\",\"Thriller\",\"Fantasy\"]},"
