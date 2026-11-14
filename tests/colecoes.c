@@ -355,6 +355,7 @@ int main(void) {
     fclose(f);
     assert(col_carregar(dir) == 1);
     assert(col_definir_json("[{\"collections_json\":[]}]") == 1 && col_n() == 1);
+    assert(col_tem_conta());
     assert(!strcmp(col_folder(0)->id, "f1"));
     col_esquecer_perfil();
     assert(col_n() == 0);
