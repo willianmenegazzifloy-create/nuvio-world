@@ -82,14 +82,6 @@ static void *leitor(void *arg) {
 }
 int main(void) {
   fil_definir_perfil(1); fil_definir_limite(3);
-  // A Collection guardou a URL antiga, mas o addon atual tem o mesmo addonId
-  // e uma base nova. A poda deve priorizar a identidade do manifesto.
-  addonBaseAtual = "https://fixture-new.example";
-  {
-    const char *ids[] = { "addon.demo" };
-    const char *bases[] = { "https://fixture-new.example" };
-    assert(fil_podar_catalogos(ids, bases, 1, 1) == 0);
-  }
   fil_registrar("continue_watching", "Continue", "", "", 2);
   fil_registrar("social_activity", "Friends", "", "", 1);
   for (int i = 1; i <= 3; i++) {
@@ -97,10 +89,6 @@ int main(void) {
     fil_registrar(k, k, "Addon", "movie", 5);
   }
   assert(colfileiras_receber(duas) == 2);
-  // addonBaseUrl de ambas as pastas ainda e fixture.example: o addonId deve
-  // resolver para a base nova sem descartar a fonte nem a pasta.
-  assert(col_folder(0)->nSources == 1);
-  assert(!strcmp(col_folder(0)->sources[0].base, "https://fixture-new.example"));
   colfileiras_sincronizar(); fil_normalizar();
   assert(fil_n_na_home() == 7 && fil_n_capacidade() == 3 && fil_n_fila() == 0);
   assert(fil_estado_chave("collection_c1") == FIL_NA_HOME);
@@ -279,6 +267,36 @@ int main(void) {
     fil_definir_perfil(11);
     assert(idx("addon.demo_movie_onlyB") >= 0 && idx("collection_ga1") < 0);
     puts("ok #294: profile switch A->B->A keeps A's Home order, collections included");
+  }
+
+  // A fonte salva com URL antiga nao pode ser podada quando o addonId continua
+  // presente na lista autoritativa com outra URL. A remocao real pelo addonId
+  // continua apagando a fonte e escondendo a pasta.
+  {
+    const char *idsAtuais[] = { "addon.demo" };
+    const char *basesAtuais[] = { "https://fixture-new.example" };
+    const char *snapshot =
+      "{\\\"collections\\\":[{\\\"id\\\":\\\"stable\\\",\\\"title\\\":\\\"Stable\\\","
+      "\\\"folders\\\":[{\\\"id\\\":\\\"f\\\",\\\"title\\\":\\\"F\\\","
+      "\\\"sources\\\":[{\\\"provider\\\":\\\"addon\\\",\\\"addonId\\\":\\\"addon.demo\\\","
+      "\\\"addonBaseUrl\\\":\\\"https://fixture.example\\\",\\\"type\\\":\\\"movie\\\","
+      "\\\"catalogId\\\":\\\"popular\\\"}]}]}]}";
+    fil_definir_perfil(20); col_esquecer_perfil(); catordem_esquecer();
+    addonBaseAtual = "https://fixture-new.example";
+    addonCatalogActive = 1;
+    assert(fil_podar_catalogos(idsAtuais, basesAtuais, 1, 20) == 0);
+    assert(colfileiras_receber(snapshot) == 1);
+    assert(col_n() == 1 && col_folder(0)->nSources == 1);
+    assert(!strcmp(col_folder(0)->sources[0].base, "https://fixture-new.example"));
+    colfileiras_sincronizar();
+    int idxPastas[2];
+    assert(col_grupo_chave("collection_stable", idxPastas, 2) == 1);
+
+    const char *idsDepois[] = { "addon.other" };
+    const char *basesDepois[] = { "https://other.example" };
+    assert(fil_podar_catalogos(idsDepois, basesDepois, 1, 20) == 0);
+    colfileiras_sincronizar();
+    assert(col_n() == 0 && col_grupo_chave("collection_stable", idxPastas, 2) == 0);
   }
   return 0;
 }
