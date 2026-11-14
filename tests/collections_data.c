@@ -75,6 +75,7 @@ char *rede_baixar(const char *url,int timeout) {
     const char *paths[] = {
       "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=New%20%26%20fresh%2FTV&skip=0.json?config=fixture",
       "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=Comedy&skip=0.json?config=fixture",
+      "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=Comedy&skip=3.json?config=fixture",
       "/addon/catalog/movie/new%2Fmovies%20%231%3Ffresh%25/genre=New%20%26%20fresh%2FTV&skip=1.json?config=fixture",
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25.json?config=fixture",
       "/addon/catalog/series/new%2Fseries%20%231%3Ffresh%25/skip=1.json?config=fixture",
@@ -106,7 +107,7 @@ char *rede_baixar(const char *url,int timeout) {
         fixtureDisableDuringRequest = 0;
         fixtureCatalogEnabled = 0; // simula desligar enquanto o GET responde
       }
-      if (i == 2 || i == 4) return strdup("{\"metas\":[]}");
+      if (i == 2 || i == 4 || i == 9) return strdup("{\"metas\":[]}");
       if (i == 1)
         return strdup("{\"metas\":["
           "{\"id\":\"ttbuddy\",\"type\":\"movie\",\"name\":\"Buddy\",\"poster\":\"buddy.jpg\",\"genres\":[\"Horror\",\"Thriller\",\"Fantasy\"]},"
@@ -253,6 +254,9 @@ int main(void) {
     // e o drama, mesmo que o addon devolva os tres ignorando o parametro genre.
     assert(col_definir_json("{\"collections\":[{\"id\":\"genre\",\"title\":\"Genre\",\"folders\":[{\"id\":\"g\",\"title\":\"Comedy\",\"sources\":[{\"provider\":\"addon\",\"addonBaseUrl\":\"https://collection.invalid/addon?config=fixture\",\"type\":\"movie\",\"catalogId\":\"new/movies #1?fresh%\",\"genre\":\"Comedy\"}]}]}]}") == 1);
     desc_vertudo_filtro(genre.base, genre.type, genre.catId, genre.genre); waitDone();
+    assert(desc_vertudo_n() == 1 && !desc_vertudo_fim());
+    // A primeira pagina reteve apenas Comedy; a pagina seguinte vazia encerra Ver tudo.
+    desc_vertudo_mais(); waitDone();
     assert(desc_vertudo_n() == 1 && desc_vertudo_fim());
     assert(desc_vertudo_item(0, &i) && !strcmp(i.imdb, "ttcomedy"));
     assert(col_definir_json("{\"collections\":[]}")==0);
