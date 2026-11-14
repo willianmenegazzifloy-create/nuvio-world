@@ -159,7 +159,7 @@ int main(void) {
     assert(col_revisao() == c && fil_revisao() == f);
   }
   colfileiras_receber("{\"collections\":[]}"); colfileiras_sincronizar();
-  assert(col_n() == 0 && idx("collection_c1") == -1);
+  assert(col_n() == 1 && idx("collection_c1") >= 0); // snapshot vazio preserva a ultima coleção válida
   assert(fil_estado_chave("addon.demo_movie_new_a") == FIL_FORA);
   assert(!fil_oculta("addon.demo_movie_b") && fil_oculta("addon.demo_movie_s2"));
   assert(fil_n_capacidade() == 3 && fil_n_na_home() == 5);
