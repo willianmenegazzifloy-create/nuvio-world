@@ -42,6 +42,11 @@ int main(void) {
   assert(f->nSources == 2);
   assert(!strcmp(f->sources[0].base, "https://addon/abc") && !strcmp(f->sources[0].catId, "nf_movies") && !f->sources[0].genre[0]);
   assert(!strcmp(f->sources[1].title, "Series") && !strcmp(f->sources[1].type, "series"));
+  {
+    int pastas = 0, fontes = 0, ativas = 0;
+    col_estatisticas(&pastas, &fontes, &ativas);
+    assert(pastas == 1 && fontes == 2 && ativas == 2);
+  }
 
   // Mesmo quando o JSON original inclui fontes diretas TMDB/Trakt, o World
   // conserva somente os catalogos de addons instalados e ativos.
