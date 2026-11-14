@@ -19,6 +19,7 @@ int addons_base_por_id_copiar(const char *id, char *dst, unsigned tam) {
 }
 int addons_catalogo_base_ativo(const char *base) {
   return base && ((!strcmp(base, "https://addon/abc")) ||
+                  !strcmp(base, "https://x") ||
                   (baseAddonAtual[0] && !strcmp(base, baseAddonAtual)));
 }
 int main(void) {
