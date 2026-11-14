@@ -26,6 +26,9 @@ jobs:
       - name: Run Collection parser and paged-data regressions
         run: bash tests/collections.sh
 
+      - name: Run Settings category coverage
+        run: bash tests/ajustes_secoes.sh
+
       - name: Run Collection addon identity and Home reconciliation regressions
         run: bash tests/colfileiras_sync.sh
 
