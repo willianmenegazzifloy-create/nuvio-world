@@ -183,7 +183,6 @@ int main(void) {
   assert(col_definir_json("{\"collections\":[]}") == 0 && col_n() == 0 && col_revisao() == rev);
   puts("ok  empty snapshot with no local collections remains empty");
   // fonte so com addonId (como a conta manda): entra, e a base resolve no acesso
-  //   // fonte so com addonId (como a conta manda): entra, e a base resolve no acesso
   assert(col_definir_json("{\"collections\":[{\"id\":\"c\",\"title\":\"T\",\"folders\":[{\"id\":\"g\",\"title\":\"G\",\"sources\":[{\"provider\":\"addon\",\"addonId\":\"org.x\",\"type\":\"movie\",\"catalogId\":\"k\"}]}]}]}") == 1);
   assert(!strcmp(col_folder(0)->sources[0].base, "https://resolvido"));
   puts("ok  addonId sem URL resolve pela sonda");
