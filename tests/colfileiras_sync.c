@@ -160,7 +160,7 @@ int main(void) {
   }
   colfileiras_receber("{\"collections\":[]}"); colfileiras_sincronizar();
   assert(col_n() == 1 && idx("collection_c1") >= 0); // snapshot vazio preserva a ultima coleção válida
-  assert(!fil_oculta("addon.demo_movie_new_a")); // a última coleção continua ativa após o snapshot vazio
+  assert(fil_estado_chave("addon.demo_movie_new_a") == -1); // só existe como fonte interna da coleção, não como fileira independente
   assert(!fil_oculta("addon.demo_movie_b") && fil_oculta("addon.demo_movie_s2"));
   assert(fil_n_capacidade() == 3 && fil_n_na_home() == 5);
   fil_teste_recarregar();
