@@ -162,7 +162,7 @@ int main(void) {
   assert(col_n() == 1 && idx("collection_c1") >= 0); // snapshot vazio preserva a ultima coleção válida
   assert(fil_estado_chave("addon.demo_movie_new_a") == -1); // só existe como fonte interna da coleção, não como fileira independente
   assert(!fil_oculta("addon.demo_movie_b") && fil_oculta("addon.demo_movie_s2"));
-  assert(fil_n_capacidade() == 3 && fil_n_na_home() == 5);
+  assert(fil_n_capacidade() == 3 && fil_n_na_home() == 6); // collection_c1 permanece na Home
   fil_teste_recarregar();
   assert(fil_oculta("addon.demo_movie_new_a") && !fil_oculta("addon.demo_movie_b"));
   assert(fil_tipo("addon.demo_movie_s1") == estiloCat);
