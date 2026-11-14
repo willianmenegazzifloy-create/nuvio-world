@@ -561,21 +561,9 @@ static const char *baseDaFonte(const ColSource *s) {
 #else
   static _Thread_local char base[NV_ADDON_URL_MAX];
 #endif
-  // Como no Original, addonId e a identidade principal. A URL salva fica como
-  // compatibilidade; se o ID resolver para outra base, vale a do manifesto atual.
-  if (s->addonId[0]) {
-    if (!addons_base_por_id_copiar(s->addonId, base, sizeof base)) {
-      // addonId explicito sem correspondencia: nao usar URL antiga.
-      base[0] = 0;
-      return base;
-    }
-    // Identidade instalada nao basta: Collection exige addon ativo com
-    // capacidade de catalogo. A mesma regra vale para a fonte legada abaixo.
-    if (!addons_catalogo_base_ativo(base)) base[0] = 0;
-    return base;
-  }
-  if (s->base[0] && addons_catalogo_base_ativo(s->base)) return s->base;
-  base[0] = 0;
+  // A URL so autoriza a fonte se corresponder a um addon atualmente ativo.
+  // Quando ha addonId, ele vence e resolve para a base da instalacao atual.
+  if (!col_fonte_base_ativa(s, base, sizeof base)) base[0] = 0;
   return base;
 }
 static const char *mensagemSemFonte(const ColSource *s) {
@@ -617,22 +605,8 @@ static void carregarFonte(void) {
   toqueLivre = 0;
   toquerol_limpar(&toqueAbas);
 #endif
-  // Cada aba consulta a fonte que foi salva nela. TMDB e Trakt sao
-  // provedores explicitos de colecao no Original; nao devem ser convertidos
-  // para um catalogo generico nem descartados como se fossem addons ausentes.
-  if (s->prov[0]) {
-    semFonte = !strcmp(s->prov, "tmdb") ? !desc_chave_tmdb()[0]
-                                        : !nuvem_trakt_cliente()[0];
-    snprintf(catalogId,sizeof catalogId,"%s",s->title);
-    if (semFonte) {
-      printf("[vertudo] fonte %s sem servico configurado: %s\n",
-             s->prov, s->title);
-      fflush(stdout);
-      return;
-    }
-    desc_vertudo_fonte_desde(s, vitPaginaFonte());
-    return;
-  }
+  // No World, Collections so consultam catalogos de addons.
+  if (s->prov[0]) { semFonte = 1; desc_vertudo_fechar(); return; }
   // BASE VAZIA NAO VIRA PEDIDO.
   //
   // desc_vertudo_filtro so recusa ponteiro NULO, e `base` e um vetor dentro da
@@ -1757,7 +1731,7 @@ static void vitCarregar(Uint32 agora) {
     // TMDB e Trakt sao fontes reais da Collection, nao addons ausentes.
     // A disponibilidade do servico e verificada abaixo; se estiver configurado,
     // a mesma fila limitada carrega a fonte sem transforma-la em uma linha vazia.
-    int desligada = s->prov[0] ? 0 : !desc_catalogo_resolver(base, s->type, s->catId, NULL);
+    int desligada = !base[0] || !desc_catalogo_resolver(base, s->type, s->catId, NULL);
     if (vitDesligada[r] != desligada) {
       if (vitManualFonte == r) vitManualFonte = -1;
       vitManualPendente[r] = 0;
@@ -1777,7 +1751,7 @@ static void vitCarregar(Uint32 agora) {
     if (p && __atomic_load_n(&p->pronto, __ATOMIC_ACQUIRE)) {
       vitPedidos[r] = NULL;
       if (p->geracao == vitGeracao && p->sessao == vitSessao && p->atual &&
-          (p->fonte.prov[0] || desc_catalogo_resolver(p->base, p->fonte.type, p->fonte.catId, NULL)))
+          (p->base[0] && desc_catalogo_resolver(p->base, p->fonte.type, p->fonte.catId, NULL)))
         vitGuardarInicial(r, p);
       else {
         vitLin[r].estado = VIT_PEND;
@@ -1791,9 +1765,7 @@ static void vitCarregar(Uint32 agora) {
     if (l->estado != VIT_PEND) continue;
     if (vitRetentarEm[r] && (Sint32)(agora - vitRetentarEm[r]) < 0) continue;
     vitRetentarEm[r] = 0;
-    int disponivel = s->prov[0]
-        ? (!strcmp(s->prov, "tmdb") ? desc_chave_tmdb()[0] != 0 : nuvem_trakt_cliente()[0] != 0)
-        : desc_catalogo_resolver(base, s->type, s->catId, NULL);
+    int disponivel = base[0] && desc_catalogo_resolver(base, s->type, s->catId, NULL);
     if (!disponivel) {
       l->estado = VIT_VAZIA; l->semFonte = 1; continue;
     }
