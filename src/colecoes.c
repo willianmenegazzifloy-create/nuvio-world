@@ -582,7 +582,7 @@ static int carregarPacote(const char *dir) {
         js_texto(s,se,"title",a->title,sizeof a->title);lerBase(s,se,"base",a,v->title);
         js_texto(s,se,"addonId",a->addonId,sizeof a->addonId);
         js_texto(s,se,"type",a->type,sizeof a->type);js_texto(s,se,"catId",a->catId,sizeof a->catId);js_texto(s,se,"genre",a->genre,sizeof a->genre);
-        if(a->base[0]&&a->type[0]&&a->catId[0])v->nSources++;
+        if((a->base[0]||a->addonId[0])&&a->type[0]&&a->catId[0])v->nSources++;
       }
       v->local=1;
       if(v->nSources&&v->title[0]){nNovas+=v->nSources;count++;}
