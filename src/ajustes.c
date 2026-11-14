@@ -717,6 +717,7 @@ typedef enum {
 #endif
   AJ_CONFIG_COPIAR,
   AJ_NAV_VELOCIDADE,
+  AJ_COLECOES_STATUS, // read-only status: received folders and active addon sources
   AJ_N
 } OpcaoId;
 _Static_assert(DEBRID_RD == 0 && DEBRID_TB == 1 && DEBRID_PM == 2 && DEBRID_AD == 3,
@@ -1856,6 +1857,7 @@ static const Opcao OPCOES[AJ_N] = {
 #endif
   ACAO("Copiar configurações de outro perfil"),
   ESC("Velocidade da navegação", V_NAV_VELOCIDADE, 3),
+  LER("Estado das coleções"),
 };
 
 // Nome de cada opcao no arquivo. O formato era POSICIONAL — uma linha por
@@ -2190,6 +2192,7 @@ static const char *CHAVE[] = {
 #endif
   "-configCopiar",
   "navVelocidadeLocal",
+  "-colecoesStatus",
 };
 // QUATRO VETORES PARALELOS indexados pelo mesmo enum AJ_*: OPCOES, CHAVE,
 // valor e as secoes. OPCOES ja e declarado [AJ_N], e `valor` aceita inicializacao
@@ -6941,6 +6944,14 @@ static const char *textoLeitura(int op) {
   }
   if(op==AJ_IPTV_NOME)return ajIptvNome(iptv_conta_indice());
   static char buf[64];
+  if (op == AJ_COLECOES_STATUS) {
+    int pastas = 0, fontes = 0, ativas = 0;
+    col_estatisticas(&pastas, &fontes, &ativas);
+    if (!pastas) return i18n("Nenhuma recebida");
+    if (!fontes) return i18n("Sem fontes");
+    snprintf(buf, sizeof buf, i18n("%d pastas · %d/%d fontes"), pastas, ativas, fontes);
+    return buf;
+  }
   // MASCARADO, sempre. Esta tela e fotografada e colada em issue — foi assim
   // que chegou o relato do painel de Tracking. O portal sai sem esquema e o MAC
   // so com os dois ultimos octetos: o bastante para a pessoa reconhecer QUAL
@@ -7788,6 +7799,7 @@ static const char *ajudaOpcaoBase(int op) {
     case AJ_POSTER_MODELO: return "Endereço com {imdb}, {tmdb}, {type} (movie ou series) e {tipo_tmdb} (movie ou tv), por exemplo https://meu.servidor/{type}/{imdb}.jpg. Quem não tiver o dado que o modelo pede fica com o cartaz normal.";
     case AJ_POSTER_TESTAR: return "Baixa o cartaz de um filme conhecido com a configuração atual e mostra se deu certo. O primeiro cartaz de cada título é montado no servidor e pode levar alguns segundos.";
     case AJ_COLECAO_EXIBICAO: return "Vale para coleções sem escolha própria neste perfil. Automático mantém a exibição original. Em Exibição, escolha Padrão para seguir este ajuste novamente.";
+    case AJ_COLECOES_STATUS: return "Quantidade de pastas recebidas e fontes de catálogo de addons reconhecidas como instaladas e ativas nesta TV. Se houver pastas, mas nenhuma fonte ativa, confira os addons da conta.";
     case AJ_MURAL_TITULOS: return "Ligado (padrão): cada ladrilho do Mural mostra o nome do título. Desligado: o nome fica só no painel da direita. Vale só nesta TV.";
     case AJ_HOME_LAYOUT: return "Moderna: destaque atrás das fileiras. Padrão: destaque num banner no topo. Dinâmica: estilo Apple TV, com destaques grandes e Top 10.";
     case AJ_VIDRO: return "Painéis, botões e menus viram ilhas translúcidas que deixam a arte aparecer. Desligado, as mesmas ilhas ficam opacas. Só muda o visual; nada muda de lugar.";
