@@ -1061,7 +1061,7 @@ static int definirJson(const char *json) {
     int locais = 0;
     for (int i = 0; i < count; i++) if (!PASTA(i).extra) locais++;
     if (locais > 0) {
-      printf("[collections] empty remote snapshot; preserving %d local folder(s)\\n", locais);
+      printf("[collections] empty remote snapshot; preserving %d local folder(s)\n", locais);
       if (recarregou) revisao++;
       free(solto);
       return locais;
