@@ -76,6 +76,26 @@ int main(void) {
   assert(col_folder(0)->nSources == 1 && !strcmp(col_folder(0)->sources[0].catId, "old"));
   puts("ok  catalogSources usado como compatibilidade quando sources esta vazio");
 
+  // Addon reconfigurado: o ID antigo sozinho nao identifica a instancia atual,
+  // mas um addonBaseUrl salvo ainda pode resolver com seguranca pela URL exata.
+  assert(col_definir_json("{\"collections\":[{\"id\":\"changed\",\"title\":\"Changed\",\"folders\":[{\"id\":\"f\",\"title\":\"F\",\"sources\":[{\"provider\":\"addon\",\"addonId\":\"old.manifest.id\",\"addonBaseUrl\":\"https://resolvido/manifest.json\",\"type\":\"movie\",\"catalogId\":\"popular\"}]}]}]}") == 1);
+  {
+    char base[600];
+    assert(col_fonte_base_ativa(&col_folder(0)->sources[0], base, sizeof base));
+    assert(!strcmp(base, "https://resolvido"));
+  }
+  // Formato atual do site: so addonId/type/catalogId. ID desconhecido deve
+  // continuar recebido, mas nunca ser tratado como fonte ativa nem virar fileira.
+  assert(col_definir_json("{\"collections\":[{\"id\":\"unresolved\",\"title\":\"Unresolved\",\"folders\":[{\"id\":\"f\",\"title\":\"F\",\"catalogSources\":[{\"addonId\":\"old.manifest.id\",\"type\":\"movie\",\"catalogId\":\"popular\"}]}]}]}") == 1);
+  {
+    int pastas = 0, fontes = 0, ativas = 0;
+    char base[600];
+    col_estatisticas(&pastas, &fontes, &ativas);
+    assert(pastas == 1 && fontes == 1 && ativas == 0);
+    assert(!col_fonte_base_ativa(&col_folder(0)->sources[0], base, sizeof base));
+  }
+  puts("ok  IDs de manifesto antigos: URL exata recupera; ID opaco permanece recebido e inativo");
+
   // Cadeia de arte da pasta, na ordem do web, ate o ultimo campo.
   assert(col_definir_json("{\"collections\":[{\"id\":\"cc\",\"title\":\"C\",\"backdropImageUrl\":\"https://img/grupo.jpg\",\"folders\":["
     "{\"id\":\"a\",\"title\":\"So grupo\",\"sources\":[{\"addonId\":\"a\",\"type\":\"movie\",\"catalogId\":\"k\"}]},"
