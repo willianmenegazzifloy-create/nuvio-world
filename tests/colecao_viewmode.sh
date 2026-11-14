@@ -311,6 +311,16 @@ int addons_base_por_id_copiar(const char *id, char *dst, unsigned tam) {
   snprintf(dst, tam, "%s", currentBase);
   return 1;
 }
+int col_fonte_base_ativa(const ColSource *fonte, char *base, unsigned tam) {
+  if (!fonte || !base || !tam) return 0;
+  base[0] = 0;
+  if (fonte->addonId[0]) {
+    if (!addons_base_por_id_copiar(fonte->addonId, base, tam)) return 0;
+  } else {
+    snprintf(base, tam, "%s", fonte->base);
+  }
+  return base[0] && addons_catalogo_base_ativo(base);
+}
 """
 main = r"""
 int main(void) {
