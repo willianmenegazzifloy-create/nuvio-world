@@ -6948,7 +6948,7 @@ static const char *textoLeitura(int op) {
   if (op == AJ_COLECOES_STATUS) {
     int pastas = 0, fontes = 0, ativas = 0;
     col_estatisticas(&pastas, &fontes, &ativas);
-    if (!pastas) return i18n("Nenhuma recebida");
+    if (!pastas) return col_tem_conta() ? i18n("Recebida · 0 pastas válidas") : i18n("Nenhuma recebida");
     if (!fontes) return i18n("Sem fontes");
     snprintf(buf, sizeof buf, i18n("%d pastas · %d/%d fontes"), pastas, ativas, fontes);
     return buf;
