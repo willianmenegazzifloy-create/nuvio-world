@@ -852,6 +852,7 @@ int fil_addon_ausente(const char *id, const char *base) {
   if (autoridadeAtual() && perfil == dono && addonsContaVinculada == vinculada &&
       (!vinculada || addonsContaVersao == versao) &&
       ((id && *id) || (base && *base))) {
+    ausente = 1;
     int idEncontrado = 0, baseEncontrada = 0;
     for (int i = 0; i < nAddonsConta; i++) {
       if (id && *id && !strcmp(id, addonsConta[i].id)) idEncontrado = 1;
