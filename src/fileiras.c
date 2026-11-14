@@ -852,13 +852,20 @@ int fil_addon_ausente(const char *id, const char *base) {
   if (autoridadeAtual() && perfil == dono && addonsContaVinculada == vinculada &&
       (!vinculada || addonsContaVersao == versao) &&
       ((id && *id) || (base && *base))) {
-    ausente = 1;
-    // addonId e a identidade persistente da fonte. addonBaseUrl e apenas
-    // compatibilidade/cache: pode ter mudado desde que a Collection foi salva.
-    // So usamos a URL quando a fonte antiga nao tem id de manifesto.
-    for (int i = 0; i < nAddonsConta; i++)
-      if (id && *id ? !strcmp(id, addonsConta[i].id) :
-          (base && *base && !strcmp(base, addonsConta[i].base))) ausente = 0;
+    int idEncontrado = 0, baseEncontrada = 0;
+    for (int i = 0; i < nAddonsConta; i++) {
+      if (id && *id && !strcmp(id, addonsConta[i].id)) idEncontrado = 1;
+      if (base && *base && !strcmp(base, addonsConta[i].base)) baseEncontrada = 1;
+    }
+    if (idEncontrado || baseEncontrada) ausente = 0;
+    else if (!base || !*base) {
+      // Modern Nuvio collections store only addonId/type/catalogId. An unknown
+      // opaque ID can mean an uninstalled addon OR a regenerated manifest ID
+      // (AIOStreams does this on reconfiguration). Without a stored URL there
+      // is no safe way to identify the replacement. Keep it unresolved instead
+      // of deleting the folder; it will remain hidden until the ID is fixed.
+      ausente = 0;
+    }
   }
   pthread_mutex_unlock(&trava);
   if (vinculada) addons_destravar_lista();
