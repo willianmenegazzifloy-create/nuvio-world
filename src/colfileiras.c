@@ -31,10 +31,26 @@ static int chaveFonte(const ColSource *s, char *dst) {
   id = s->addonId;
   base = s->base;
   if (id[0]) {
-    // A URL salva pode ser antiga. Para a identidade de fileira, use a base
-    // atual do addon identificado pelo manifesto, nunca a URL em cache.
-    if (addons_base_por_id_copiar(id, baseAtual, sizeof baseAtual))
+    // A URL salva pode ser antiga. Preferir a base atual do ID; se o manifesto
+    // mudou, aceitar a base salva somente quando ela ainda pertence a um addon
+    // instalado, e então usar o ID atual desse addon para a chave da Home.
+    if (addons_base_por_id_copiar(id, baseAtual, sizeof baseAtual)) {
       base = baseAtual;
+    } else if (base && base[0]) {
+      for (int i = 0; i < addons_n(); i++)
+        if (!strcmp(addons_base(i), base) && addons_id_manifesto(i)[0]) {
+          id = addons_id_manifesto(i);
+          break;
+        }
+    } else if (!strncmp(id, "https://", 8) || !strncmp(id, "http://", 7)) {
+      base = id;
+      for (int i = 0; i < addons_n(); i++)
+        if (!strcmp(addons_base(i), base) && addons_id_manifesto(i)[0]) {
+          id = addons_id_manifesto(i);
+          base = addons_base(i);
+          break;
+        }
+    }
   } else if (base && base[0]) {
     for (int i = 0; i < addons_n(); i++)
       if (!strcmp(addons_base(i), base)) { id = addons_id_manifesto(i); break; }
