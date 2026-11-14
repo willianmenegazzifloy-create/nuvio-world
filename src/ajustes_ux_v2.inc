@@ -213,6 +213,7 @@ static void aj2MenuValor(int sec, char *b, size_t n) {
   b[0] = 0;
   switch (sec) {
     case AJS_HOME: op = AJ_HOME_LAYOUT; break;
+    case AJS_COLECOES: op = AJ_COLECOES_STATUS; break;
     case AJS_TITULO: {   // as notas ligadas, pelos nomes
       int k, q = 0;
       size_t u = 0;
