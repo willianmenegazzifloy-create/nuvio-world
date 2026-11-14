@@ -130,6 +130,8 @@ void col_arte_conta(int sim);
 // tem id (web e catordem usam o id), senao collection_<titulo do grupo>.
 void col_chave_grupo(const char *group, char *dst, unsigned n);
 int col_n(void);
+// Current folders and installed/active addon catalog sources for Settings diagnostics.
+void col_estatisticas(int *pastas, int *fontes, int *ativas);
 // Muda sempre que o conjunto de pastas muda. Quem decide remontar a tela deve
 // olhar ISTO e nao col_n(): trocar N pastas por outras N mantem o numero.
 unsigned col_revisao(void);
