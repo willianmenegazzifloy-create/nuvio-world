@@ -242,7 +242,7 @@ int main(void) {
     CatItem genreItems[4]; DescColecaoResultado genreResult;
     snprintf(genre.base, sizeof genre.base, "https://collection.invalid/addon?config=fixture");
     snprintf(genre.type, sizeof genre.type, "movie");
-    snprintf(genre.catId, sizeof genre.catId, "new/movies #1?fresh%");
+    snprintf(genre.catId, sizeof genre.catId, "new/movies #1?fresh%%");
     snprintf(genre.genre, sizeof genre.genre, "Comedy");
     assert(desc_colecao_inicial(&genre, genre.base, nv_perfil_sessao_ler(),
                                 genreItems, 4, &genreResult));
