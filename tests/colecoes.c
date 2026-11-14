@@ -117,6 +117,11 @@ int main(void) {
     assert(d.fontesValidas == 2 && d.pastasValidas == 1 && d.pastasSemFonte == 1);
   }
 
+  char chave[192];
+  col_chave_grupo("Streaming", chave, sizeof chave); assert(!strcmp(chave, "collection_c1"));
+  col_chave_grupo("Outro", chave, sizeof chave);     assert(!strcmp(chave, "collection_Outro"));
+  puts("ok  chave por id da colecao, nome quando nao ha id");
+
   // Algumas exportacoes antigas usam snake_case e name em vez de title.
   // O parser aceita os aliases sem mudar a regra: catalogo precisa de
   // identidade, tipo e catalogId; provedores externos continuam de fora.
@@ -146,10 +151,6 @@ int main(void) {
     assert(d.pastasValidas == 0 && d.pastasSemFonte == 1);
   }
 
-  char chave[192];
-  col_chave_grupo("Streaming", chave, sizeof chave); assert(!strcmp(chave, "collection_c1"));
-  col_chave_grupo("Outro", chave, sizeof chave);     assert(!strcmp(chave, "collection_Outro"));
-  puts("ok  chave por id da colecao, nome quando nao ha id");
 
   // Collections compostas apenas por fontes TMDB/Trakt nao existem no World.
   const char *descobrir =
