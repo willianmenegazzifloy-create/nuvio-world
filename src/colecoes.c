@@ -231,7 +231,18 @@ int col_fonte_base_ativa(const ColSource *fonte, char *base, unsigned tam) {
   // Preferir a identidade persistente; a URL e somente compatibilidade para
   // colecoes antigas, e tambem precisa pertencer a um addon ativo hoje.
   if (fonte->addonId[0]) {
-    if (!addons_base_por_id_copiar(fonte->addonId, atual, sizeof atual)) return 0;
+    if (!addons_base_por_id_copiar(fonte->addonId, atual, sizeof atual)) {
+      // Older collection snapshots may carry both an addonId and its base URL.
+      // If the manifest id changed after an addon was reconfigured, the exact
+      // base is still a safe identity: it must match an installed active
+      // catalog addon below. Never guess from catalog name or index.
+      if (fonte->base[0] && strlen(fonte->base) < sizeof atual)
+        snprintf(atual, sizeof atual, "%s", fonte->base);
+      else if (!strncmp(fonte->addonId, "https://", 8) ||
+               !strncmp(fonte->addonId, "http://", 7))
+        snprintf(atual, sizeof atual, "%s", fonte->addonId);
+      else return 0;
+    }
   } else {
     if (!fonte->base[0] || strlen(fonte->base) >= sizeof atual) return 0;
     snprintf(atual, sizeof atual, "%s", fonte->base);
@@ -253,7 +264,9 @@ static void resolverBases(ColFolder *v) {
     if (fonte->prov[0] || !fonte->addonId[0]) continue;
     char atual[NV_ADDON_URL_MAX];
     if (col_fonte_base_ativa(fonte, atual, sizeof atual)) baseCabe(fonte, atual);
-    else fonte->base[0] = 0; // a identidade permite resolver novamente ao religar
+    // Keep a persisted legacy base while its addonId is unresolved. The active
+    // resolver validates it against the current addon list before any catalog
+    // request, so retaining it cannot resurrect a removed/disabled source.
   }
 }
 const ColFolder *col_folder(int i) {
